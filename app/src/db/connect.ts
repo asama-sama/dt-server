@@ -19,5 +19,9 @@ export const getConnection = async () => {
   } catch (error) {
     console.error("Unable to connect to the database:", error);
   }
+
+  await connection.sync({ force: true });
+  console.log("All models were synchronized successfully.");
+
   return connection;
 };

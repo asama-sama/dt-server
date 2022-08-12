@@ -6,8 +6,6 @@ import { getConnection } from "./db/connect";
 
 dotenv.config();
 
-console.log("test", process.env);
-
 const PORT = process.env.PORT || 3000;
 const app: Express = express();
 
