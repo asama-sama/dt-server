@@ -3,7 +3,6 @@ import csv from "csv-parser";
 import { Emission } from "./db/models/Emission";
 import { Category } from "./db/models/Category";
 import { Suburb } from "./db/models/Suburb";
-import { ModelStatic } from "./db/connect";
 
 type SuburbAttributes = {
   name: string;
@@ -25,8 +24,8 @@ const loadDataFiles = () => {
         .pipe(csv())
         .on("data", (data) => results.push(data))
         .on("end", () => {
-          // build up normalised tables
           results.forEach(async (result) => {
+            // build up normalised tables
             const suburbData: SuburbAttributes = {
               name: result["Area_suburb"],
               shapeArea: result["Shape__Area"],
@@ -46,14 +45,39 @@ const loadDataFiles = () => {
                 shapeLength: parseFloat(suburbData.shapeLength),
               },
             });
-            const suburb = suburbCreated[0];
 
             const categoryCreated = await Category.findOrCreate({
               where: {
                 name: categoryData.name,
               },
+              defaults: {
+                name: categoryData.name,
+              },
             });
+
+            // get table relation
+            const suburb = suburbCreated[0];
             const category = categoryCreated[0];
+
+            // insert emission values
+            const properties = Object.keys(result);
+            for (let i = 0; i < properties.length; i++) {
+              const property = properties[i];
+              const yearMatch = property.match(/^F\d{4}_\d{2}/g);
+              if (yearMatch) {
+                const year = parseInt(yearMatch[0].substring(1, 5));
+                try {
+                  await Emission.create({
+                    year: year,
+                    reading: result[property] || 0,
+                    suburbId: suburb.id,
+                    categoryId: category.id,
+                  });
+                } catch (e) {
+                  console.error("Error inserting emission", e);
+                }
+              }
+            }
           });
         });
     });

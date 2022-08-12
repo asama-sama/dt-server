@@ -2,7 +2,7 @@ import { Model, Sequelize } from "sequelize-typescript";
 import Seq from "sequelize";
 
 export const getConnection = async () => {
-  const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST } = process.env;
+  const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DROP_TABLES } = process.env;
 
   if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST) {
     throw new Error("DB connection details must be provided");
@@ -21,6 +21,9 @@ export const getConnection = async () => {
     console.error("Unable to connect to the database:", error);
   }
 
+  if (DROP_TABLES) {
+    await connection.dropAllSchemas({}); //
+  }
   await connection.sync({ force: true });
   console.log("All models were synchronized successfully.");
 

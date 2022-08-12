@@ -4,17 +4,18 @@ import {
   Model,
   BelongsTo,
   ForeignKey,
+  DataType,
 } from "sequelize-typescript";
 import { Suburb } from "./Suburb";
 import { Category } from "./Category";
 
 @Table
 export class Emission extends Model {
-  @Column
+  @Column(DataType.FLOAT)
   reading: number;
 
   @Column
-  year: Date;
+  year: number;
 
   @ForeignKey(() => Suburb)
   @Column
