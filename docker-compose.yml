@@ -1,0 +1,11 @@
+version: "3.7"
+
+services:
+  app:
+    image: node:18-alpine
+    command: sh -c "npm install && npm run serve"
+    ports:
+      - 3000:3000
+    working_dir: /src
+    volumes:
+      - ./src:/app
