@@ -6,6 +6,6 @@ services:
     command: sh -c "npm install && npm run serve"
     ports:
       - 3000:3000
-    working_dir: /src
+    working_dir: /app
     volumes:
-      - ./src:/app
+      - ./app:/app
