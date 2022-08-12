@@ -6,7 +6,6 @@ import {
   ForeignKey,
 } from "sequelize-typescript";
 import { Suburb } from "./Suburb";
-import { Year } from "./Year";
 import { Category } from "./Category";
 
 @Table
@@ -14,13 +13,12 @@ export class Emission extends Model {
   @Column
   reading: number;
 
+  @Column
+  year: Date;
+
   @ForeignKey(() => Suburb)
   @Column
   suburbId: number;
-
-  @ForeignKey(() => Year)
-  @Column
-  yearId: number;
 
   @ForeignKey(() => Category)
   @Column
@@ -28,9 +26,6 @@ export class Emission extends Model {
 
   @BelongsTo(() => Suburb)
   suburb: Suburb;
-
-  @BelongsTo(() => Year)
-  year: Year;
 
   @BelongsTo(() => Category)
   category: Category;

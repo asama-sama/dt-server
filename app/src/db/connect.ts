@@ -1,4 +1,5 @@
-import { Sequelize } from "sequelize-typescript";
+import { Model, Sequelize } from "sequelize-typescript";
+import Seq from "sequelize";
 
 export const getConnection = async () => {
   const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST } = process.env;
@@ -24,4 +25,8 @@ export const getConnection = async () => {
   console.log("All models were synchronized successfully.");
 
   return connection;
+};
+
+export type ModelStatic = typeof Model & {
+  new (values?: object, options?: Seq.BuildOptions): Model;
 };

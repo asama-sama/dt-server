@@ -1,15 +1,23 @@
-import { Table, Column, Model, HasMany } from "sequelize-typescript";
+import {
+  Table,
+  Column,
+  Model,
+  HasMany,
+  Unique,
+  DataType,
+} from "sequelize-typescript";
 import { Emission } from "./Emission";
 
 @Table
 export class Suburb extends Model {
+  @Unique
   @Column
   name: string;
 
-  @Column
+  @Column(DataType.FLOAT)
   shapeArea: number;
 
-  @Column
+  @Column(DataType.FLOAT)
   shapeLength: number;
 
   @HasMany(() => Emission)

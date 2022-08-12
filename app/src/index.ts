@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import { getConnection } from "./db/connect";
+import { loadDataFiles } from "./loadDataFiles";
 
 dotenv.config();
 
@@ -13,7 +14,11 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const connection = getConnection();
+const init = async () => {
+  await getConnection();
+  await loadDataFiles();
+};
+init();
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
