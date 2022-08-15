@@ -1,4 +1,4 @@
-import { getConnection } from "./src/db/connect";
+import { getConnection } from "../src/db/connect";
 
 module.exports = async () => {
   console.log("run global teardown");

@@ -3,6 +3,7 @@ module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
   testPathIgnorePatterns: ["dist/*", "node_modules"],
-  globalSetup: "./setup.ts",
-  globalTeardown: "./teardown.ts",
+  globalSetup: "./tests/globalSetup.ts",
+  globalTeardown: "./tests/globalTeardown.ts",
+  setupFilesAfterEnv: ["./tests/setup.ts"],
 };

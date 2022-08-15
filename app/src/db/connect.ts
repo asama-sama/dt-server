@@ -17,6 +17,7 @@ export const initConnection = async ({
   dbPort,
   dbSchema,
   dropTables,
+  logging = true,
 }: {
   dbName: string;
   dbUser: string;
@@ -25,12 +26,14 @@ export const initConnection = async ({
   dbPort: string;
   dropTables?: boolean;
   dbSchema?: string;
+  logging?: boolean;
 }) => {
   let connection = new Sequelize(dbName, dbUser, dbPassword, {
     host: dbHost,
     dialect: "postgres",
     models: [`${__dirname}/models`],
     port: parseInt(dbPort),
+    logging,
   });
 
   if (dbSchema) {
@@ -51,12 +54,12 @@ export const initConnection = async ({
       models: [`${__dirname}/models`],
       port: parseInt(dbPort),
       schema: dbSchema,
+      logging,
     });
   }
 
   try {
     await connection.authenticate();
-    console.log("Connection has been established successfully.");
   } catch (error) {
     console.error("Unable to connect to the database:", error);
   }
@@ -67,7 +70,6 @@ export const initConnection = async ({
   } else {
     await connection.sync();
   }
-  console.log("All models were synchronized successfully.");
   sequelize = connection;
   return sequelize;
 };

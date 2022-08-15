@@ -1,4 +1,4 @@
-import { initConnection } from "./src/db/connect";
+import { initConnection } from "../src/db/connect";
 
 module.exports = async () => {
   console.log("run global setup");
