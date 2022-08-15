@@ -1,4 +1,3 @@
-import { GlobalConfigTsJest, ProjectConfigTsJest } from "ts-jest";
 import { getConnection, initConnection } from "./src/db/connect";
 
 declare global {
@@ -6,10 +5,7 @@ declare global {
   var DB_SCHEMA: string;
 }
 
-module.exports = async (
-  globalConfig: GlobalConfigTsJest,
-  projectConfig: ProjectConfigTsJest
-) => {
+module.exports = async () => {
   console.log("run global setup");
   globalThis.DB_SCHEMA = "dbtwins_test";
 
@@ -20,10 +16,5 @@ module.exports = async (
     dbHost: "localhost",
     dbPort: "5433",
     dbSchema: "dbtwins_test",
-    // dropTables: true,
   });
-
-  const connection = getConnection();
-  // await connection.createSchema("dbtwins_test", {});
-  // await connection.sync({ schema: "dbtwins_test" });
 };

@@ -1,4 +1,3 @@
-import { GlobalConfigTsJest, ProjectConfigTsJest } from "ts-jest";
 import { getConnection } from "./src/db/connect";
 
 declare global {
@@ -6,10 +5,7 @@ declare global {
   var DB_SCHEMA: string;
 }
 
-module.exports = async (
-  globalConfig: GlobalConfigTsJest,
-  projectConfig: ProjectConfigTsJest
-) => {
+module.exports = async () => {
   console.log("run global teardown");
   const sequelize = getConnection();
   await sequelize.dropSchema(globalThis.DB_SCHEMA, {});
