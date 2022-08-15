@@ -9,6 +9,8 @@ describe("Suburb", () => {
     });
     expect(s).toMatchObject({
       name: "test",
+      shapeArea: 234.345,
+      shapeLength: 554.435346,
     });
   });
 });
