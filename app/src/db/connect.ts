@@ -2,22 +2,57 @@ import { Model, Sequelize } from "sequelize-typescript";
 import Seq from "sequelize";
 let sequelize: Sequelize;
 
-export const getConnection = async () => {
+export const getConnection = () => {
   if (sequelize) {
     return sequelize;
   }
+  throw new Error("Sequelize not initialized");
+};
 
-  const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DROP_TABLES } = process.env;
-
-  if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST) {
-    throw new Error("DB connection details must be provided");
-  }
-
-  const connection = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-    host: DB_HOST,
+export const initConnection = async ({
+  dbName,
+  dbUser,
+  dbPassword,
+  dbHost,
+  dbPort,
+  dbSchema,
+  dropTables,
+}: {
+  dbName: string;
+  dbUser: string;
+  dbPassword: string;
+  dbHost: string;
+  dbPort: string;
+  dropTables?: boolean;
+  dbSchema?: string;
+}) => {
+  let connection = new Sequelize(dbName, dbUser, dbPassword, {
+    host: dbHost,
     dialect: "postgres",
     models: [`${__dirname}/models`],
+    port: parseInt(dbPort),
   });
+
+  if (dbSchema) {
+    try {
+      await connection.createSchema(dbSchema, {});
+    } catch (e) {
+      if (e instanceof Error) {
+        // ignore on "schema already exists" error
+        if (!e.message.match("^.*?already exists")) {
+          throw e;
+        }
+      }
+    }
+    await connection.close();
+    connection = new Sequelize(dbName, dbUser, dbPassword, {
+      host: dbHost,
+      dialect: "postgres",
+      models: [`${__dirname}/models`],
+      port: parseInt(dbPort),
+      schema: dbSchema,
+    });
+  }
 
   try {
     await connection.authenticate();
@@ -26,11 +61,12 @@ export const getConnection = async () => {
     console.error("Unable to connect to the database:", error);
   }
 
-  if (DROP_TABLES === "yes") {
+  if (dropTables) {
     console.log("force schema reset");
-    await connection.sync({ force: true });
+    await connection.sync({ force: true, schema: dbSchema });
+  } else {
+    await connection.sync();
   }
-  await connection.sync();
   console.log("All models were synchronized successfully.");
   sequelize = connection;
   return sequelize;

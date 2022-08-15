@@ -1,8 +1,8 @@
-import express, { Express, Request, Response } from "express";
+import express, { Express } from "express";
 import bodyParser from "body-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
-import { getConnection } from "./db/connect";
+import { initConnection } from "./db/connect";
 import { loadDataFiles } from "./loadDataFiles";
 
 dotenv.config();
@@ -15,7 +15,21 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const init = async () => {
-  await getConnection();
+  const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DROP_TABLES, DB_PORT } =
+    process.env;
+
+  if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
+    throw new Error("DB connection details must be provided");
+  }
+
+  await initConnection({
+    dbName: DB_NAME,
+    dbHost: DB_HOST,
+    dbUser: DB_USER,
+    dbPassword: DB_PASSWORD,
+    dropTables: DROP_TABLES === "yes",
+    dbPort: DB_PORT,
+  });
   await loadDataFiles();
 };
 init();

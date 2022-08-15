@@ -11,7 +11,7 @@ type SuburbAttributes = {
   shapeArea: string;
   shapeLength: string;
 };
-
+//
 const loadFile = async (filename: string, path: string) => {
   const sequelize = await getConnection();
   const promise = new Promise((resolve, reject) => {
@@ -101,7 +101,7 @@ const loadFile = async (filename: string, path: string) => {
   return promise;
 };
 
-const loadDataFiles = async () => {
+export const loadDataFiles = async () => {
   const { DATA_FILES_PATH } = process.env;
 
   if (!DATA_FILES_PATH) throw new Error("Must provide path to data files");
@@ -128,5 +128,3 @@ const loadDataFiles = async () => {
     }
   });
 };
-
-export { loadDataFiles };

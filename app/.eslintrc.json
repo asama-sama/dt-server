@@ -14,5 +14,6 @@
     "sourceType": "module"
   },
   "plugins": ["@typescript-eslint"],
-  "rules": {}
+  "rules": {},
+  "ignorePatterns": ["jest.config.js"]
 }
