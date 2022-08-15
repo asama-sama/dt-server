@@ -1,7 +1,12 @@
 import { Model, Sequelize } from "sequelize-typescript";
 import Seq from "sequelize";
+let sequelize: Sequelize;
 
 export const getConnection = async () => {
+  if (sequelize) {
+    return sequelize;
+  }
+
   const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DROP_TABLES } = process.env;
 
   if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST) {
@@ -21,13 +26,14 @@ export const getConnection = async () => {
     console.error("Unable to connect to the database:", error);
   }
 
-  if (DROP_TABLES) {
-    await connection.dropAllSchemas({}); //
+  if (DROP_TABLES === "yes") {
+    console.log("force schema reset");
+    await connection.sync({ force: true });
   }
-  await connection.sync({ force: true });
+  await connection.sync();
   console.log("All models were synchronized successfully.");
-
-  return connection;
+  sequelize = connection;
+  return sequelize;
 };
 
 export type ModelStatic = typeof Model & {
