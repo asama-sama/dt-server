@@ -1,9 +1,4 @@
-import { getConnection, initConnection } from "./src/db/connect";
-
-declare global {
-  // eslint-disable-next-line no-var
-  var DB_SCHEMA: string;
-}
+import { initConnection } from "./src/db/connect";
 
 module.exports = async () => {
   console.log("run global setup");
