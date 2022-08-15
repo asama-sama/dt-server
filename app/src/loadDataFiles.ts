@@ -11,9 +11,9 @@ type SuburbAttributes = {
   shapeArea: string;
   shapeLength: string;
 };
-//
+
 const loadFile = async (filename: string, path: string) => {
-  const sequelize = await getConnection();
+  const sequelize = getConnection();
   const promise = new Promise((resolve, reject) => {
     const results: Record<string, string>[] = [];
     fs.createReadStream(path)
@@ -103,28 +103,27 @@ const loadFile = async (filename: string, path: string) => {
 
 export const loadDataFiles = async () => {
   const { DATA_FILES_PATH } = process.env;
-
   if (!DATA_FILES_PATH) throw new Error("Must provide path to data files");
 
-  fs.readdir(DATA_FILES_PATH, async (err, files) => {
-    for (const file of files) {
-      const foundFile = await ProcessedDataFile.findOne({
-        where: { name: file },
-      });
+  return new Promise((resolve, reject) => {
+    fs.readdir(DATA_FILES_PATH, async (err, files) => {
+      for (const file of files) {
+        const foundFile = await ProcessedDataFile.findOne({
+          where: { name: file },
+        });
 
-      if (foundFile) {
-        console.log(`${file} has already been uploaded. Skipping`);
-        continue;
-      } else {
-        console.log(`processing ${file}`);
+        if (foundFile) {
+          continue;
+        }
+        const path = `${DATA_FILES_PATH}/${file}`;
+        try {
+          await loadFile(file, path);
+        } catch (err) {
+          console.error(err);
+          reject(err);
+        }
       }
-      console.log(foundFile);
-      const path = `${DATA_FILES_PATH}/${file}`;
-      try {
-        await loadFile(file, path);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+      resolve(null);
+    });
   });
 };

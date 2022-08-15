@@ -1,6 +1,6 @@
 import { getConnection, initConnection } from "../src/db/connect";
 
-beforeAll(async () => {
+beforeEach(async () => {
   await initConnection({
     dbName: "root",
     dbUser: "root",
@@ -12,7 +12,8 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
+afterEach(async () => {
   const sequelize = getConnection();
+  await sequelize.dropSchema(globalThis.DB_SCHEMA, {});
   await sequelize.close();
 });
