@@ -13,8 +13,7 @@ export const bulkSearch = async (queries: string[]) => {
   }
   for (const query of queries) {
     const res = await axios.get(
-      `test`
-      // `https://nominatim.openstreetmap.org/search?q=${query}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&limit=1`
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&limit=1`
     );
     results.push(res);
     await new Promise((r) => setTimeout(r, apiTimeout)); // wait 1.5 seconds to not make nominatim angry
