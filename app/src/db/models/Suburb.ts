@@ -5,6 +5,7 @@ import {
   HasMany,
   Unique,
   DataType,
+  AllowNull,
 } from "sequelize-typescript";
 import { Emission } from "./Emission";
 
@@ -19,6 +20,10 @@ export class Suburb extends Model {
 
   @Column(DataType.FLOAT)
   shapeLength: number;
+
+  @AllowNull(true)
+  @Column(DataType.JSON)
+  geoJson: object;
 
   @HasMany(() => Emission)
   emissions: Emission[];

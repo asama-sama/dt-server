@@ -68,7 +68,7 @@ export const initConnection = async ({
     console.log("force schema reset");
     await connection.sync({ force: true, schema: dbSchema });
   } else {
-    await connection.sync();
+    await connection.sync({ alter: true });
   }
   sequelize = connection;
   return sequelize;
