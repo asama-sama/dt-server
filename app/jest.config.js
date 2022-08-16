@@ -6,4 +6,6 @@ module.exports = {
   globalSetup: "./tests/globalSetup.ts",
   globalTeardown: "./tests/globalTeardown.ts",
   setupFilesAfterEnv: ["./tests/setup.ts"],
+  roots: ["tests"],
+  clearMocks: true,
 };

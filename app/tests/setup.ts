@@ -1,7 +1,10 @@
 import { getConnection, initConnection } from "../src/db/connect";
 
 beforeAll(() => {
-  jest.mock("axios");
+  // set new env vars
+  process.env.DATA_FILES_PATH = "./tests/dataFiles";
+  process.env.FETCH_SUBURBS = "yes";
+  process.env.NOMINATIM_API_TIMEOUT = "0";
 });
 
 beforeEach(async () => {
