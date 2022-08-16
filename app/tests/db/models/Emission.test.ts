@@ -36,24 +36,4 @@ describe("Emission", () => {
       },
     });
   });
-
-  test("creates correct emission readings", async () => {
-    const READINGS = [3, 5842.23498239, 0, "", -12.23232];
-    const suburb = await Suburb.create({
-      name: "s1",
-      shapeArea: 23.234,
-      shapeLength: 5.5,
-    });
-
-    const category = await Category.create({ name: "c1" });
-
-    for (const reading of READINGS) {
-      const e = await Emission.create({
-        reading,
-        suburbId: suburb.id,
-        categoryId: category.id,
-      });
-      expect(e.reading).toBe(reading || 0);
-    }
-  });
 });

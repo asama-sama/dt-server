@@ -15,7 +15,9 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false,
-    "typeRoots": ["customTypes", "node_modules/@types"]
+    "typeRoots": ["customTypes", "node_modules/@types"],
+    "types": ["jest", "@types/jest"]
   },
-  "include": ["src/**/*"]
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"],
+  "include": ["./src/**/*.ts", "./customTypes/**/*.ts"]
 }
