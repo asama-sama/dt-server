@@ -5,6 +5,7 @@ import { Emission } from "./db/models/Emission";
 import { Category } from "./db/models/Category";
 import { Suburb } from "./db/models/Suburb";
 import { ProcessedDataFile } from "./db/models/ProcessedDataFile";
+import { bulkSearch } from "./clients/nominatim";
 
 type SuburbAttributes = {
   name: string;
@@ -22,6 +23,7 @@ export const loadDataFile = async (filename: string, path: string) => {
   const promise = new Promise<LoadDataFileResult>((resolve, reject) => {
     let nullReads = 0,
       totalReads = 0;
+    const uniqueSuburbs = new Set<string>();
     const results: Record<string, string>[] = [];
     fs.createReadStream(path)
       .pipe(csv())
@@ -40,6 +42,7 @@ export const loadDataFile = async (filename: string, path: string) => {
                 name: result["Data_Category"],
               };
 
+              uniqueSuburbs.add(result["Area_suburb"]);
               const suburbCreated = await Suburb.findOrCreate({
                 where: {
                   name: suburbData.name,
@@ -51,7 +54,6 @@ export const loadDataFile = async (filename: string, path: string) => {
                 },
                 transaction: t,
               });
-
               const categoryCreated = await Category.findOrCreate({
                 where: {
                   name: categoryData.name,
@@ -115,6 +117,43 @@ export const loadDataFile = async (filename: string, path: string) => {
       });
   });
   return promise;
+};
+
+export const updateSuburbGeoJson = async () => {
+  const suburbs = await Suburb.findAll({
+    where: {
+      geoData: null,
+    },
+  });
+  const suburbMapping: { [key: string]: Suburb } = {};
+  const suburbKeyNameMapping: { [key: string]: string } = {};
+  const uniqueSuburbNamesSet = new Set<string>();
+
+  for (const suburb of suburbs) {
+    suburbMapping[suburb.name] = suburb;
+    const suburbNames = suburb.name.split("+");
+    for (const suburbName of suburbNames) {
+      const name = suburbName.trim();
+      suburbKeyNameMapping[name] = suburb.name;
+      uniqueSuburbNamesSet.add(name);
+    }
+  }
+  const uniqueSuburbNames = [...uniqueSuburbNamesSet];
+
+  const searchResults = await bulkSearch(uniqueSuburbNames);
+  for (let i = 0; i < searchResults.length; i++) {
+    const suburbName = uniqueSuburbNames[i];
+    const suburbKey = suburbKeyNameMapping[suburbName];
+    const suburb = suburbMapping[suburbKey];
+    // for suburbs that span two suburbs ie. with +, make sure to keep data for both
+    await suburb.reload();
+    await suburb.update({
+      geoData: {
+        ...suburb.geoData,
+        [suburbName]: searchResults[i],
+      },
+    });
+  }
 };
 
 export const loadDataFiles = async () => {

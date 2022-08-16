@@ -23,7 +23,7 @@ export class Suburb extends Model {
 
   @AllowNull(true)
   @Column(DataType.JSON)
-  geoJson: object;
+  geoData: object;
 
   @HasMany(() => Emission)
   emissions: Emission[];

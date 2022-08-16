@@ -1,5 +1,9 @@
 import { getConnection, initConnection } from "../src/db/connect";
 
+beforeAll(() => {
+  jest.mock("axios");
+});
+
 beforeEach(async () => {
   await initConnection({
     dbName: "root",

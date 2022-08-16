@@ -1,8 +1,17 @@
 /// <reference types="@types/jest" />;
-import { loadDataFile, LoadDataFileResult } from "../../app/src/loadDataFiles";
+import axios from "axios";
+import {
+  loadDataFile,
+  LoadDataFileResult,
+  updateSuburbGeoJson,
+} from "../../app/src/loadDataFiles";
 import { Emission } from "../src/db/models/Emission";
 import { Suburb } from "../src/db/models/Suburb";
 import { Category } from "../src/db/models/Category";
+
+jest.mock("axios");
+
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe("loadDataFiles", () => {
   describe("loadDataFile: multiple rows", () => {
@@ -21,7 +30,7 @@ describe("loadDataFiles", () => {
         "Chippendale",
         "Zetland",
       ];
-      const suburbs = await Suburb.findAll();
+      const suburbs = await Suburb.findAll({});
       expect(suburbs.length).toBe(5);
       suburbs.forEach((suburb) => {
         expect(SUBURB_LIST).toContain(suburb.name);
@@ -73,6 +82,32 @@ describe("loadDataFiles", () => {
       expect(promiseResult).toMatchObject({
         totalReads: 4,
         nullReads: 2,
+      });
+    });
+  });
+
+  describe("updateSuburbGeoJson", () => {
+    beforeAll(() => {
+      mockedAxios.get.mockResolvedValue({ geoJson: "geodata" });
+    });
+
+    test("check geodata set properly", async () => {
+      const suburbNames = ["s1", "s2", "s3 + s4"];
+
+      await Suburb.bulkCreate(
+        suburbNames.map((name) => ({
+          name,
+          shapeArea: 1,
+          shapeLength: 2,
+        }))
+      );
+      await updateSuburbGeoJson();
+      const suburbs = await Suburb.findAll();
+      expect(suburbs[0].geoData).toMatchObject({ s1: { geoJson: "geodata" } });
+      expect(suburbs[1].geoData).toMatchObject({ s2: { geoJson: "geodata" } });
+      expect(suburbs[2].geoData).toMatchObject({
+        s3: { geoJson: "geodata" },
+        s4: { geoJson: "geodata" },
       });
     });
   });
