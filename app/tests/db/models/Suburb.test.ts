@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { Suburb } from "../../../src/db/models/Suburb";
 
 describe("Suburb", () => {

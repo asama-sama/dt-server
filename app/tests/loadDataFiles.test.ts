@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { loadDataFiles } from "../../app/src/loadDataFiles";
 import { Emission } from "../src/db/models/Emission";
 import { Suburb } from "../src/db/models/Suburb";

@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { Emission } from "../../../src/db/models/Emission";
 import { Suburb } from "../../../src/db/models/Suburb";
 import { Category } from "../../../src/db/models/Category";

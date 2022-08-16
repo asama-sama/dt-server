@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { ProcessedDataFile } from "../../../src/db/models/ProcessedDataFile";
 
 describe("ProcessedDataFile", () => {

@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { Category } from "../../../src/db/models/Category";
 
 describe("Category", () => {
