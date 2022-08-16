@@ -12,9 +12,16 @@ type SuburbAttributes = {
   shapeLength: string;
 };
 
-const loadFile = async (filename: string, path: string) => {
+export type LoadDataFileResult = {
+  totalReads: number;
+  nullReads: number;
+};
+
+export const loadDataFile = async (filename: string, path: string) => {
   const sequelize = getConnection();
-  const promise = new Promise((resolve, reject) => {
+  const promise = new Promise<LoadDataFileResult>((resolve, reject) => {
+    let nullReads = 0,
+      totalReads = 0;
     const results: Record<string, string>[] = [];
     fs.createReadStream(path)
       .pipe(csv())
@@ -65,17 +72,26 @@ const loadFile = async (filename: string, path: string) => {
                 const property = properties[i];
                 const yearMatch = property.match(/^F\d{4}_\d{2}/g);
                 if (yearMatch) {
+                  const readingValue = parseFloat(result[property]);
+                  let reading;
+                  if (isNaN(readingValue)) {
+                    nullReads += 1;
+                    reading = null;
+                  } else {
+                    reading = readingValue;
+                  }
                   const year = parseInt(yearMatch[0].substring(1, 5));
                   try {
                     await Emission.create(
                       {
                         year: year,
-                        reading: parseFloat(result[property]) || 0,
+                        reading,
                         suburbId: suburb.id,
                         categoryId: category.id,
                       },
                       { transaction: t }
                     );
+                    totalReads += 1;
                   } catch (e) {
                     console.error("Error inserting emission", e);
                   }
@@ -88,7 +104,7 @@ const loadFile = async (filename: string, path: string) => {
               },
               { transaction: t }
             );
-            resolve(`${filename} loaded successfully`);
+            resolve({ totalReads, nullReads });
           });
         } catch (e) {
           reject(e);
@@ -117,7 +133,8 @@ export const loadDataFiles = async () => {
         }
         const path = `${DATA_FILES_PATH}/${file}`;
         try {
-          await loadFile(file, path);
+          console.log(file, path);
+          await loadDataFile(file, path);
         } catch (err) {
           console.error(err);
           reject(err);
