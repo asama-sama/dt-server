@@ -89,7 +89,7 @@ describe("loadDataFiles", () => {
       mockedAxios.get.mockResolvedValue({ geoJson: "geodata" });
     });
 
-    test("check geodata set properly", async () => {
+    test("it should set geodata json in suburb properly", async () => {
       const suburbNames = ["s1", "s2", "s3 + s4"];
 
       await Suburb.bulkCreate(
@@ -106,6 +106,37 @@ describe("loadDataFiles", () => {
       expect(suburbs[2].geoData).toMatchObject({
         s3: { geoJson: "geodata" },
         s4: { geoJson: "geodata" },
+      });
+    });
+
+    test("it should only fetch data for suburbs that don't have geojson set", async () => {
+      const suburbNames = ["s1", "s2 + s3", "s3", "s5"];
+
+      await Suburb.bulkCreate(
+        suburbNames.map((name, i) => ({
+          name,
+          shapeArea: 1,
+          shapeLength: 2,
+          geoData: i % 2 === 0 ? { dataHere: "data" } : null,
+        }))
+      );
+      await updateSuburbGeoJson();
+      const suburbs = await Suburb.findAll({
+        order: [["id", "ASC"]],
+      });
+      expect(axios.get).toHaveBeenCalledTimes(3);
+      expect(suburbs[0].geoData).toMatchObject({
+        dataHere: "data",
+      });
+      expect(suburbs[1].geoData).toMatchObject({
+        s2: { geoJson: "geodata" },
+        s3: { geoJson: "geodata" },
+      });
+      expect(suburbs[2].geoData).toMatchObject({
+        dataHere: "data",
+      });
+      expect(suburbs[3].geoData).toMatchObject({
+        s5: { geoJson: "geodata" },
       });
     });
   });

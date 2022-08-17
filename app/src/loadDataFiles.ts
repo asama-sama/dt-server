@@ -139,7 +139,6 @@ export const updateSuburbGeoJson = async () => {
     }
   }
   const uniqueSuburbNames = [...uniqueSuburbNamesSet];
-
   const searchResults = await bulkSearch(uniqueSuburbNames);
   for (let i = 0; i < searchResults.length; i++) {
     const suburbName = uniqueSuburbNames[i];
