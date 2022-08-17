@@ -4,6 +4,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import { initConnection } from "./db/connect";
 import { loadDataFiles } from "./loadDataFiles";
+import { routes } from "./api";
 
 dotenv.config();
 
@@ -37,6 +38,8 @@ init();
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+app.use(routes);
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
