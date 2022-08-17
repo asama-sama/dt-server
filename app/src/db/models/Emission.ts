@@ -31,3 +31,8 @@ export class Emission extends Model {
   @BelongsTo(() => Category)
   category: Category;
 }
+
+export interface EmissionsAggregate extends Emission {
+  suburbId: number;
+  suburbAggregateEmission: number;
+}

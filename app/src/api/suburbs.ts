@@ -3,7 +3,7 @@ import { get } from "../controllers/suburbs";
 
 const router = express.Router();
 
-router.get("/suburbs", async (req, res) => {
+router.get("/", async (req, res) => {
   const results = await get();
   res.status(200).send(results);
 });

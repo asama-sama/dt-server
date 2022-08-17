@@ -1,4 +1,4 @@
-import { Emission } from "../db/models/Emission";
+import { Emission, EmissionsAggregate } from "../db/models/Emission";
 import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 
@@ -10,10 +10,7 @@ export const get = async () => {
 
 export const getAggregate = async () => {
   const connection = getConnection();
-  interface EmissionsAggregate extends Emission {
-    suburbId: number;
-    suburbAggregateEmission: number;
-  }
+
   const emissionsAggregate = (await Emission.findAll({
     raw: true,
     attributes: [
