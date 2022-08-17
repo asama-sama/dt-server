@@ -2,6 +2,7 @@ import express, { Express } from "express";
 import bodyParser from "body-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import cors from "cors";
 import { initConnection } from "./db/connect";
 import { loadDataFiles } from "./loadDataFiles";
 import { routes } from "./api";
@@ -14,6 +15,7 @@ const app: Express = express();
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
 const init = async () => {
   const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DROP_TABLES, DB_PORT } =
