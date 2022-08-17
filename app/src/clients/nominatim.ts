@@ -2,6 +2,8 @@ import axios from "axios";
 
 // handles queries to nominatim to abide by terms of use
 
+const { NODE_ENV } = process.env;
+
 export const bulkSearch = async (queries: string[]) => {
   const { FETCH_SUBURBS, NOMINATIM_API_TIMEOUT } = process.env;
 
@@ -12,13 +14,13 @@ export const bulkSearch = async (queries: string[]) => {
     return [];
   }
   for (const query of queries) {
-    console.log(`fetch ${query} from nomatim`);
+    if (NODE_ENV !== "test") console.log(`fetch ${query} from nomatim`);
     const res = await axios.get(
       `https://nominatim.openstreetmap.org/search?q=${query}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&limit=1`
     );
     results.push(res.data[0]);
     await new Promise((r) => setTimeout(r, apiTimeout)); // wait 1.5 seconds to not make nominatim angry
   }
-  console.log("nomatim fetch complete");
+  if (NODE_ENV !== "test") console.log("nomatim fetch complete");
   return results;
 };

@@ -86,7 +86,7 @@ describe("loadDataFiles", () => {
       );
     });
     test("it has the correct number of emissions", async () => {
-      const emissions = await Emission.findAll();
+      const emissions = await Emission.findAll({});
       expect(emissions.length).toBe(4);
     });
     test("it read the emissions correctly", async () => {

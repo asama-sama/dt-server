@@ -2,7 +2,13 @@
 import { bulkSearch } from "../../src/clients/nominatim";
 import axios from "axios";
 
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
 describe("nominatim", () => {
+  beforeAll(() => {
+    mockedAxios.get.mockResolvedValue({ data: [{ geoJson: "geodata" }] });
+  });
+
   test("it should throttle requests", async () => {
     process.env.NOMINATIM_API_TIMEOUT = "500";
 

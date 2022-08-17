@@ -4,13 +4,34 @@ import { Suburb } from "../db/models/Suburb";
 
 export const get = async () => {
   const emissions = await Emission.findAll();
-  const suburbs = await Suburb.findAll();
 
-  return { emissions, suburbs };
+  return { emissions };
+};
+
+export const getAggregate = async () => {
+  const connection = getConnection();
+  interface EmissionsAggregate extends Emission {
+    suburbId: number;
+    suburbAggregateEmission: number;
+  }
+  const emissionsAggregate = (await Emission.findAll({
+    raw: true,
+    attributes: [
+      "suburbId",
+      [
+        connection.fn("SUM", connection.col("reading")),
+        "suburbAggregateEmission",
+      ],
+    ],
+    group: "suburbId",
+    order: [["suburbId", "ASC"]],
+  })) as EmissionsAggregate[];
+  return emissionsAggregate;
 };
 
 export const getCount = async () => {
   const connection = getConnection();
+
   const emissionsGrouped = await Emission.findAll({
     attributes: [
       "suburbId",
@@ -19,6 +40,5 @@ export const getCount = async () => {
     group: "suburbId",
   });
   const suburbs = await Suburb.findAll();
-
   return { emissionsGrouped, suburbs };
 };
