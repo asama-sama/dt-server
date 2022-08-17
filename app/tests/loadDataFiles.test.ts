@@ -1,6 +1,7 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
 import {
+  loadDataFiles,
   loadDataFile,
   LoadDataFileResult,
   updateSuburbGeoJson,
@@ -12,6 +13,25 @@ import { Category } from "../src/db/models/Category";
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe("loadDataFiles", () => {
+  beforeAll(() => {
+    mockedAxios.get.mockResolvedValue({ data: [{ geoJson: "geodata" }] });
+  });
+
+  describe("loadDataFiles", () => {
+    beforeEach(async () => {
+      await loadDataFiles();
+    });
+
+    test("it should load all emissions from the files", async () => {
+      const emissions = await Emission.findAll();
+      expect(emissions.length).toBe(14 * 7 + 4);
+    });
+
+    test("it should call make the correct number of fetch requests for suburb geodata", async () => {
+      expect(axios.get).toHaveBeenCalledTimes(7);
+    });
+  });
+
   describe("loadDataFile: multiple rows", () => {
     beforeEach(async () => {
       await loadDataFile(
@@ -28,7 +48,7 @@ describe("loadDataFiles", () => {
         "Chippendale",
         "Zetland",
       ];
-      const suburbs = await Suburb.findAll({});
+      const suburbs = await Suburb.findAll();
       expect(suburbs.length).toBe(5);
       suburbs.forEach((suburb) => {
         expect(SUBURB_LIST).toContain(suburb.name);
@@ -85,10 +105,6 @@ describe("loadDataFiles", () => {
   });
 
   describe("updateSuburbGeoJson", () => {
-    beforeAll(() => {
-      mockedAxios.get.mockResolvedValue({ geoJson: "geodata" });
-    });
-
     test("it should set geodata json in suburb properly", async () => {
       const suburbNames = ["s1", "s2", "s3 + s4"];
 

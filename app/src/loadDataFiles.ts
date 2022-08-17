@@ -171,13 +171,13 @@ export const loadDataFiles = async () => {
         }
         const path = `${DATA_FILES_PATH}/${file}`;
         try {
-          console.log(file, path);
           await loadDataFile(file, path);
         } catch (err) {
           console.error(err);
           reject(err);
         }
       }
+      await updateSuburbGeoJson();
       resolve(null);
     });
   });
