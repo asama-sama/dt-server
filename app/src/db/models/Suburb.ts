@@ -8,7 +8,7 @@ import {
   AllowNull,
 } from "sequelize-typescript";
 import { Emission } from "./Emission";
-import { SuburbJson } from "../../../customTypes/suburb";
+import { SuburbJson } from "../../customTypes/suburb";
 
 @Table
 export class Suburb extends Model {
