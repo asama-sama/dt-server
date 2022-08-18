@@ -1,6 +1,10 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
-import { get, getAggregate } from "../../src/controllers/emissions";
+import {
+  get,
+  getAggregate,
+  getEmissionsByYear,
+} from "../../src/controllers/emissions";
 import { loadDataFile } from "../../src/loadDataFiles";
 import * as data from "../dataArtifacts/nomanitimErskenvilleResponse.json";
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -143,6 +147,35 @@ describe("Emissions Controller", () => {
     test("it should group emissions by suburb", async () => {
       const emissionsBySuburb = await get();
       expect(emissionsBySuburb.emissions.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("getEmissionsByYear", () => {
+    test("it should return emissions grouped by year as the key", async () => {
+      const emissionsByYear = await getEmissionsByYear();
+      expect(Object.keys(emissionsByYear)).toMatchObject([
+        "2005",
+        "2006",
+        "2007",
+        "2008",
+        "2009",
+        "2010",
+        "2011",
+        "2012",
+        "2013",
+        "2014",
+        "2015",
+        "2016",
+        "2017",
+        "2018",
+      ]);
+    });
+
+    test("each year should have the correct number of emissions", async () => {
+      const emissionsByYear = await getEmissionsByYear();
+      Object.keys(emissionsByYear).forEach((year) => {
+        expect(emissionsByYear[year].length).toBe(5);
+      });
     });
   });
 });

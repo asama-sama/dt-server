@@ -36,3 +36,8 @@ export interface EmissionsAggregate extends Emission {
   suburbId: number;
   suburbAggregateEmission: number;
 }
+export interface EmissionsYearAggregate extends EmissionsAggregate {
+  suburbId: number;
+  year: number;
+  suburbAggregateEmission: number;
+}

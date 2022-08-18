@@ -1,4 +1,8 @@
-import { Emission, EmissionsAggregate } from "../db/models/Emission";
+import {
+  Emission,
+  EmissionsAggregate,
+  EmissionsYearAggregate,
+} from "../db/models/Emission";
 import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 
@@ -22,8 +26,35 @@ export const getAggregate = async () => {
     ],
     group: "suburbId",
     order: [["suburbId", "ASC"]],
-  })) as EmissionsAggregate[];
+  })) as EmissionsYearAggregate[];
   return emissionsAggregate;
+};
+
+export const getEmissionsByYear = async () => {
+  type YearSuburbMap = { [key: string]: Emission[] };
+  const connection = getConnection();
+
+  const emissions = (await Emission.findAll({
+    attributes: [
+      "suburbId",
+      "year",
+      [connection.fn("SUM", connection.col("reading")), "reading"],
+    ],
+    group: ["suburbId", "year"],
+  })) as EmissionsAggregate[];
+  const yearSuburbMap: YearSuburbMap = {};
+
+  emissions.forEach((emission) => {
+    const { year } = emission;
+
+    if (!yearSuburbMap[year]) {
+      yearSuburbMap[year] = [emission];
+    } else {
+      yearSuburbMap[year] = [...yearSuburbMap[year], emission];
+    }
+  });
+
+  return yearSuburbMap;
 };
 
 export const getCount = async () => {
