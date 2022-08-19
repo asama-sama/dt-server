@@ -1,8 +1,4 @@
-import {
-  Emission,
-  EmissionsAggregate,
-  EmissionsYearAggregate,
-} from "../db/models/Emission";
+import { Emission } from "../db/models/Emission";
 import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 
@@ -19,14 +15,11 @@ export const getAggregate = async () => {
     raw: true,
     attributes: [
       "suburbId",
-      [
-        connection.fn("SUM", connection.col("reading")),
-        "suburbAggregateEmission",
-      ],
+      [connection.fn("SUM", connection.col("reading")), "reading"],
     ],
     group: "suburbId",
     order: [["suburbId", "ASC"]],
-  })) as EmissionsYearAggregate[];
+  })) as Emission[];
   return emissionsAggregate;
 };
 
@@ -41,7 +34,7 @@ export const getEmissionsByYear = async () => {
       [connection.fn("SUM", connection.col("reading")), "reading"],
     ],
     group: ["suburbId", "year"],
-  })) as EmissionsAggregate[];
+  })) as Emission[];
   const yearSuburbMap: YearSuburbMap = {};
 
   emissions.forEach((emission) => {

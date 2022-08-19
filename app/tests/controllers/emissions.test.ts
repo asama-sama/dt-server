@@ -138,7 +138,7 @@ describe("Emissions Controller", () => {
           waterlooSum,
           chippendaleSum,
           zetlandSum,
-        ]).toContain(agg.suburbAggregateEmission);
+        ]).toContain(agg.reading);
       }
     });
   });
@@ -175,6 +175,16 @@ describe("Emissions Controller", () => {
       const emissionsByYear = await getEmissionsByYear();
       Object.keys(emissionsByYear).forEach((year) => {
         expect(emissionsByYear[year].length).toBe(5);
+      });
+    });
+
+    test("the returned values should have the correction properties", async () => {
+      const emissionsByYear = await getEmissionsByYear();
+      Object.keys(emissionsByYear).forEach((year) => {
+        emissionsByYear[year].forEach((emission) => {
+          expect(emission.reading).toBeDefined();
+          expect(emission.suburbId).toBeDefined();
+        });
       });
     });
   });
