@@ -24,7 +24,7 @@ describe("loadDataFiles", () => {
 
     test("it should load all emissions from the files", async () => {
       const emissions = await Emission.findAll();
-      expect(emissions.length).toBe(14 * 7 + 4);
+      expect(emissions.length).toBe(14 * 10 + 4);
     });
 
     test("it should call make the correct number of fetch requests for suburb geodata", async () => {
@@ -70,7 +70,7 @@ describe("loadDataFiles", () => {
 
     test("correct number of emissions loaded", async () => {
       const emissions = await Emission.findAll();
-      expect(emissions.length).toBe(14 * 7);
+      expect(emissions.length).toBe(14 * 10);
       emissions.forEach((emission) => {
         expect(emission.reading).not.toBeNaN();
       });
