@@ -3,6 +3,7 @@ import {
   get,
   getAggregate,
   getEmissionsByYear,
+  getYears,
 } from "../controllers/emissions";
 
 const router = express.Router();
@@ -19,6 +20,11 @@ router.get("/aggregate", async (req, res) => {
 
 router.get("/yearly", async (req, res) => {
   const results = await getEmissionsByYear();
+  res.status(200).send(results);
+});
+
+router.get("/years", async (req, res) => {
+  const results = await getYears();
   res.status(200).send(results);
 });
 

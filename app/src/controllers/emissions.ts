@@ -63,3 +63,14 @@ export const getCount = async () => {
   const suburbs = await Suburb.findAll();
   return { emissionsGrouped, suburbs };
 };
+
+export const getYears = async () => {
+  const years = (
+    await Emission.findAll({
+      attributes: ["year"],
+      group: "year",
+      order: [["year", "ASC"]],
+    })
+  ).map((emission) => emission.year);
+  return years;
+};
