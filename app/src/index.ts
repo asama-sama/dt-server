@@ -1,4 +1,10 @@
-import express, { Express } from "express";
+import express, {
+  ErrorRequestHandler,
+  Express,
+  NextFunction,
+  Request,
+  Response,
+} from "express";
 import bodyParser from "body-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
@@ -42,6 +48,18 @@ app.get("/", (req, res) => {
 });
 
 app.use(routes);
+
+app.use(
+  (
+    err: ErrorRequestHandler,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    console.log("last", err);
+    res.status(500).send("there was an error");
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);

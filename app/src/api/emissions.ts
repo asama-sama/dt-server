@@ -1,27 +1,33 @@
-import express from "express";
-import {
-  get,
-  getAggregate,
-  getEmissionsByYear,
-  getYears,
-} from "../controllers/emissions";
+import express, { Request, Response } from "express";
+import { get, getYears } from "../controllers/emissions";
+import { Emission } from "../db/models/Emission";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  const results = await get();
-  res.status(200).send(results);
-});
+type EmissionQueryParams = {
+  categories: string;
+  year: string;
+};
 
-router.get("/aggregate", async (req, res) => {
-  const results = await getAggregate();
-  res.status(200).send(results);
-});
-
-router.get("/yearly", async (req, res) => {
-  const results = await getEmissionsByYear();
-  res.status(200).send(results);
-});
+router.get(
+  "/",
+  async (
+    req: Request<never, never, never, EmissionQueryParams>,
+    res: Response<Emission[]>,
+    next
+  ) => {
+    try {
+      const categories = req.query.categories
+        ? JSON.parse(req.query.categories)
+        : undefined;
+      const year = parseInt(req.query.year);
+      const results = await get(categories, year);
+      res.status(200).send(results);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 router.get("/years", async (req, res) => {
   const results = await getYears();
