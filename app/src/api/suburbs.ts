@@ -1,5 +1,6 @@
-import express from "express";
-import { get } from "../controllers/suburbs";
+import express, { Request, Response } from "express";
+import { get, getEmissionsBySuburb } from "../controllers/suburbs";
+import { Emission } from "../db/models/Emission";
 
 const router = express.Router();
 
@@ -7,5 +8,32 @@ router.get("/", async (req, res) => {
   const results = await get();
   res.status(200).send(results);
 });
+
+type EmissionQueryParams = {
+  categories: string;
+  year: string;
+  sort: string;
+};
+
+router.get(
+  "/emissions",
+  async (
+    req: Request<never, never, never, EmissionQueryParams>,
+    res: Response<Emission[]>,
+    next
+  ) => {
+    try {
+      const categories = req.query.categories
+        ? JSON.parse(req.query.categories)
+        : undefined;
+      const year = parseInt(req.query.year);
+      const sort = req.query.sort;
+      const results = await getEmissionsBySuburb(categories, year, sort);
+      res.status(200).send(results);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 export { router as suburbs };
