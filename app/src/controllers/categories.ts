@@ -8,7 +8,7 @@ export const get = () => {
 
 export const getEmissionsByCategory = () => {
   const connection = getConnection();
-  Emission.findAll({
+  return Emission.findAll({
     raw: true,
     attributes: [
       "categoryId",
