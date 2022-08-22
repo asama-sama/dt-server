@@ -3,7 +3,8 @@ import { getConnection } from "../db/connect";
 
 export const get = async (
   categories: number[] | undefined,
-  year: number | undefined
+  year: number | undefined,
+  sort: string
 ) => {
   const connection = getConnection();
 
@@ -23,7 +24,7 @@ export const get = async (
     ],
     where: whereOpts,
     group: "suburbId",
-    order: [["suburbId", "ASC"]],
+    order: [[connection.fn("SUM", connection.col("reading")), sort]],
   });
 
   return emissions;

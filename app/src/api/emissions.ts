@@ -7,6 +7,7 @@ const router = express.Router();
 type EmissionQueryParams = {
   categories: string;
   year: string;
+  sort: string;
 };
 
 router.get(
@@ -21,7 +22,8 @@ router.get(
         ? JSON.parse(req.query.categories)
         : undefined;
       const year = parseInt(req.query.year);
-      const results = await get(categories, year);
+      const sort = req.query.sort;
+      const results = await get(categories, year, sort);
       res.status(200).send(results);
     } catch (e) {
       next(e);
