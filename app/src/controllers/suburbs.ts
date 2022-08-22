@@ -18,7 +18,7 @@ export const get = async () => {
 export const getEmissionsBySuburb = async (
   categories: number[] | undefined,
   year: number | undefined,
-  sort: string
+  sort = "desc"
 ) => {
   const connection = getConnection();
 
