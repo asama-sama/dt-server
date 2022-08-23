@@ -43,3 +43,17 @@ export const getEmissionsBySuburb = async (
 
   return emissions;
 };
+
+export const getYearlyEmissionsBySuburb = async () => {
+  type EmissionBySuburb = { [key: number]: Emission[] };
+  const emissionsBySuburb: EmissionBySuburb = {};
+  const emissions = await Emission.findAll({});
+  for (const emission of emissions) {
+    const id = emission.suburbId;
+    if (!emissionsBySuburb[id]) {
+      emissionsBySuburb[id] = [];
+    }
+    emissionsBySuburb[id].push(emission);
+  }
+  return emissionsBySuburb;
+};

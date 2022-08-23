@@ -1,7 +1,10 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
 import * as data from "../dataArtifacts/nomanitimErskenvilleResponse.json";
-import { getEmissionsBySuburb } from "../../src/controllers/suburbs";
+import {
+  getEmissionsBySuburb,
+  getYearlyEmissionsBySuburb,
+} from "../../src/controllers/suburbs";
 import { loadDataFile } from "../../src/loadDataFiles";
 import { Emission } from "../../src/db/models/Emission";
 
@@ -12,14 +15,14 @@ describe("Suburbs Controller", () => {
     mockedAxios.get.mockResolvedValue({ data: [data] });
   });
 
-  describe("getEmissionsBySuburb", () => {
-    beforeEach(async () => {
-      await loadDataFile(
-        "ghgEmissionsTest.csv",
-        "./tests/dataFiles/ghgEmissionsTest.csv"
-      );
-    });
+  beforeEach(async () => {
+    await loadDataFile(
+      "ghgEmissionsTest.csv",
+      "./tests/dataFiles/ghgEmissionsTest.csv"
+    );
+  });
 
+  describe("getEmissionsBySuburb", () => {
     test("it should group emissions by suburb", async () => {
       const emissions = await getEmissionsBySuburb(undefined, undefined);
       expect(emissions.length).toBeGreaterThan(0);
@@ -68,6 +71,24 @@ describe("Suburbs Controller", () => {
         expect(emissions2010cat1[i].reading).toBeLessThan(
           emissions2010[i].reading
         );
+      }
+    });
+  });
+
+  describe("getYearlyEmissionsBySuburb", () => {
+    test("it should return an object indexed by suburbId", async () => {
+      const results = await getYearlyEmissionsBySuburb();
+      expect(Object.keys(results).length).toBe(5);
+    });
+
+    test("each value should be an array of emissions", async () => {
+      const results = await getYearlyEmissionsBySuburb();
+      for (const key in results) {
+        const emissions = results[key];
+        expect(emissions.length).toBeGreaterThan(0);
+        for (const emission of emissions) {
+          expect(emission.reading).toBeDefined();
+        }
       }
     });
   });

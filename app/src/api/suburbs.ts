@@ -1,5 +1,9 @@
 import express, { Request, Response } from "express";
-import { get, getEmissionsBySuburb } from "../controllers/suburbs";
+import {
+  get,
+  getEmissionsBySuburb,
+  getYearlyEmissionsBySuburb,
+} from "../controllers/suburbs";
 import { Emission } from "../db/models/Emission";
 
 const router = express.Router();
@@ -35,5 +39,14 @@ router.get(
     }
   }
 );
+
+router.get("/emissions/yearly", async (req: Request, res: Response, next) => {
+  try {
+    const results = await getYearlyEmissionsBySuburb();
+    res.status(200).send(results);
+  } catch (e) {
+    next(e);
+  }
+});
 
 export { router as suburbs };
