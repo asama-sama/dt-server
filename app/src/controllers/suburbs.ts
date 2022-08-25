@@ -44,10 +44,31 @@ export const getEmissionsBySuburb = async (
   return emissions;
 };
 
-export const getYearlyEmissionsBySuburb = async () => {
+export const getYearlyEmissionsBySuburb = async (
+  categories?: number[] | undefined
+) => {
+  const connection = getConnection();
+
+  const whereOpts: { categoryId?: number[] } = {};
+
+  if (categories) {
+    whereOpts.categoryId = categories;
+  }
+
   type EmissionBySuburb = { [key: number]: Emission[] };
   const emissionsBySuburb: EmissionBySuburb = {};
-  const emissions = await Emission.findAll({});
+  const emissions = await Emission.findAll({
+    raw: true,
+    attributes: [
+      "suburbId",
+      "year",
+      [connection.fn("SUM", connection.col("reading")), "reading"],
+    ],
+    where: whereOpts,
+    group: ["suburbId", "year"],
+    order: ["year"],
+  });
+
   for (const emission of emissions) {
     const id = emission.suburbId;
     if (!emissionsBySuburb[id]) {
@@ -55,5 +76,6 @@ export const getYearlyEmissionsBySuburb = async () => {
     }
     emissionsBySuburb[id].push(emission);
   }
+  console.log(emissionsBySuburb);
   return emissionsBySuburb;
 };

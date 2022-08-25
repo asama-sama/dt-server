@@ -40,13 +40,27 @@ router.get(
   }
 );
 
-router.get("/emissions/yearly", async (req: Request, res: Response, next) => {
-  try {
-    const results = await getYearlyEmissionsBySuburb();
-    res.status(200).send(results);
-  } catch (e) {
-    next(e);
+type YearlyEmissionQueryParams = {
+  categories?: string;
+};
+
+router.get(
+  "/emissions/yearly",
+  async (
+    req: Request<never, never, never, YearlyEmissionQueryParams>,
+    res: Response,
+    next
+  ) => {
+    try {
+      const categories = req.query.categories
+        ? JSON.parse(req.query.categories)
+        : undefined;
+      const results = await getYearlyEmissionsBySuburb(categories);
+      res.status(200).send(results);
+    } catch (e) {
+      next(e);
+    }
   }
-});
+);
 
 export { router as suburbs };

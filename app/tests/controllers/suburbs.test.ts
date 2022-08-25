@@ -91,5 +91,17 @@ describe("Suburbs Controller", () => {
         }
       }
     });
+
+    test("it should filter by categoryId", async () => {
+      const results = await getYearlyEmissionsBySuburb();
+      const resultsFiltered = await getYearlyEmissionsBySuburb([1]);
+      for (const key in resultsFiltered) {
+        const yearlyTotal = results[key];
+        const yearlyFiltered = resultsFiltered[key];
+        yearlyFiltered.forEach((emission, i) => {
+          expect(emission.reading).toBeLessThan(yearlyTotal[i].reading);
+        });
+      }
+    });
   });
 });

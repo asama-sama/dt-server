@@ -35,7 +35,7 @@ describe("categories", () => {
       const emissions = await getEmissionsByCategory();
       expect(emissions).toMatchObject([
         { categoryId: 3, reading: 1640017.8703649996 },
-        { categoryId: 2, reading: 1218848.9996985998 },
+        { categoryId: 2, reading: 1218850.9996985998 },
         { categoryId: 1, reading: 5745788.400319999 },
       ]);
     });
