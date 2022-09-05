@@ -5,7 +5,7 @@ import {
   getEmissionsBySuburb,
   getYearlyEmissionsBySuburb,
 } from "../../src/controllers/suburbs";
-import { loadDataFile } from "../../src/loadDataFiles";
+import { loadDataFile } from "../../src/initialise/loadDataFiles";
 import { Emission } from "../../src/db/models/Emission";
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;

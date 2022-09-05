@@ -44,10 +44,10 @@ export const loadDataFile = async (filename: string, path: string) => {
               uniqueSuburbs.add(result["Area_suburb"]);
               const suburbCreated = await Suburb.findOrCreate({
                 where: {
-                  name: suburbData.name,
+                  name: suburbData.name.toUpperCase(),
                 },
                 defaults: {
-                  name: suburbData.name,
+                  name: suburbData.name.toUpperCase(),
                   shapeArea: parseFloat(suburbData.shapeArea),
                   shapeLength: parseFloat(suburbData.shapeLength),
                 },

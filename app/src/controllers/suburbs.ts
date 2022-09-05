@@ -76,6 +76,5 @@ export const getYearlyEmissionsBySuburb = async (
     }
     emissionsBySuburb[id].push(emission);
   }
-  console.log(emissionsBySuburb);
   return emissionsBySuburb;
 };

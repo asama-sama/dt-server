@@ -9,7 +9,7 @@ describe("Suburb", () => {
       shapeLength: 554.435346,
     });
     expect(s).toMatchObject({
-      name: "test",
+      name: "TEST",
       shapeArea: 234.345,
       shapeLength: 554.435346,
     });

@@ -1,6 +1,6 @@
 /// <reference types="@types/jest" />;
 import { getYears } from "../../src/controllers/emissions";
-import { loadDataFile } from "../../src/loadDataFiles";
+import { loadDataFile } from "../../src/initialise/loadDataFiles";
 
 describe("Emissions Controller", () => {
   describe("getYears", () => {
