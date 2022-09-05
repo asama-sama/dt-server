@@ -13,7 +13,12 @@ import { SuburbJson } from "../../customTypes/suburb";
 @Table
 export class Suburb extends Model {
   @Unique
-  @Column
+  @Column({
+    type: DataType.STRING,
+    set(name: string) {
+      this.setDataValue("name", name.toUpperCase());
+    },
+  })
   name: string;
 
   @Column(DataType.FLOAT)

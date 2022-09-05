@@ -1,7 +1,7 @@
 /// <reference types="@types/jest" />;
 import { Category } from "../../src/db/models/Category";
 import { getEmissionsByCategory } from "../../src/controllers/categories";
-import { loadDataFile } from "../../src/loadDataFiles";
+import { loadDataFile } from "../../src/initialise/loadDataFiles";
 
 describe("categories", () => {
   test("it should get all categories", async () => {

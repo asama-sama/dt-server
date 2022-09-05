@@ -4,8 +4,8 @@ import {
   loadDataFiles,
   loadDataFile,
   LoadDataFileResult,
-  updateSuburbGeoJson,
-} from "../../app/src/loadDataFiles";
+} from "../src/initialise/loadDataFiles";
+import { updateSuburbGeoJson } from "../src/initialise/updateSuburbGeoJson";
 import { Emission } from "../src/db/models/Emission";
 import { Suburb } from "../src/db/models/Suburb";
 import { Category } from "../src/db/models/Category";
