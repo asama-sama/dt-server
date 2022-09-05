@@ -3,6 +3,7 @@ import {
   get,
   getEmissionsBySuburb,
   getYearlyEmissionsBySuburb,
+  getSuburbsForApi,
 } from "../controllers/suburbs";
 import { Emission } from "../db/models/Emission";
 
@@ -57,6 +58,19 @@ router.get(
         : undefined;
       const results = await getYearlyEmissionsBySuburb(categories);
       res.status(200).send(results);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/api/:id",
+  async (req: Request<{ id: string }>, res: Response, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      const suburbs = await getSuburbsForApi(id);
+      res.status(200).send(suburbs);
     } catch (e) {
       next(e);
     }
