@@ -8,6 +8,7 @@ const router = express.Router();
 
 type MonthlyTrafficVolumeRequestParams = {
   year: string;
+  stationIds: string;
 };
 
 router.get(
@@ -24,7 +25,8 @@ router.get(
   ) => {
     try {
       const yearInt: number = parseInt(req.query.year);
-      const counts = await getStationCountsByMonth(yearInt);
+      const stationIds: number[] = JSON.parse(req.query.stationIds);
+      const counts = await getStationCountsByMonth(yearInt, stationIds);
       res.status(200).send(counts);
     } catch (e) {
       next(e);
@@ -32,7 +34,7 @@ router.get(
   }
 );
 
-router.get("/station", async (req, res, next) => {
+router.get("/stations", async (req, res, next) => {
   try {
     const stations = await getStations();
     res.status(200).send(stations);
