@@ -1,10 +1,11 @@
 import { initConnection } from "../db/connect";
-import { loadDataFiles } from "./loadDataFiles";
 import { loadAndSync as loadAndSyncNswAirQuality } from "./initialiseNswAirQualityApi";
+import { loadAndSync as loadAndSyncNswTrafficVolume } from "./initialiseNswTrafficVolumeApi";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
 
 const loadAndSyncApis = async () => {
   await loadAndSyncNswAirQuality();
+  await loadAndSyncNswTrafficVolume();
 };
 
 export const init = async () => {
@@ -23,7 +24,7 @@ export const init = async () => {
     dropTables: DROP_TABLES === "yes",
     dbPort: DB_PORT,
   });
-  await loadDataFiles();
+
   await loadAndSyncApis();
   await updateSuburbGeoJson();
 };

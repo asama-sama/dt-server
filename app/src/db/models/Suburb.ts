@@ -9,7 +9,6 @@ import {
 } from "sequelize-typescript";
 import { Emission } from "./Emission";
 import { SuburbJson } from "../../customTypes/suburb";
-import { ApiSuburb } from "./ApiSuburb";
 
 @Table
 export class Suburb extends Model {
@@ -34,7 +33,4 @@ export class Suburb extends Model {
 
   @HasMany(() => Emission)
   emissions: Emission[];
-
-  @HasMany(() => ApiSuburb)
-  apiSuburbs: ApiSuburb[];
 }

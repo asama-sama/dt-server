@@ -2,7 +2,6 @@ import { Suburb } from "../db/models/Suburb";
 import { Op } from "sequelize";
 import { getConnection } from "../db/connect";
 import { Emission } from "../db/models/Emission";
-import { ApiSuburb } from "../db/models/ApiSuburb";
 
 export const get = async () => {
   const suburbs = await Suburb.findAll({
@@ -78,25 +77,4 @@ export const getYearlyEmissionsBySuburb = async (
     emissionsBySuburb[id].push(emission);
   }
   return emissionsBySuburb;
-};
-
-export const getSuburbsForApi = async (apiId: number) => {
-  const suburbs = await Suburb.findAll({
-    where: {
-      "$apiSuburbs.apiId$": apiId,
-    },
-    include: [
-      {
-        model: ApiSuburb,
-        as: "apiSuburbs",
-        where: {
-          apiId,
-        },
-      },
-    ],
-  });
-  return suburbs.map((suburb) => ({
-    id: suburb.id,
-    meta: suburb.apiSuburbs[0].apiSuburbMeta,
-  }));
 };

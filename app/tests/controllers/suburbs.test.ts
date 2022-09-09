@@ -4,13 +4,9 @@ import * as data from "../dataArtifacts/nomanitimErskenvilleResponse.json";
 import {
   getEmissionsBySuburb,
   getYearlyEmissionsBySuburb,
-  getSuburbsForApi,
 } from "../../src/controllers/suburbs";
 import { loadDataFile } from "../../src/initialise/loadDataFiles";
 import { Emission } from "../../src/db/models/Emission";
-import { Api } from "../../src/db/models/Api";
-import { Suburb } from "../../src/db/models/Suburb";
-import { ApiSuburb } from "../../src/db/models/ApiSuburb";
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
@@ -105,64 +101,6 @@ describe("Suburbs Controller", () => {
         yearlyFiltered.forEach((emission, i) => {
           expect(emission.reading).toBeLessThan(yearlyTotal[i].reading);
         });
-      }
-    });
-  });
-
-  describe("getSuburbsForApi", () => {
-    let api: Api;
-    beforeEach(async () => {
-      api = await Api.create({
-        name: "api1",
-      });
-      const api2 = await Api.create({
-        name: "api2",
-      });
-      const suburb1 = await Suburb.create({
-        name: "suburb1",
-      });
-      await ApiSuburb.create({
-        apiId: api.id,
-        suburbId: suburb1.id,
-        apiSuburbMeta: {
-          siteId: "site1",
-        },
-      });
-      const suburb2 = await Suburb.create({
-        name: "suburb2",
-      });
-      await ApiSuburb.create({
-        apiId: api.id,
-        suburbId: suburb2.id,
-        apiSuburbMeta: {
-          siteId: "site2",
-        },
-      });
-      await ApiSuburb.create({
-        apiId: api2.id,
-        suburbId: suburb2.id,
-        apiSuburbMeta: {
-          siteId: "site2",
-        },
-      });
-      const suburb3 = await Suburb.create({
-        name: "suburb3",
-      });
-
-      await ApiSuburb.create({
-        apiId: api2.id,
-        suburbId: suburb3.id,
-        apiSuburbMeta: {
-          siteId: "site2",
-        },
-      });
-    });
-
-    test("it should return the suburbs for a given api id", async () => {
-      const suburbs = await getSuburbsForApi(api.id);
-      expect(suburbs.length).toBe(2);
-      for (const suburb of suburbs) {
-        expect(suburb.meta).toBeDefined();
       }
     });
   });
