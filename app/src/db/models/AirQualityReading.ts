@@ -20,25 +20,31 @@ export enum AirQualityCategory {
 
 export enum PollutantType {
   "NO2" = "NO2",
+  "CO2" = "CO2",
 }
 
 export enum Frequency {
   HOURLY = "HOURLY",
+  DAILY = "DAILY",
   MONTHLY = "MONTHLY",
 }
 
 @Table
 export class AirQualityReading extends Model {
   @ForeignKey(() => AirQualitySite)
+  @AllowNull(false)
   @Column
-  siteId: number;
+  airQualitySiteId: number;
+
+  @BelongsTo(() => AirQualitySite, "airQualitySiteId")
+  airQualitySite: AirQualitySite;
 
   @ForeignKey(() => Api)
   @AllowNull(false)
   @Column
   apiId: number;
 
-  @BelongsTo(() => Api)
+  @BelongsTo(() => Api, "apiId")
   api: Api;
 
   @Column
@@ -47,8 +53,10 @@ export class AirQualityReading extends Model {
   @Column
   hour: number;
 
-  @Column
-  value: number;
+  @Column({
+    type: DataType.FLOAT,
+  })
+  value: number | null;
 
   @Column({
     type: DataType.STRING,
@@ -87,7 +95,4 @@ export class AirQualityReading extends Model {
     },
   })
   frequency: string;
-
-  @BelongsTo(() => AirQualitySite)
-  site: AirQualitySite;
 }

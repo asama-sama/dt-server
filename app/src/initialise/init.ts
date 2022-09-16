@@ -1,10 +1,10 @@
 import { initConnection } from "../db/connect";
-import { loadAndSync as loadAndSyncNswAirQuality } from "./initialiseNswAirQualityApi";
+import { init as initNswAirQuality } from "./initialiseNswAirQualityApi";
 import { loadAndSync as loadAndSyncNswTrafficVolume } from "./initialiseNswTrafficVolumeApi";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
 
 const loadAndSyncApis = async () => {
-  await loadAndSyncNswAirQuality();
+  await initNswAirQuality();
   await loadAndSyncNswTrafficVolume();
 };
 

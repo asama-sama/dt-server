@@ -5,22 +5,30 @@ import {
   AllowNull,
   ForeignKey,
   BelongsTo,
+  DataType,
+  Unique,
+  HasMany,
 } from "sequelize-typescript";
+import { AirQualityReading } from "./AirQualityReading";
 import { Api } from "./Api";
 
 @Table
 export class AirQualitySite extends Model {
-  @AllowNull(false)
-  @Column
-  siteId: number;
-
   @ForeignKey(() => Api)
   @AllowNull(false)
   @Column
   apiId: number;
 
-  @BelongsTo(() => Api)
+  @BelongsTo(() => Api, "apiId")
   api: Api;
+
+  @HasMany(() => AirQualityReading, "airQualitySiteId")
+  airQualityReadings: AirQualityReading[];
+
+  @Unique
+  @AllowNull(false)
+  @Column
+  siteId: number;
 
   @Column
   name: string;
@@ -28,9 +36,15 @@ export class AirQualitySite extends Model {
   @Column
   region: string;
 
-  @Column
+  @AllowNull(false)
+  @Column({
+    type: DataType.FLOAT,
+  })
   lat: number;
 
-  @Column
+  @AllowNull(false)
+  @Column({
+    type: DataType.FLOAT,
+  })
   lng: number;
 }

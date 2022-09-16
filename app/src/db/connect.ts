@@ -65,10 +65,14 @@ export const initConnection = async ({
   }
 
   if (dropTables) {
+    const schemaToReset = dbSchema ? dbSchema : "public";
     console.log("force schema reset");
-    await connection.sync({ force: true, schema: dbSchema });
+    await connection.dropSchema(schemaToReset, {});
+    await connection.createSchema(schemaToReset, {});
+    await connection.sync({ logging: true });
   } else {
-    await connection.sync({ alter: true });
+    console.log("run sync tables: alter");
+    await connection.sync({ alter: true, logging: true });
   }
   sequelize = connection;
   return sequelize;

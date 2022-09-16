@@ -1,11 +1,8 @@
-// DEPRECATE
-
 import { Api } from "../db/models/Api";
-import { APIS } from "../const/api";
-import { Suburb } from "../db/models/Suburb";
-import { getSites } from "../clients/nswAirQuality";
+import { APIS, API_UPDATE_MS } from "../const/api";
+import { updateSites } from "../controllers/airQuality";
 
-export const loadAndSync = async () => {
+const setupDb = async () => {
   const nswAirQualityReadingsApi = await Api.findOne({
     where: {
       name: APIS.nswAirQualityReadings.name,
@@ -32,28 +29,12 @@ export const loadAndSync = async () => {
       },
     });
   }
-  // if (!nswAirQualityApi) {
-  //   const api = await Api.create({
-  //     name: APIS.nswAirQualityReadings,
-  //   });
-  // }
-  // const sites = await getSites();
+};
 
-  // for (const site of sites) {
-  //   const { name, region, siteId } = site;
-  // there are many other readings across nsw, only include those close to sydney
-  //https://www.dpie.nsw.gov.au/air-quality/air-quality-concentration-data-updated-hourly
-  // if (!region.includes("SYDNEY") || name.includes("SYDNEY")) continue;
-  // const [suburb] = await Suburb.findOrCreate({
-  //   where: {
-  //     name: name,
-  //   },
-  // });
-  // await ApiSuburb.findOrCreate({
-  //   where: {
-  //     suburbId: suburb.id,
-  //     apiId: api.id,
-  //     apiSuburbMeta: { siteId },
-  //   },
-  // });
+const setupUpdates = async () => {
+  setInterval(() => updateSites(), API_UPDATE_MS);
+};
+
+export const init = async () => {
+  await setupDb();
 };

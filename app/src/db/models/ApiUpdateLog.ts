@@ -19,6 +19,9 @@ export class ApiUpdateLog extends Model {
   @Column
   apiId: number;
 
+  @BelongsTo(() => Api, "apiId")
+  api: Api;
+
   @Column
   updatedAt: Date;
 
@@ -33,7 +36,4 @@ export class ApiUpdateLog extends Model {
     },
   })
   status: string;
-
-  @BelongsTo(() => Api)
-  api: Api;
 }

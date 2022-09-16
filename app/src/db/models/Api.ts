@@ -29,18 +29,18 @@ export class Api extends Model {
   @Column
   historicalFetched: boolean;
 
-  @HasMany(() => ApiUpdateLog)
+  @HasMany(() => ApiUpdateLog, "apiId")
   apiUpdateLogs: ApiUpdateLog[];
 
-  @HasMany(() => AirQualityReading)
+  @HasMany(() => AirQualityReading, "apidId")
   airQualityReadings: AirQualityReading[];
 
-  @HasMany(() => AirQualitySite)
+  @HasMany(() => AirQualitySite, "apiId")
   airQualitySites: AirQualitySite[];
 
-  @HasMany(() => TrafficVolumeReading)
+  @HasMany(() => TrafficVolumeReading, "apidId")
   trafficVolumeReadings: TrafficVolumeReading[];
 
-  @HasMany(() => TrafficVolumeStation)
+  @HasMany(() => TrafficVolumeStation, "apiId")
   trafficVolumeStations: TrafficVolumeStation[];
 }

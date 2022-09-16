@@ -11,15 +11,6 @@ import { Api } from "./Api";
 
 @Table
 export class TrafficVolumeReading extends Model {
-  @ForeignKey(() => TrafficVolumeStation)
-  @Column
-  siteId: number;
-
-  @ForeignKey(() => Api)
-  @AllowNull(false)
-  @Column
-  apiId: number;
-
   @AllowNull(false)
   @Column
   year: number;
@@ -35,9 +26,18 @@ export class TrafficVolumeReading extends Model {
   @Column
   value: number;
 
-  @BelongsTo(() => TrafficVolumeStation)
+  @ForeignKey(() => TrafficVolumeStation)
+  @Column
+  trafficVolumeStationId: number;
+
+  @BelongsTo(() => TrafficVolumeStation, "trafficVolumeStationId")
   station: TrafficVolumeStation;
 
-  @BelongsTo(() => Api)
+  @ForeignKey(() => Api)
+  @AllowNull(false)
+  @Column
+  apiId: number;
+
+  @BelongsTo(() => Api, "apidId")
   api: Api;
 }

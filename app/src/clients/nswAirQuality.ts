@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Frequency, PollutantType } from "../db/models/AirQualityReading";
 
 const AIR_QUALITY_API = "https://data.airquality.nsw.gov.au/api/Data";
 
@@ -6,6 +7,8 @@ type Site = {
   region: string;
   name: string;
   siteId: number;
+  lat: number;
+  lng: number;
 };
 
 type SiteApiObject = {
@@ -22,6 +25,8 @@ export const getSites = async () => {
     name: site.SiteName.toUpperCase(),
     region: site.Region.toUpperCase(),
     siteId: site.Site_Id,
+    lat: site.Latitude,
+    lng: site.Longitude,
   }));
   return sites;
 };
@@ -29,7 +34,7 @@ export const getSites = async () => {
 type AirQualityDataResponse = {
   Site_Id: number;
   Parameter: {
-    ParameterCode: string;
+    ParameterCode: PollutantType;
     ParameterDescription: string;
     Units: string;
     UnitsDescription: string;
@@ -45,11 +50,13 @@ type AirQualityDataResponse = {
   DeterminingPollutant: string | null;
 };
 
-type AirQualityData = {
+export type AirQualityData = {
   siteId: number;
   value: number;
   date: string;
   quality: string | null;
+  frequency: Frequency;
+  type: PollutantType;
 };
 
 interface AirQualityDataMonthly extends AirQualityData {
@@ -85,6 +92,8 @@ export const getMonthlyObservationsAQApi = async (
     date: data.Date,
     month: new Date(data.Date).getMonth(),
     quality: data.AirQualityCategory,
+    frequency: Frequency.MONTHLY,
+    type: data.Parameter.ParameterCode,
   }));
   return airQualityData;
 };
@@ -118,8 +127,6 @@ export const getHourlyObservationsAQApi = async (
       },
     }
   );
-  // const sitesToInclude: { [key: number]: boolean } = {};
-  // sites.map((site) => (sitesToInclude[site] = true));
   const airQualityData: AirQualityDataLive[] = res.data.map((data) => ({
     date: data.Date,
     quality: data.AirQualityCategory,
@@ -127,6 +134,43 @@ export const getHourlyObservationsAQApi = async (
     value: data.Value,
     hour: data.Hour,
     hourDescription: data.HourDescription,
+    frequency: Frequency.HOURLY,
+    type: data.Parameter.ParameterCode,
+  }));
+  return airQualityData;
+};
+
+export const getDailyObservations = async (
+  emissions: string[],
+  sites: number[],
+  startDate: string,
+  endDate: string
+) => {
+  const res = await axios.post<AirQualityDataResponse[]>(
+    `${AIR_QUALITY_API}/get_Observations`,
+    {
+      Parameters: emissions,
+      Sites: sites,
+      StartDate: startDate,
+      EndDate: endDate,
+      Categories: ["Averages"],
+      SubCategories: ["Daily"],
+      Frequency: ["24h average derived from 1h average"],
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    }
+  );
+  const airQualityData: AirQualityData[] = res.data.map((data) => ({
+    date: data.Date,
+    quality: data.AirQualityCategory,
+    siteId: data.Site_Id,
+    value: data.Value,
+    frequency: Frequency.DAILY,
+    type: data.Parameter.ParameterCode,
   }));
   return airQualityData;
 };
