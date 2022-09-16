@@ -7,7 +7,6 @@ import {
 } from "../clients/nswAirQuality";
 import { AirQualitySite } from "../db/models/AirQualitySite";
 import { Api } from "../db/models/Api";
-import { APIS } from "../const/api";
 import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
@@ -58,27 +57,22 @@ export const getCurrentObservations = async (sites: number[]) => {
   return Object.values(observationsBySite);
 };
 
-export const updateSites = async () => {
-  const api = await Api.findOne({
-    where: {
-      name: APIS.nswAirQualitySites.name,
-    },
-  });
-  if (!api)
-    throw new Error(`Could not find API ${APIS.nswAirQualitySites.name}`);
+export const updateSites = async (api: Api) => {
   const sites = await getSites();
   for (const site of sites) {
-    const { name, region, siteId, lat, lng } = site;
+    const { name: _name, region: _region, siteId, lat, lng } = site;
+    const region = _region.toUpperCase();
+    const name = _name.toUpperCase();
     // there are many other readings across nsw, only include those close to sydney
     // https://www.dpie.nsw.gov.au/air-quality/air-quality-concentration-data-updated-hourly
-    if (!region.includes("SYDNEY") || name.includes("SYDNEY")) continue;
-    let aqSite = await AirQualitySite.findOne({
+    if (!region.includes("SYDNEY") && !name.includes("SYDNEY")) continue;
+    const aqSite = await AirQualitySite.findOne({
       where: {
         siteId,
       },
     });
     if (!aqSite) {
-      aqSite = await AirQualitySite.create({
+      await AirQualitySite.create({
         siteId,
         lng,
         lat,

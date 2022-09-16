@@ -3,7 +3,7 @@ import { Frequency, PollutantType } from "../db/models/AirQualityReading";
 
 const AIR_QUALITY_API = "https://data.airquality.nsw.gov.au/api/Data";
 
-type Site = {
+export type Site = {
   region: string;
   name: string;
   siteId: number;

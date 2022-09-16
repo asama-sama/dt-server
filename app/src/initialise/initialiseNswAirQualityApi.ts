@@ -30,7 +30,11 @@ const setupDb = async () => {
 };
 
 const setupUpdates = async () => {
-  setInterval(() => updateSites(), API_UPDATE_MS);
+  const api = await Api.findOne({
+    where: { name: APIS.nswAirQualitySites.name },
+  });
+  if (!api) throw new Error(`No api found for ${APIS.nswAirQualitySites.name}`);
+  setInterval(() => updateSites(api), API_UPDATE_MS);
 };
 
 export const init = async () => {
