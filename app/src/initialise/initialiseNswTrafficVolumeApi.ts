@@ -9,11 +9,9 @@ export const loadAndSync = async () => {
   });
   if (!nswTrafficVolumeReadingsApi) {
     await Api.create({
-      where: {
-        name: APIS.nswTrafficVolumeReadings.name,
-        uri: APIS.nswTrafficVolumeReadings.uri,
-        queryStringParams: APIS.nswTrafficVolumeReadings.queryStringParams,
-      },
+      name: APIS.nswTrafficVolumeReadings.name,
+      uri: APIS.nswTrafficVolumeReadings.uri,
+      queryStringParams: APIS.nswTrafficVolumeReadings.queryStringParams,
     });
   }
   const nswTrafficVolumeStationsApi = await Api.findOne({
@@ -23,11 +21,9 @@ export const loadAndSync = async () => {
   });
   if (!nswTrafficVolumeStationsApi) {
     await Api.create({
-      where: {
-        name: APIS.nswTrafficVolumeStations.name,
-        uri: APIS.nswTrafficVolumeStations.uri,
-        queryStringParams: APIS.nswTrafficVolumeStations.queryStringParams,
-      },
+      name: APIS.nswTrafficVolumeStations.name,
+      uri: APIS.nswTrafficVolumeStations.uri,
+      queryStringParams: APIS.nswTrafficVolumeStations.queryStringParams,
     });
   }
 };

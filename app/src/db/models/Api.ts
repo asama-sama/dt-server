@@ -5,6 +5,7 @@ import {
   Default,
   HasMany,
   DataType,
+  AllowNull,
 } from "sequelize-typescript";
 import { ApiUpdateLog } from "./ApiUpdateLog";
 import { AirQualityReading } from "./AirQualityReading";
@@ -14,9 +15,11 @@ import { TrafficVolumeStation } from "./TrafficVolumeStation";
 
 @Table
 export class Api extends Model {
+  @AllowNull(false)
   @Column
   name: string;
 
+  @AllowNull(false)
   @Column
   uri: string;
 

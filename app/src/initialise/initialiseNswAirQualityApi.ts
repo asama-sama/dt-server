@@ -22,11 +22,9 @@ const setupDb = async () => {
   });
   if (!nswAirQualitySitesApi) {
     await Api.create({
-      where: {
-        name: APIS.nswAirQualitySites.name,
-        uri: APIS.nswAirQualitySites.uri,
-        queryStringParams: APIS.nswAirQualitySites.queryStringParams,
-      },
+      name: APIS.nswAirQualitySites.name,
+      uri: APIS.nswAirQualitySites.uri,
+      queryStringParams: APIS.nswAirQualitySites.queryStringParams,
     });
   }
 };

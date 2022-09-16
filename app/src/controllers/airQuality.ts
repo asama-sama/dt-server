@@ -10,6 +10,7 @@ import { Api } from "../db/models/Api";
 import { APIS } from "../const/api";
 import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
+import { Op } from "sequelize";
 
 export const getMonthlyObservations = async (sites: number[]) => {
   const date = new Date();
@@ -89,53 +90,90 @@ export const updateSites = async () => {
   }
 };
 
-export const updateDailyReadings = async (endDate: Date) => {
-  const sites = (await AirQualitySite.findAll({})).map((site) => site.siteId);
-  const startDate = new Date(new Date().setDate(endDate.getDate() - 30));
+export const updateDailyReadings = async (api: Api, endDate: Date) => {
+  const airQualitySites = await AirQualitySite.findAll({});
+  const siteToAirQualitySites: { [key: string]: AirQualitySite } = {};
+  airQualitySites.forEach((airQualitySite) => {
+    siteToAirQualitySites[airQualitySite.siteId] = airQualitySite;
+  });
+  const startDate = new Date(endDate.getTime());
+  startDate.setDate(endDate.getDate() - 30);
 
   const todayParsed = `${endDate.getFullYear()}-${
     endDate.getMonth() + 1
   }-${endDate.getDay()}`;
+
   const startDateParsed = `${startDate.getFullYear()}-${
     startDate.getMonth() + 1
   }-${startDate.getDay()}`;
-  const observations = await getDailyObservations(
-    [PollutantType.NO2],
-    sites,
-    startDateParsed,
-    todayParsed
-  );
+
+  const observations = (
+    await getDailyObservations(
+      [PollutantType.NO2],
+      airQualitySites.map((airQualitySite) => airQualitySite.siteId),
+      startDateParsed,
+      todayParsed
+    )
+  ).filter((observation) => {
+    const date = new Date(observation.date);
+    if (date < startDate || date > endDate) return false;
+    return true;
+  });
 
   const dailyReadingsInDb = await AirQualityReading.findAll({
     where: {
       date: {
-        $gte: startDate,
-        $lte: endDate,
+        [Op.gte]: startDate,
+        [Op.lte]: endDate,
       },
     },
   });
-  const daiilyReadingsMapped: { [key: string]: AirQualityReading } = {};
+
+  const dailyReadingsMapped: {
+    [key: string]: { [key: number]: AirQualityReading };
+  } = {};
   dailyReadingsInDb.forEach((dailyReading) => {
-    const dateToString = `${dailyReading.date.getFullYear()}-${
-      dailyReading.date.getMonth() + 1
-    }-${dailyReading.date.getDate()}`;
-    if (!daiilyReadingsMapped[dateToString]) {
-      daiilyReadingsMapped[dateToString] = dailyReading;
+    const year = dailyReading.date.getFullYear();
+    const month = String(dailyReading.date.getMonth() + 1).padStart(2, "0");
+    const day = String(dailyReading.date.getDate()).padStart(2, "0");
+    const dateToString = `${year}-${month}-${day}`;
+
+    if (!dailyReadingsMapped[dateToString]) {
+      dailyReadingsMapped[dateToString] = {};
     }
+    dailyReadingsMapped[dateToString][dailyReading.airQualitySiteId] =
+      dailyReading;
   });
 
-  observations.forEach(async (observation) => {
-    const existingReading = daiilyReadingsMapped[observation.date];
-    if (!existingReading) {
-      await AirQualityReading.create({
-        date: new Date(observation.date),
-        value: observation.value,
-        frequency: observation.frequency,
-        type: observation.type,
-      });
-    }
-    if (!existingReading.value) {
-      await existingReading.update({ value: observation.value });
-    }
-  });
+  const countLogs = {
+    create: 0,
+    update: 0,
+  };
+
+  await Promise.all(
+    observations.map(async (observation) => {
+      const airQualitySiteId = siteToAirQualitySites[observation.siteId].id;
+
+      const existingReading =
+        dailyReadingsMapped[observation.date] &&
+        dailyReadingsMapped[observation.date][airQualitySiteId];
+
+      if (!existingReading) {
+        await AirQualityReading.create({
+          date: new Date(observation.date),
+          value: observation.value,
+          frequency: observation.frequency,
+          type: observation.type,
+          apiId: api.id,
+          airQualitySiteId: airQualitySiteId,
+        });
+
+        countLogs.create = countLogs.create + 1;
+      }
+      if (existingReading && existingReading.value === null) {
+        await existingReading.update({ value: observation.value });
+        countLogs.update = countLogs.update + 1;
+      }
+    })
+  );
 };

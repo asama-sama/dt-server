@@ -15,7 +15,6 @@ import { Api } from "./Api";
 @Table
 export class AirQualitySite extends Model {
   @ForeignKey(() => Api)
-  @AllowNull(false)
   @Column
   apiId: number;
 

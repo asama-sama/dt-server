@@ -72,7 +72,13 @@ export const initConnection = async ({
     await connection.sync({ logging: true });
   } else {
     console.log("run sync tables: alter");
-    await connection.sync({ alter: true, logging: true });
+
+    try {
+      await connection.sync({ alter: true, logging: true });
+    } catch (e) {
+      console.log("sync error");
+      console.error(e);
+    }
   }
   sequelize = connection;
   return sequelize;
