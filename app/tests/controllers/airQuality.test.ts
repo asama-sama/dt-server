@@ -84,8 +84,8 @@ describe("airQuality Controller", () => {
         lat: 5.2,
         lng: 2.235,
       });
-      const frequency = await AirQualityReadingFrequency.create({
-        frequency: Frequency.DAILY,
+      const frequency = await AirQualityReadingFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
       });
 
       initialReadings = await Promise.all(
@@ -103,7 +103,7 @@ describe("airQuality Controller", () => {
 
     test("it should update with new readings", async () => {
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-07"));
+      await updateDailyReadings(new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
       expect(readings.length).toBe(7);
     });
@@ -113,7 +113,7 @@ describe("airQuality Controller", () => {
         initialReading.updatedAt.getTime()
       );
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-07"));
+      await updateDailyReadings(new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
       let notUpdated = 0;
       readings.forEach((reading) => {
@@ -125,7 +125,7 @@ describe("airQuality Controller", () => {
 
     test("it should update any values which were null initially", async () => {
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-30"));
+      await updateDailyReadings(new Date("2022-07-30"));
       const readings = await AirQualityReading.findAll({});
       const reading = readings.find(
         (reading) => reading.date === new Date("2022-07-06")
@@ -135,21 +135,13 @@ describe("airQuality Controller", () => {
 
     test(`it should filter out observations from the API that don't fall within the expected date range`, async () => {
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-10"));
+      await updateDailyReadings(new Date("2022-07-10"));
       const newReadings = await AirQualityReading.findAll();
       expect(newReadings.length).toBe(5);
     });
   });
 
   describe("updateSites", () => {
-    let api: Api;
-    beforeEach(async () => {
-      api = await Api.create({
-        name: "api1",
-        uri: "api/test",
-      });
-    });
-
     test("it should add sites within the sydney region", async () => {
       const sites: Site[] = [
         {
@@ -175,7 +167,7 @@ describe("airQuality Controller", () => {
         lat: 30,
       }));
       getSitesMock.mockResolvedValueOnce(sites);
-      await updateSites(api);
+      await updateSites();
       const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(3);
     });
@@ -205,7 +197,7 @@ describe("airQuality Controller", () => {
         lat: 30,
       }));
       getSitesMock.mockResolvedValueOnce(sites);
-      await updateSites(api);
+      await updateSites();
       const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(3);
     });
@@ -256,11 +248,11 @@ describe("airQuality Controller", () => {
       getSitesMock.mockResolvedValueOnce(sites);
       getSitesMock.mockResolvedValueOnce(sites2);
 
-      await updateSites(api);
+      await updateSites();
       let airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(3);
 
-      await updateSites(api);
+      await updateSites();
       airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(5);
     });
@@ -276,7 +268,7 @@ describe("airQuality Controller", () => {
         },
       ];
       getSitesMock.mockResolvedValueOnce(sites);
-      await updateSites(api);
+      await updateSites();
       const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(0);
     });

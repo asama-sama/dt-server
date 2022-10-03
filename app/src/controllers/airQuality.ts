@@ -14,6 +14,7 @@ import {
   AirQualityReadingFrequency,
   Frequency,
 } from "../db/models/AirQualityReadingFrequency";
+import { APIS } from "../const/api";
 
 const DAYS_TO_SEARCH = 7;
 
@@ -63,8 +64,11 @@ export const getCurrentObservations = async (sites: number[]) => {
   return Object.values(observationsBySite);
 };
 
-export const updateSites = async (api: Api) => {
+export const updateSites = async () => {
   const sites = await getSites();
+  const api = await Api.findOne({
+    where: { name: APIS.nswAirQualitySites.name },
+  });
   for (const site of sites) {
     const { name: _name, region: _region, siteId, lat, lng } = site;
 
@@ -87,13 +91,13 @@ export const updateSites = async (api: Api) => {
         lat,
         name,
         region,
-        apiId: api.id,
+        apiId: api?.id,
       });
     }
   }
 };
 
-export const updateDailyReadings = async (api: Api, endDate: Date) => {
+export const updateDailyReadings = async (endDate: Date) => {
   const airQualitySites = await AirQualitySite.findAll({});
   const siteToAirQualitySites: { [key: string]: AirQualitySite } = {};
   airQualitySites.forEach((airQualitySite) => {
@@ -156,6 +160,11 @@ export const updateDailyReadings = async (api: Api, endDate: Date) => {
   const airQualityReadingFrequency = await AirQualityReadingFrequency.findOne({
     where: { frequency: Frequency.DAILY },
   });
+  const api = await Api.findOne({
+    where: {
+      name: APIS.nswAirQualityReadings.name,
+    },
+  });
   if (!airQualityReadingFrequency || !airQualityReadingFrequency.id)
     throw new Error(`airQualityReadingFrequency not found: ${Frequency.DAILY}`);
   await Promise.all(
@@ -171,7 +180,7 @@ export const updateDailyReadings = async (api: Api, endDate: Date) => {
           date: new Date(observation.date),
           value: observation.value,
           type: observation.type,
-          apiId: api.id,
+          apiId: api?.id,
           airQualitySiteId: airQualitySiteId,
           airQualityReadingFrequencyId: airQualityReadingFrequency.id,
         });
