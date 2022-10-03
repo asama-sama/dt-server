@@ -102,7 +102,6 @@ describe("airQuality Controller", () => {
     });
 
     test("it should update with new readings", async () => {
-      console.log("here");
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
       await updateDailyReadings(readingsApi, new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});

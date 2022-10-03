@@ -49,24 +49,15 @@ type StationApiResponse = {
   station_key: string;
   station_id: string;
   name: string;
-  road_name: string;
-  road_name_base: string;
-  common_road_name: string;
-  road_on_type: string;
-  lane_count: string;
-  road_classification_type: string;
-  road_classification_admin: string;
   rms_region: string;
   lga: string;
   suburb: string;
   post_code: string;
   wgs84_latitude: string;
   wgs84_longitude: string;
-  secondary_name: string;
-  full_name: string;
 };
 
-interface Station
+export interface Station
   extends Omit<StationApiResponse, "wgs84_latitude" | "wgs84_longitude"> {
   longitude: number;
   latitude: number;
@@ -76,19 +67,15 @@ type NswApiGetStations = {
   rows: StationApiResponse[];
 };
 
-export const getStations = async () => {
+export const getStations = async (): Promise<Station[]> => {
   const { data } = await axios.get<NswApiGetStations>(
     `${BASE_URL}?q=${GET_STATIONS}`
   );
 
-  const stationMap: { [key: string]: Station } = {};
-  data.rows.map((station) => {
-    const newStation: Station = {
-      ...station,
-      longitude: parseFloat(station.wgs84_longitude),
-      latitude: parseFloat(station.wgs84_latitude),
-    };
-    stationMap[station.station_key] = newStation;
-  });
-  return stationMap;
+  const stations = data.rows.map((station) => ({
+    ...station,
+    longitude: parseFloat(station.wgs84_longitude),
+    latitude: parseFloat(station.wgs84_latitude),
+  }));
+  return stations;
 };

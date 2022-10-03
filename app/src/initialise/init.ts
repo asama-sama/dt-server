@@ -1,11 +1,16 @@
 import { initConnection } from "../db/connect";
 import { Api } from "../db/models/Api";
 import { ApiUpdateLog, UpdateStatus } from "../db/models/ApiUpdateLog";
-import { ApiInitialisor } from "./ApiInitialisor";
+import { ApiConsts } from "../const/api";
 import { airQualitySitesApi } from "./airQualitySitesApi";
 import { airQualityReadingsApi } from "./airQualityReadingsApi";
-import { loadAndSync as loadAndSyncNswTrafficVolume } from "./initialiseNswTrafficVolumeApi";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
+import { runSeeds } from "../seeds/runSeeds";
+
+export interface ApiInitialisor {
+  update(): Promise<void>;
+  apiConsts: ApiConsts;
+}
 
 const timers: NodeJS.Timer[] = [];
 
@@ -17,7 +22,6 @@ const loadAndSyncApis = async () => {
 };
 
 const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
-  await apiInitialisor.setupDb();
   const update = async () => {
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
@@ -68,6 +72,7 @@ export const init = async () => {
     dbPort: DB_PORT,
   });
 
+  await runSeeds();
   await loadAndSyncApis();
   await updateSuburbGeoJson();
 };

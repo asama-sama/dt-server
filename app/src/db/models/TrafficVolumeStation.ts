@@ -14,6 +14,7 @@ import { TrafficVolumeReading } from "./TrafficVolumeReading";
 @Table
 export class TrafficVolumeStation extends Model {
   @ForeignKey(() => Api)
+  @AllowNull(false)
   @Column
   apiId: number;
 
@@ -23,6 +24,7 @@ export class TrafficVolumeStation extends Model {
   @HasMany(() => TrafficVolumeReading, "trafficVolumeStationId")
   trafficVolumeReadings: TrafficVolumeReading[];
 
+  @Unique
   @AllowNull(false)
   @Column
   stationKey: number;

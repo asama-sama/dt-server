@@ -94,7 +94,6 @@ export const updateSites = async (api: Api) => {
 };
 
 export const updateDailyReadings = async (api: Api, endDate: Date) => {
-  console.log("here");
   const airQualitySites = await AirQualitySite.findAll({});
   const siteToAirQualitySites: { [key: string]: AirQualitySite } = {};
   airQualitySites.forEach((airQualitySite) => {
@@ -159,7 +158,6 @@ export const updateDailyReadings = async (api: Api, endDate: Date) => {
   });
   if (!airQualityReadingFrequency || !airQualityReadingFrequency.id)
     throw new Error(`airQualityReadingFrequency not found: ${Frequency.DAILY}`);
-  console.log(airQualityReadingFrequency);
   await Promise.all(
     observations.map(async (observation) => {
       const airQualitySiteId = siteToAirQualitySites[observation.siteId].id;
