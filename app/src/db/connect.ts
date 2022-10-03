@@ -33,7 +33,7 @@ export const initConnection = async ({
     dialect: "postgres",
     models: [`${__dirname}/models`],
     port: parseInt(dbPort),
-    logging,
+    logging: logging && console.log,
   });
 
   if (dbSchema) {
@@ -54,7 +54,7 @@ export const initConnection = async ({
       models: [`${__dirname}/models`],
       port: parseInt(dbPort),
       schema: dbSchema,
-      logging,
+      logging: logging && console.log,
     });
   }
 
@@ -69,12 +69,12 @@ export const initConnection = async ({
     console.log("force schema reset");
     await connection.dropSchema(schemaToReset, {});
     await connection.createSchema(schemaToReset, {});
-    await connection.sync({ logging: true });
+    await connection.sync({ logging: logging && console.log });
   } else {
     console.log("run sync tables: alter");
 
     try {
-      await connection.sync({ alter: true, logging: true });
+      await connection.sync({ alter: true, logging: logging && console.log });
     } catch (e) {
       console.log("sync error");
       console.error(e);

@@ -1,7 +1,6 @@
 /// <reference types="@types/jest" />;
 import {
   AirQualityReading,
-  Frequency,
   PollutantType,
 } from "../../src/db/models/AirQualityReading";
 import { AirQualitySite } from "../../src/db/models/AirQualitySite";
@@ -16,6 +15,10 @@ import {
   updateDailyReadings,
   updateSites,
 } from "../../src/controllers/airQuality";
+import {
+  AirQualityReadingFrequency,
+  Frequency,
+} from "../../src/db/models/AirQualityReadingFrequency";
 
 jest.mock("../../src/clients/nswAirQuality", () => {
   return {
@@ -47,13 +50,13 @@ describe("airQuality Controller", () => {
         value: null,
       },
       {
-        date: "2022-07-10",
+        date: "2022-07-7",
         value: 1,
       },
     ];
 
     const airQualityReadingsNew: AirQualityData[] = Array.from(
-      { length: 30 },
+      { length: 7 },
       (k, v) => v + 1
     ).map((i) => {
       const date = String(i).padStart(2, "0");
@@ -81,6 +84,9 @@ describe("airQuality Controller", () => {
         lat: 5.2,
         lng: 2.235,
       });
+      const frequency = await AirQualityReadingFrequency.create({
+        frequency: Frequency.DAILY,
+      });
 
       initialReadings = await Promise.all(
         airQualityReadingsInitial.map(async (aqReadingToAdd) => {
@@ -89,16 +95,18 @@ describe("airQuality Controller", () => {
             value: aqReadingToAdd.value,
             apiId: readingsApi.id,
             airQualitySiteId: site.id,
+            airQualityReadingFrequencyId: frequency?.id,
           });
         })
       );
     });
 
     test("it should update with new readings", async () => {
+      console.log("here");
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-30"));
+      await updateDailyReadings(readingsApi, new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
-      expect(readings.length).toBe(30);
+      expect(readings.length).toBe(7);
     });
 
     test("it should not update existing readings", async () => {
@@ -106,7 +114,7 @@ describe("airQuality Controller", () => {
         initialReading.updatedAt.getTime()
       );
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-07-30"));
+      await updateDailyReadings(readingsApi, new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
       let notUpdated = 0;
       readings.forEach((reading) => {
@@ -128,9 +136,9 @@ describe("airQuality Controller", () => {
 
     test(`it should filter out observations from the API that don't fall within the expected date range`, async () => {
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(readingsApi, new Date("2022-08-15"));
+      await updateDailyReadings(readingsApi, new Date("2022-07-10"));
       const newReadings = await AirQualityReading.findAll();
-      expect(newReadings.length).toBe(19);
+      expect(newReadings.length).toBe(5);
     });
   });
 

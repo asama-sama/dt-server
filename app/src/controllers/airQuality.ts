@@ -10,6 +10,12 @@ import { Api } from "../db/models/Api";
 import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
+import {
+  AirQualityReadingFrequency,
+  Frequency,
+} from "../db/models/AirQualityReadingFrequency";
+
+const DAYS_TO_SEARCH = 7;
 
 export const getMonthlyObservations = async (sites: number[]) => {
   const date = new Date();
@@ -88,13 +94,14 @@ export const updateSites = async (api: Api) => {
 };
 
 export const updateDailyReadings = async (api: Api, endDate: Date) => {
+  console.log("here");
   const airQualitySites = await AirQualitySite.findAll({});
   const siteToAirQualitySites: { [key: string]: AirQualitySite } = {};
   airQualitySites.forEach((airQualitySite) => {
     siteToAirQualitySites[airQualitySite.siteId] = airQualitySite;
   });
   const startDate = new Date(endDate.getTime());
-  startDate.setDate(endDate.getDate() - 30);
+  startDate.setDate(endDate.getDate() - DAYS_TO_SEARCH);
 
   const todayParsed = `${endDate.getFullYear()}-${
     endDate.getMonth() + 1
@@ -147,6 +154,12 @@ export const updateDailyReadings = async (api: Api, endDate: Date) => {
     update: 0,
   };
 
+  const airQualityReadingFrequency = await AirQualityReadingFrequency.findOne({
+    where: { frequency: Frequency.DAILY },
+  });
+  if (!airQualityReadingFrequency || !airQualityReadingFrequency.id)
+    throw new Error(`airQualityReadingFrequency not found: ${Frequency.DAILY}`);
+  console.log(airQualityReadingFrequency);
   await Promise.all(
     observations.map(async (observation) => {
       const airQualitySiteId = siteToAirQualitySites[observation.siteId].id;
@@ -159,10 +172,10 @@ export const updateDailyReadings = async (api: Api, endDate: Date) => {
         await AirQualityReading.create({
           date: new Date(observation.date),
           value: observation.value,
-          frequency: observation.frequency,
           type: observation.type,
           apiId: api.id,
           airQualitySiteId: airQualitySiteId,
+          airQualityReadingFrequencyId: airQualityReadingFrequency.id,
         });
 
         countLogs.create = countLogs.create + 1;

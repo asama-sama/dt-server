@@ -2,20 +2,8 @@ import { Api } from "../db/models/Api";
 import { APIS } from "../const/api";
 import { updateSites } from "../controllers/airQuality";
 
-export const initialiseNswAirQualitySitesApi = {
+export const airQualitySitesApi = {
   async setupDb() {
-    // const nswAirQualityReadingsApi = await Api.findOne({
-    //   where: {
-    //     name: APIS.nswAirQualityReadings.name,
-    //   },
-    // });
-    // if (!nswAirQualityReadingsApi) {
-    //   await Api.create({
-    //     name: APIS.nswAirQualityReadings.name,
-    //     uri: APIS.nswAirQualityReadings.uri,
-    //     queryStringParams: APIS.nswAirQualityReadings.queryStringParams,
-    //   });
-    // }
     const nswAirQualitySitesApi = await Api.findOne({
       where: {
         name: APIS.nswAirQualitySites.name,

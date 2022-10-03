@@ -7,6 +7,7 @@ import {
   DataType,
   AllowNull,
 } from "sequelize-typescript";
+import { AirQualityReadingFrequency } from "./AirQualityReadingFrequency";
 import { AirQualitySite } from "./AirQualitySite";
 import { Api } from "./Api";
 
@@ -21,12 +22,6 @@ export enum AirQualityCategory {
 export enum PollutantType {
   "NO2" = "NO2",
   "CO2" = "CO2",
-}
-
-export enum Frequency {
-  HOURLY = "HOURLY",
-  DAILY = "DAILY",
-  MONTHLY = "MONTHLY",
 }
 
 @Table
@@ -70,7 +65,7 @@ export class AirQualityReading extends Model {
       },
     },
   })
-  airQuality: string;
+  airQualityCategory: string;
 
   @Column({
     type: DataType.STRING,
@@ -84,15 +79,11 @@ export class AirQualityReading extends Model {
   })
   type: string;
 
-  @Column({
-    type: DataType.STRING,
-    validate: {
-      isValidFrequency(value: string) {
-        if (!(value in Frequency)) {
-          throw new Error(`frequency must be of type Frequency: ${value}`);
-        }
-      },
-    },
-  })
-  frequency: string;
+  @ForeignKey(() => AirQualityReadingFrequency)
+  @AllowNull(false)
+  @Column
+  airQualityReadingFrequencyId: number;
+
+  @BelongsTo(() => AirQualityReadingFrequency, "airQualityReadingFrequencyId")
+  airQualityReadingFrequency: AirQualityReadingFrequency;
 }

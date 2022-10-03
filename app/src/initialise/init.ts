@@ -2,14 +2,17 @@ import { initConnection } from "../db/connect";
 import { Api } from "../db/models/Api";
 import { ApiUpdateLog, UpdateStatus } from "../db/models/ApiUpdateLog";
 import { ApiInitialisor } from "./ApiInitialisor";
-import { initialiseNswAirQualitySitesApi } from "./initialiseNswAirQualitySitesApi";
+import { airQualitySitesApi } from "./airQualitySitesApi";
+import { airQualityReadingsApi } from "./airQualityReadingsApi";
 import { loadAndSync as loadAndSyncNswTrafficVolume } from "./initialiseNswTrafficVolumeApi";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
 
 const timers: NodeJS.Timer[] = [];
 
 const loadAndSyncApis = async () => {
-  loadAndSyncApi(initialiseNswAirQualitySitesApi);
+  await loadAndSyncApi(airQualitySitesApi);
+  await loadAndSyncApi(airQualityReadingsApi);
+
   // await loadAndSyncNswTrafficVolume();
 };
 
@@ -17,10 +20,13 @@ const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   await apiInitialisor.setupDb();
   const update = async () => {
     let status: UpdateStatus = UpdateStatus.SUCCESS;
+    let errorMessage = "";
     try {
       await apiInitialisor.update();
     } catch (e) {
+      console.error(e);
       status = UpdateStatus.FAIL;
+      if (e instanceof Error) errorMessage = e.message;
     }
     const api = await Api.findOne({
       where: {
@@ -28,10 +34,11 @@ const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
       },
     });
     const apiId = api?.id;
-    ApiUpdateLog.create({
+    await ApiUpdateLog.create({
       apiId: apiId,
       updateAt: new Date(),
       status,
+      message: errorMessage,
     });
   };
 
@@ -41,6 +48,7 @@ const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   );
   timers.push(timerId);
   await update(); // first call
+  console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
 };
 
 export const init = async () => {

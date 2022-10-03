@@ -36,4 +36,9 @@ export class ApiUpdateLog extends Model {
     },
   })
   status: string;
+
+  @Column({
+    type: DataType.TEXT,
+  })
+  message: string;
 }
