@@ -1,11 +1,46 @@
 import { initConnection } from "../db/connect";
-import { init as initNswAirQuality } from "./initialiseNswAirQualityApi";
+import { Api } from "../db/models/Api";
+import { ApiUpdateLog, UpdateStatus } from "../db/models/ApiUpdateLog";
+import { ApiInitialisor } from "./ApiInitialisor";
+import { initialiseNswAirQualitySitesApi } from "./initialiseNswAirQualitySitesApi";
 import { loadAndSync as loadAndSyncNswTrafficVolume } from "./initialiseNswTrafficVolumeApi";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
 
+const timers: NodeJS.Timer[] = [];
+
 const loadAndSyncApis = async () => {
-  await initNswAirQuality();
-  await loadAndSyncNswTrafficVolume();
+  loadAndSyncApi(initialiseNswAirQualitySitesApi);
+  // await loadAndSyncNswTrafficVolume();
+};
+
+const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
+  await apiInitialisor.setupDb();
+  const update = async () => {
+    let status: UpdateStatus = UpdateStatus.SUCCESS;
+    try {
+      await apiInitialisor.update();
+    } catch (e) {
+      status = UpdateStatus.FAIL;
+    }
+    const api = await Api.findOne({
+      where: {
+        name: apiInitialisor.apiConsts.name,
+      },
+    });
+    const apiId = api?.id;
+    ApiUpdateLog.create({
+      apiId: apiId,
+      updateAt: new Date(),
+      status,
+    });
+  };
+
+  const timerId = setInterval(
+    () => update(),
+    apiInitialisor.apiConsts.updateFrequency
+  );
+  timers.push(timerId);
+  await update(); // first call
 };
 
 export const init = async () => {

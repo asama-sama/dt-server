@@ -61,6 +61,9 @@ export const updateSites = async (api: Api) => {
   const sites = await getSites();
   for (const site of sites) {
     const { name: _name, region: _region, siteId, lat, lng } = site;
+
+    if (!lat || !lng) continue;
+
     const region = _region.toUpperCase();
     const name = _name.toUpperCase();
     // there are many other readings across nsw, only include those close to sydney

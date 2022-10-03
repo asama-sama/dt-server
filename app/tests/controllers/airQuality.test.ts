@@ -202,5 +202,76 @@ describe("airQuality Controller", () => {
       const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(3);
     });
+
+    test("it should update the sites", async () => {
+      const sites: Site[] = [
+        {
+          region: "test",
+          name: "sydney",
+        },
+        {
+          region: "test",
+          name: "sydney 11###",
+        },
+        {
+          region: "test",
+          name: "woiwej sydney",
+        },
+        {
+          region: "test",
+          name: "name2",
+        },
+      ].map((site, i) => ({
+        ...site,
+        siteId: i + 1,
+        lng: 40,
+        lat: 30,
+      }));
+      const sites2: Site[] = [
+        {
+          region: "sydney",
+          name: "abc",
+        },
+        {
+          region: "test",
+          name: "test",
+        },
+        {
+          region: "abc",
+          name: "sydney ssss",
+        },
+      ].map((site, i) => ({
+        ...site,
+        siteId: i + 10,
+        lng: 40,
+        lat: 30,
+      }));
+      getSitesMock.mockResolvedValueOnce(sites);
+      getSitesMock.mockResolvedValueOnce(sites2);
+
+      await updateSites(api);
+      let airQualitySites = await AirQualitySite.findAll({});
+      expect(airQualitySites.length).toBe(3);
+
+      await updateSites(api);
+      airQualitySites = await AirQualitySite.findAll({});
+      expect(airQualitySites.length).toBe(5);
+    });
+
+    test("it should not create a site if lat/lng is null", async () => {
+      const sites: Site[] = [
+        {
+          region: "sydney",
+          name: "test1",
+          lat: null,
+          lng: null,
+          siteId: 1,
+        },
+      ];
+      getSitesMock.mockResolvedValueOnce(sites);
+      await updateSites(api);
+      const airQualitySites = await AirQualitySite.findAll({});
+      expect(airQualitySites.length).toBe(0);
+    });
   });
 });

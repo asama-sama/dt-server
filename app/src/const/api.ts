@@ -1,16 +1,18 @@
-type Apis = {
-  [key: string]: {
-    name: string;
-    uri: string;
-    method: "post" | "get";
-    queryStringParams: string | null;
-    updateFrequency: UpdateFrequency;
-  };
+export type ApiConsts = {
+  name: string;
+  uri: string;
+  method: "post" | "get";
+  queryStringParams: string | null;
+  updateFrequency: number;
 };
 
-type UpdateFrequency = "HOURLY" | "DAILY";
+type Apis = {
+  [key: string]: ApiConsts;
+};
 
-export const API_UPDATE_MS = 60 * 1000; // each api should be checked once an hour
+// export const API_UPDATE_MS = 60 * 1000; // each api should be checked once an hour
+const millisecondsInHour = 1000 * 60 * 60;
+const millisecondsInDay = 1000 * 60 * 60 * 24;
 
 export const APIS: Apis = {
   nswAirQualityReadings: {
@@ -18,14 +20,14 @@ export const APIS: Apis = {
     uri: "https://data.airquality.nsw.gov.au/api/Data/get_Observations",
     method: "post",
     queryStringParams: null,
-    updateFrequency: "DAILY",
+    updateFrequency: millisecondsInDay,
   },
   nswAirQualitySites: {
     name: "NSW_AIR_QUALITY_SITES",
     uri: "https://data.airquality.nsw.gov.au/api/Data/get_SiteDetails",
     method: "get",
     queryStringParams: null,
-    updateFrequency: "DAILY",
+    updateFrequency: millisecondsInDay,
   },
   nswTrafficVolumeReadings: {
     name: "NSW_TRAFFIC_VOLUME_READINGS",
@@ -33,7 +35,7 @@ export const APIS: Apis = {
     method: "get",
     queryStringParams:
       "q=select d1.station_key, sum(cast(daily_total as int)), year, month from ds_aadt_permanent_hourly_data d1 where d1.station_key in (select station_key from ds_aadt_reference where ST_DWithin(ST_MakePoint(cast(wgs84_longitude as float), cast(wgs84_latitude as float)), ST_MakePoint(150.999919,-33.816228)::geography, 10000))  group by station_key, year, month",
-    updateFrequency: "DAILY",
+    updateFrequency: millisecondsInDay,
   },
   nswTrafficVolumeStations: {
     name: "NSW_TRAFFIC_VOLUME_STATIONS",
@@ -41,6 +43,6 @@ export const APIS: Apis = {
     method: "get",
     queryStringParams:
       "q=SELECT * FROM ds_aadt_reference WHERE publish='1' and ST_DWithin(ST_MakePoint(cast(wgs84_longitude as float), cast(wgs84_latitude as float)), ST_MakePoint(150.999919,-33.816228)::geography, 100000)",
-    updateFrequency: "DAILY",
+    updateFrequency: millisecondsInDay,
   },
 };

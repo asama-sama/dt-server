@@ -7,8 +7,8 @@ export type Site = {
   region: string;
   name: string;
   siteId: number;
-  lat: number;
-  lng: number;
+  lat: number | null;
+  lng: number | null;
 };
 
 type SiteApiObject = {
