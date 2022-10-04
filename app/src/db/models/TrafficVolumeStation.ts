@@ -27,12 +27,12 @@ export class TrafficVolumeStation extends Model {
   @Unique
   @AllowNull(false)
   @Column
-  stationKey: number;
+  stationKey: string;
 
   @Unique
   @AllowNull(false)
   @Column
-  stationId: number;
+  stationId: string;
 
   @AllowNull(false)
   @Column

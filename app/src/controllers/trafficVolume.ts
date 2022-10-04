@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { getStations } from "../clients/nswTrafficVolume";
 import { APIS } from "../const/api";
 import { Api } from "../db/models/Api";
@@ -14,11 +15,15 @@ export const updateStations = async () => {
     const station = stations[i];
     await TrafficVolumeStation.findOrCreate({
       where: {
-        stationId: station.station_id,
+        [Op.or]: [
+          { stationId: station.station_id },
+          { stationKey: station.station_key },
+        ],
       },
       defaults: {
         apiId: api?.id,
         stationKey: station.station_key,
+        stationId: station.station_id,
         lat: station.latitude,
         lng: station.longitude,
         name: station.name,

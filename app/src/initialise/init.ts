@@ -2,8 +2,7 @@ import { initConnection } from "../db/connect";
 import { Api } from "../db/models/Api";
 import { ApiUpdateLog, UpdateStatus } from "../db/models/ApiUpdateLog";
 import { ApiConsts } from "../const/api";
-import { airQualitySitesApi } from "./airQualitySitesApi";
-import { airQualityReadingsApi } from "./airQualityReadingsApi";
+import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 
@@ -15,10 +14,9 @@ export interface ApiInitialisor {
 const timers: NodeJS.Timer[] = [];
 
 const loadAndSyncApis = async () => {
-  await loadAndSyncApi(airQualitySitesApi);
-  await loadAndSyncApi(airQualityReadingsApi);
-
-  // await loadAndSyncNswTrafficVolume();
+  for (let i = 0; i < apisToLoad.length; i++) {
+    await loadAndSyncApi(apisToLoad[i]);
+  }
 };
 
 const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
