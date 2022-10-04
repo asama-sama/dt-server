@@ -7,6 +7,7 @@ import { APIS } from "../const/api";
 import { Api } from "../db/models/Api";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
+import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
 
 export const updateStations = async () => {
   const stations = await getStations();
@@ -52,6 +53,9 @@ export const updateReadings = async () => {
   });
 
   const counts = await getStationCountsByMonth(trafficVolumeStationsKeys);
+  const updateFrequency = await UpdateFrequency.findOne({
+    where: { frequency: Frequency.MONTHLY },
+  });
 
   const trafficVolumeStationsMap: { [key: string]: TrafficVolumeStation } = {};
 
@@ -80,6 +84,7 @@ export const updateReadings = async () => {
         month: count.month,
         value: count.count,
         apiId: api?.id,
+        updateFrequencyId: updateFrequency?.id,
       },
     });
   }

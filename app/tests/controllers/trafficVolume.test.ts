@@ -5,7 +5,10 @@ import {
   MonthlyStationCount,
 } from "../../src/clients/nswTrafficVolume";
 import { APIS } from "../../src/const/api";
-import { updateStations } from "../../src/controllers/trafficVolume";
+import {
+  updateReadings,
+  updateStations,
+} from "../../src/controllers/trafficVolume";
 import { Api } from "../../src/db/models/Api";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
@@ -82,7 +85,15 @@ describe("trafficVolume controller", () => {
   });
 
   describe("updateReadings", () => {
-    let stations: TrafficVolumeStation[];
+    const readingsToAdd: MonthlyStationCount[] = Array.from({
+      length: 10,
+    }).map((_, idx) => ({
+      year: 2022,
+      month: idx,
+      stationKey: "100",
+      count: idx * 100,
+    }));
+
     beforeEach(async () => {
       const api = await Api.findOne({
         where: { name: APIS.nswTrafficVolumeStations.name },
@@ -94,21 +105,21 @@ describe("trafficVolume controller", () => {
         lng: i * 100,
         apiId: api?.id,
       }));
-      stations = await TrafficVolumeStation.bulkCreate(stationsToAdd);
+      await TrafficVolumeStation.bulkCreate(stationsToAdd);
     });
 
     test("it should update with new readings", async () => {
-      //
-      const readingsToAdd: MonthlyStationCount[] = Array.from({
-        length: 10,
-      }).map((_, idx) => ({
-        year: 2022,
-        month: idx,
-        stationKey: "100",
-        count: idx * 100,
-      }));
       getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
-      await getStationCountsByMonth(["100"]);
+      await updateReadings();
+      const readings = await TrafficVolumeReading.findAll({});
+      expect(readings.length).toBe(10);
+    });
+
+    test("it should not update a reading if it has already been inserted", async () => {
+      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
+      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
+      await updateReadings();
+      await updateReadings();
       const readings = await TrafficVolumeReading.findAll({});
       expect(readings.length).toBe(10);
     });

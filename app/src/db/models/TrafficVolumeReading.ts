@@ -8,6 +8,7 @@ import {
 } from "sequelize-typescript";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { Api } from "./Api";
+import { UpdateFrequency } from "./UpdateFrequency";
 
 @Table
 export class TrafficVolumeReading extends Model {
@@ -19,7 +20,6 @@ export class TrafficVolumeReading extends Model {
   @Column
   month: number;
 
-  @AllowNull(false)
   @Column
   day: number;
 
@@ -40,4 +40,12 @@ export class TrafficVolumeReading extends Model {
 
   @BelongsTo(() => Api, "apidId")
   api: Api;
+
+  @ForeignKey(() => UpdateFrequency)
+  @AllowNull(false)
+  @Column
+  updateFrequencyId: number;
+
+  @BelongsTo(() => UpdateFrequency, "updateFrequencyId")
+  updateFrequency: UpdateFrequency;
 }

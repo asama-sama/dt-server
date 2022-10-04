@@ -1,9 +1,6 @@
 import { APIS } from "../const/api";
 import { Api } from "../db/models/Api";
-import {
-  Frequency,
-  AirQualityReadingFrequency,
-} from "../db/models/AirQualityReadingFrequency";
+import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
 
 export const seed = async () => {
   const nswAirQualityReadingsApi = await Api.findOne({
@@ -18,17 +15,17 @@ export const seed = async () => {
       queryStringParams: APIS.nswAirQualityReadings.queryStringParams,
     });
   }
-  await AirQualityReadingFrequency.findOrCreate({
+  await UpdateFrequency.findOrCreate({
     where: {
       frequency: Frequency.HOURLY,
     },
   });
-  await AirQualityReadingFrequency.findOrCreate({
+  await UpdateFrequency.findOrCreate({
     where: {
       frequency: Frequency.DAILY,
     },
   });
-  await AirQualityReadingFrequency.findOrCreate({
+  await UpdateFrequency.findOrCreate({
     where: {
       frequency: Frequency.MONTHLY,
     },

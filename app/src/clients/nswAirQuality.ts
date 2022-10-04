@@ -1,6 +1,6 @@
 import axios from "axios";
 import { PollutantType } from "../db/models/AirQualityReading";
-import { Frequency } from "../db/models/AirQualityReadingFrequency";
+import { Frequency } from "../db/models/UpdateFrequency";
 
 const AIR_QUALITY_API = "https://data.airquality.nsw.gov.au/api/Data";
 

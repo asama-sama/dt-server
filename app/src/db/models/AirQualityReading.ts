@@ -7,7 +7,7 @@ import {
   DataType,
   AllowNull,
 } from "sequelize-typescript";
-import { AirQualityReadingFrequency } from "./AirQualityReadingFrequency";
+import { UpdateFrequency } from "./UpdateFrequency";
 import { AirQualitySite } from "./AirQualitySite";
 import { Api } from "./Api";
 
@@ -79,11 +79,11 @@ export class AirQualityReading extends Model {
   })
   type: string;
 
-  @ForeignKey(() => AirQualityReadingFrequency)
+  @ForeignKey(() => UpdateFrequency)
   @AllowNull(false)
   @Column
-  airQualityReadingFrequencyId: number;
+  updateFrequencyId: number;
 
-  @BelongsTo(() => AirQualityReadingFrequency, "airQualityReadingFrequencyId")
-  airQualityReadingFrequency: AirQualityReadingFrequency;
+  @BelongsTo(() => UpdateFrequency, "updateFrequencyId")
+  updateFrequency: UpdateFrequency;
 }

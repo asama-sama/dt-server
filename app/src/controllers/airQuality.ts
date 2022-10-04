@@ -10,10 +10,7 @@ import { Api } from "../db/models/Api";
 import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
-import {
-  AirQualityReadingFrequency,
-  Frequency,
-} from "../db/models/AirQualityReadingFrequency";
+import { UpdateFrequency, Frequency } from "../db/models/UpdateFrequency";
 import { APIS } from "../const/api";
 
 const DAYS_TO_SEARCH = 7;
@@ -157,7 +154,7 @@ export const updateDailyReadings = async (endDate: Date) => {
     update: 0,
   };
 
-  const airQualityReadingFrequency = await AirQualityReadingFrequency.findOne({
+  const updateFrequency = await UpdateFrequency.findOne({
     where: { frequency: Frequency.DAILY },
   });
   const api = await Api.findOne({
@@ -165,8 +162,8 @@ export const updateDailyReadings = async (endDate: Date) => {
       name: APIS.nswAirQualityReadings.name,
     },
   });
-  if (!airQualityReadingFrequency || !airQualityReadingFrequency.id)
-    throw new Error(`airQualityReadingFrequency not found: ${Frequency.DAILY}`);
+  if (!updateFrequency || !updateFrequency.id)
+    throw new Error(`updateFrequency not found: ${Frequency.DAILY}`);
   await Promise.all(
     observations.map(async (observation) => {
       const airQualitySiteId = siteToAirQualitySites[observation.siteId].id;
@@ -182,7 +179,7 @@ export const updateDailyReadings = async (endDate: Date) => {
           type: observation.type,
           apiId: api?.id,
           airQualitySiteId: airQualitySiteId,
-          airQualityReadingFrequencyId: airQualityReadingFrequency.id,
+          updateFrequencyId: updateFrequency.id,
         });
 
         countLogs.create = countLogs.create + 1;
