@@ -1,7 +1,11 @@
 import { Op } from "sequelize";
-import { getStations } from "../clients/nswTrafficVolume";
+import {
+  getStationCountsByMonth,
+  getStations,
+} from "../clients/nswTrafficVolume";
 import { APIS } from "../const/api";
 import { Api } from "../db/models/Api";
+import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 
 export const updateStations = async () => {
@@ -31,6 +35,51 @@ export const updateStations = async () => {
         lga: station.lga,
         rmsRegion: station.rms_region,
         postCode: station.post_code,
+      },
+    });
+  }
+};
+
+export const updateReadings = async () => {
+  const trafficVolumeStationsKeys = (
+    await TrafficVolumeStation.findAll({
+      attributes: ["stationKey"],
+    })
+  ).map((trafficVolumeStation) => trafficVolumeStation.stationKey);
+
+  const api = await Api.findOne({
+    where: { name: APIS.nswTrafficVolumeReadings.name },
+  });
+
+  const counts = await getStationCountsByMonth(trafficVolumeStationsKeys);
+
+  const trafficVolumeStationsMap: { [key: string]: TrafficVolumeStation } = {};
+
+  for (let i = 0; i < counts.length; i++) {
+    const count = counts[i];
+    let station: TrafficVolumeStation | null =
+      trafficVolumeStationsMap[count.stationKey];
+    if (!station) {
+      station = await TrafficVolumeStation.findOne({
+        where: {
+          stationKey: count.stationKey,
+        },
+      });
+      if (!station) throw new Error(`Station ${count.stationKey} not found`);
+      trafficVolumeStationsMap[station.stationKey] = station;
+    }
+    await TrafficVolumeReading.findOrCreate({
+      where: {
+        trafficVolumeStationId: station.id,
+        year: count.year,
+        month: count.month,
+      },
+      defaults: {
+        trafficVolumeStationId: station.id,
+        year: count.year,
+        month: count.month,
+        value: count.count,
+        apiId: api?.id,
       },
     });
   }

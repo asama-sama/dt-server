@@ -25,8 +25,8 @@ router.get(
   ) => {
     try {
       const yearInt: number = parseInt(req.query.year);
-      const stationIds: number[] = JSON.parse(req.query.stationIds);
-      const counts = await getStationCountsByMonth(yearInt, stationIds);
+      const stationIds: string[] = JSON.parse(req.query.stationIds);
+      const counts = await getStationCountsByMonth(stationIds);
       res.status(200).send(counts);
     } catch (e) {
       next(e);

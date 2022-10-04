@@ -1,7 +1,13 @@
-import { getStations, Station } from "../../src/clients/nswTrafficVolume";
+import {
+  getStations,
+  getStationCountsByMonth,
+  Station,
+  MonthlyStationCount,
+} from "../../src/clients/nswTrafficVolume";
 import { APIS } from "../../src/const/api";
 import { updateStations } from "../../src/controllers/trafficVolume";
 import { Api } from "../../src/db/models/Api";
+import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
 
 jest.mock("../../src/clients/nswTrafficVolume", () => {
@@ -13,6 +19,10 @@ jest.mock("../../src/clients/nswTrafficVolume", () => {
 });
 
 const getStationsMock = getStations as jest.MockedFunction<typeof getStations>;
+const getStationsCountByMonthMock =
+  getStationCountsByMonth as jest.MockedFunction<
+    typeof getStationCountsByMonth
+  >;
 
 describe("trafficVolume controller", () => {
   describe("updateStations", () => {
@@ -68,6 +78,39 @@ describe("trafficVolume controller", () => {
       await updateStations();
       const stationsCreated = await TrafficVolumeStation.findAll({});
       expect(stationsCreated.length).toBe(1);
+    });
+  });
+
+  describe("updateReadings", () => {
+    let stations: TrafficVolumeStation[];
+    beforeEach(async () => {
+      const api = await Api.findOne({
+        where: { name: APIS.nswTrafficVolumeStations.name },
+      });
+      const stationsToAdd = [1, 2, 3].map((i) => ({
+        stationKey: (i * 100).toString(),
+        stationId: (i * 100).toString(),
+        lat: i * 100,
+        lng: i * 100,
+        apiId: api?.id,
+      }));
+      stations = await TrafficVolumeStation.bulkCreate(stationsToAdd);
+    });
+
+    test("it should update with new readings", async () => {
+      //
+      const readingsToAdd: MonthlyStationCount[] = Array.from({
+        length: 10,
+      }).map((_, idx) => ({
+        year: 2022,
+        month: idx,
+        stationKey: "100",
+        count: idx * 100,
+      }));
+      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
+      await getStationCountsByMonth(["100"]);
+      const readings = await TrafficVolumeReading.findAll({});
+      expect(readings.length).toBe(10);
     });
   });
 });
