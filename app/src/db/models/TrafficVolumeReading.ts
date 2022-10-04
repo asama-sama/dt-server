@@ -46,6 +46,7 @@ export class TrafficVolumeReading extends Model {
   @Column
   updateFrequencyId: number;
 
+  //
   @BelongsTo(() => UpdateFrequency, "updateFrequencyId")
   updateFrequency: UpdateFrequency;
 }

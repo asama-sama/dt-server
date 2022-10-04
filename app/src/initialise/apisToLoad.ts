@@ -1,6 +1,6 @@
 import { ApiConsts, APIS } from "../const/api";
 import { updateDailyReadings, updateSites } from "../controllers/airQuality";
-import { updateStations } from "../controllers/trafficVolume";
+import { updateReadings, updateStations } from "../controllers/trafficVolume";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -25,5 +25,11 @@ export const apisToLoad: ApiInitialisor[] = [
       await updateStations();
     },
     apiConsts: APIS.nswTrafficVolumeStations,
+  },
+  {
+    async update() {
+      await updateReadings();
+    },
+    apiConsts: APIS.nswTrafficVolumeReadings,
   },
 ];
