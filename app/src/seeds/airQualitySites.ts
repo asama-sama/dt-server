@@ -1,17 +1,17 @@
-import { APIS } from "../const/api";
+import { DATASOURCES } from "../const/datasource";
 import { DataSource } from "../db/models/DataSource";
 
 export const seed = async () => {
   const nswAirQualitySitesApi = await DataSource.findOne({
     where: {
-      name: APIS.nswAirQualitySites.name,
+      name: DATASOURCES.nswAirQualitySites.name,
     },
   });
   if (!nswAirQualitySitesApi) {
     await DataSource.create({
-      name: APIS.nswAirQualitySites.name,
-      uri: APIS.nswAirQualitySites.uri,
-      queryStringParams: APIS.nswAirQualitySites.queryStringParams,
+      name: DATASOURCES.nswAirQualitySites.name,
+      uri: DATASOURCES.nswAirQualitySites.uri,
+      queryStringParams: DATASOURCES.nswAirQualitySites.queryStringParams,
     });
   }
 };

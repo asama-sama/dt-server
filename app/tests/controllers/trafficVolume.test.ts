@@ -4,7 +4,7 @@ import {
   Station,
   MonthlyStationCount,
 } from "../../src/clients/nswTrafficVolume";
-import { APIS } from "../../src/const/api";
+import { DATASOURCES } from "../../src/const/api";
 import {
   updateReadings,
   updateStations,
@@ -32,7 +32,7 @@ describe("trafficVolume controller", () => {
     let dataSource: DataSource | null;
     beforeEach(async () => {
       dataSource = await DataSource.findOne({
-        where: { name: APIS.nswTrafficVolumeStations.name },
+        where: { name: DATASOURCES.nswTrafficVolumeStations.name },
       });
       await TrafficVolumeStation.create({
         lat: 123,
@@ -96,7 +96,7 @@ describe("trafficVolume controller", () => {
 
     beforeEach(async () => {
       const api = await DataSource.findOne({
-        where: { name: APIS.nswTrafficVolumeStations.name },
+        where: { name: DATASOURCES.nswTrafficVolumeStations.name },
       });
       const stationsToAdd = [1, 2, 3].map((i) => ({
         stationKey: (i * 100).toString(),

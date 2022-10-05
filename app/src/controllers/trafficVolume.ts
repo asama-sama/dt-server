@@ -3,7 +3,7 @@ import {
   getStationCountsByMonth,
   getStations,
 } from "../clients/nswTrafficVolume";
-import { APIS } from "../const/api";
+import { DATASOURCES } from "../const/datasource";
 import { DataSource } from "../db/models/DataSource";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
@@ -13,7 +13,7 @@ export const updateStations = async () => {
   const stations = await getStations();
   const api = await DataSource.findOne({
     where: {
-      name: APIS.nswTrafficVolumeStations.name,
+      name: DATASOURCES.nswTrafficVolumeStations.name,
     },
   });
   for (let i = 0; i < stations.length; i++) {
@@ -49,7 +49,7 @@ export const updateReadings = async () => {
   ).map((trafficVolumeStation) => trafficVolumeStation.stationKey);
 
   const api = await DataSource.findOne({
-    where: { name: APIS.nswTrafficVolumeReadings.name },
+    where: { name: DATASOURCES.nswTrafficVolumeReadings.name },
   });
 
   const counts = await getStationCountsByMonth(trafficVolumeStationsKeys);

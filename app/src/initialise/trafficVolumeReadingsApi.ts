@@ -1,29 +1,29 @@
 import { DataSource } from "../db/models/DataSource";
-import { APIS } from "../const/api";
+import { DATASOURCES } from "../const/datasource";
 
 export const loadAndSync = async () => {
   const nswTrafficVolumeReadingsApi = await DataSource.findOne({
     where: {
-      name: APIS.nswTrafficVolumeReadings.name,
+      name: DATASOURCES.nswTrafficVolumeReadings.name,
     },
   });
   if (!nswTrafficVolumeReadingsApi) {
     await DataSource.create({
-      name: APIS.nswTrafficVolumeReadings.name,
-      uri: APIS.nswTrafficVolumeReadings.uri,
-      queryStringParams: APIS.nswTrafficVolumeReadings.queryStringParams,
+      name: DATASOURCES.nswTrafficVolumeReadings.name,
+      uri: DATASOURCES.nswTrafficVolumeReadings.uri,
+      queryStringParams: DATASOURCES.nswTrafficVolumeReadings.queryStringParams,
     });
   }
   const nswTrafficVolumeStationsApi = await DataSource.findOne({
     where: {
-      name: APIS.nswTrafficVolumeStations.name,
+      name: DATASOURCES.nswTrafficVolumeStations.name,
     },
   });
   if (!nswTrafficVolumeStationsApi) {
     await DataSource.create({
-      name: APIS.nswTrafficVolumeStations.name,
-      uri: APIS.nswTrafficVolumeStations.uri,
-      queryStringParams: APIS.nswTrafficVolumeStations.queryStringParams,
+      name: DATASOURCES.nswTrafficVolumeStations.name,
+      uri: DATASOURCES.nswTrafficVolumeStations.uri,
+      queryStringParams: DATASOURCES.nswTrafficVolumeStations.queryStringParams,
     });
   }
 };

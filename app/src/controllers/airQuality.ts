@@ -11,7 +11,7 @@ import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
 import { UpdateFrequency, Frequency } from "../db/models/UpdateFrequency";
-import { APIS } from "../const/api";
+import { DATASOURCES } from "../const/datasource";
 
 const DAYS_TO_SEARCH = 7;
 
@@ -64,7 +64,7 @@ export const getCurrentObservations = async (sites: number[]) => {
 export const updateSites = async () => {
   const sites = await getSites();
   const dataSource = await DataSource.findOne({
-    where: { name: APIS.nswAirQualitySites.name },
+    where: { name: DATASOURCES.nswAirQualitySites.name },
   });
   for (const site of sites) {
     const { name: _name, region: _region, siteId, lat, lng } = site;
@@ -159,7 +159,7 @@ export const updateDailyReadings = async (endDate: Date) => {
   });
   const dataSource = await DataSource.findOne({
     where: {
-      name: APIS.nswAirQualityReadings.name,
+      name: DATASOURCES.nswAirQualityReadings.name,
     },
   });
   if (!updateFrequency || !updateFrequency.id)

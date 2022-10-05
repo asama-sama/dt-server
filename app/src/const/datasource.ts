@@ -1,4 +1,4 @@
-export type ApiConsts = {
+export type DataSourceConsts = {
   name: string;
   uri: string;
   method: "post" | "get";
@@ -6,15 +6,15 @@ export type ApiConsts = {
   updateFrequency: number;
 };
 
-type Apis = {
-  [key: string]: ApiConsts;
+type DataSource = {
+  [key: string]: DataSourceConsts;
 };
 
 // export const API_UPDATE_MS = 60 * 1000; // each api should be checked once an hour
 const millisecondsInHour = 1000 * 60 * 60;
 const millisecondsInDay = 1000 * 60 * 60 * 24;
 
-export const APIS: Apis = {
+export const DATASOURCES: DataSource = {
   nswAirQualityReadings: {
     name: "NSW_AIR_QUALITY",
     uri: "https://data.airquality.nsw.gov.au/api/Data/get_Observations",

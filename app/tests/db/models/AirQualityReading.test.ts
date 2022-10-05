@@ -9,7 +9,7 @@ import {
 } from "../../../src/db/models/UpdateFrequency";
 import { AirQualitySite } from "../../../src/db/models/AirQualitySite";
 import { DataSource } from "../../../src/db/models/DataSource";
-import { APIS } from "../../../src/const/api";
+import { DATASOURCES } from "../../../src/const/api";
 
 describe("AirQualityReading", () => {
   let site: AirQualitySite;
@@ -22,7 +22,7 @@ describe("AirQualityReading", () => {
       lng: 40,
     });
     dataSource = await DataSource.findOne({
-      where: { name: APIS.nswAirQualityReadings.name },
+      where: { name: DATASOURCES.nswAirQualityReadings.name },
     });
     updateFrequency = await UpdateFrequency.findOne({
       where: { frequency: Frequency.DAILY },

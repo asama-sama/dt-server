@@ -1,10 +1,10 @@
-import { ApiConsts, APIS } from "../const/api";
+import { DataSourceConsts, DATASOURCES } from "../const/datasource";
 import { updateDailyReadings, updateSites } from "../controllers/airQuality";
 import { updateReadings, updateStations } from "../controllers/trafficVolume";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
-  apiConsts: ApiConsts;
+  apiConsts: DataSourceConsts;
 }
 
 export const apisToLoad: ApiInitialisor[] = [
@@ -12,24 +12,24 @@ export const apisToLoad: ApiInitialisor[] = [
     async update() {
       await updateSites();
     },
-    apiConsts: APIS.nswAirQualitySites,
+    apiConsts: DATASOURCES.nswAirQualitySites,
   },
   {
     async update() {
       await updateDailyReadings(new Date());
     },
-    apiConsts: APIS.nswAirQualityReadings,
+    apiConsts: DATASOURCES.nswAirQualityReadings,
   },
   {
     async update() {
       await updateStations();
     },
-    apiConsts: APIS.nswTrafficVolumeStations,
+    apiConsts: DATASOURCES.nswTrafficVolumeStations,
   },
   {
     async update() {
       await updateReadings();
     },
-    apiConsts: APIS.nswTrafficVolumeReadings,
+    apiConsts: DATASOURCES.nswTrafficVolumeReadings,
   },
 ];

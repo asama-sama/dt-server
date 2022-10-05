@@ -4,14 +4,14 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
-import { ApiConsts } from "../const/api";
+import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
-  apiConsts: ApiConsts;
+  apiConsts: DataSourceConsts;
 }
 
 const timers: NodeJS.Timer[] = [];
