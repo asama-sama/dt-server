@@ -1,15 +1,15 @@
 import { APIS } from "../const/api";
-import { Api } from "../db/models/Api";
+import { DataSource } from "../db/models/DataSource";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
 
 export const seed = async () => {
-  const nswAirQualityReadingsApi = await Api.findOne({
+  const nswAirQualityReadingsApi = await DataSource.findOne({
     where: {
       name: APIS.nswAirQualityReadings.name,
     },
   });
   if (!nswAirQualityReadingsApi) {
-    await Api.create({
+    await DataSource.create({
       name: APIS.nswAirQualityReadings.name,
       uri: APIS.nswAirQualityReadings.uri,
       queryStringParams: APIS.nswAirQualityReadings.queryStringParams,

@@ -6,7 +6,7 @@ import {
   getDailyObservations,
 } from "../clients/nswAirQuality";
 import { AirQualitySite } from "../db/models/AirQualitySite";
-import { Api } from "../db/models/Api";
+import { DataSource } from "../db/models/DataSource";
 import { AirQualityReading } from "../db/models/AirQualityReading";
 import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
@@ -63,7 +63,7 @@ export const getCurrentObservations = async (sites: number[]) => {
 
 export const updateSites = async () => {
   const sites = await getSites();
-  const api = await Api.findOne({
+  const dataSource = await DataSource.findOne({
     where: { name: APIS.nswAirQualitySites.name },
   });
   for (const site of sites) {
@@ -88,7 +88,7 @@ export const updateSites = async () => {
         lat,
         name,
         region,
-        apiId: api?.id,
+        dataSourceId: dataSource?.id,
       });
     }
   }
@@ -157,7 +157,7 @@ export const updateDailyReadings = async (endDate: Date) => {
   const updateFrequency = await UpdateFrequency.findOne({
     where: { frequency: Frequency.DAILY },
   });
-  const api = await Api.findOne({
+  const dataSource = await DataSource.findOne({
     where: {
       name: APIS.nswAirQualityReadings.name,
     },
@@ -177,7 +177,7 @@ export const updateDailyReadings = async (endDate: Date) => {
           date: new Date(observation.date),
           value: observation.value,
           type: observation.type,
-          apiId: api?.id,
+          dataSourceId: dataSource?.id,
           airQualitySiteId: airQualitySiteId,
           updateFrequencyId: updateFrequency.id,
         });

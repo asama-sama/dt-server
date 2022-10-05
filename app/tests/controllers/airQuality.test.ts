@@ -4,7 +4,7 @@ import {
   PollutantType,
 } from "../../src/db/models/AirQualityReading";
 import { AirQualitySite } from "../../src/db/models/AirQualitySite";
-import { Api } from "../../src/db/models/Api";
+import { DataSource } from "../../src/db/models/DataSource";
 import {
   getDailyObservations,
   AirQualityData,
@@ -16,9 +16,9 @@ import {
   updateSites,
 } from "../../src/controllers/airQuality";
 import {
-  AirQualityReadingFrequency,
+  UpdateFrequency,
   Frequency,
-} from "../../src/db/models/AirQualityReadingFrequency";
+} from "../../src/db/models/UpdateFrequency";
 
 jest.mock("../../src/clients/nswAirQuality", () => {
   return {
@@ -71,20 +71,23 @@ describe("airQuality Controller", () => {
     });
 
     let initialReadings: AirQualityReading[];
-    let readingsApi: Api;
+    let readingsApi: DataSource;
     beforeEach(async () => {
-      readingsApi = await Api.create({
+      readingsApi = await DataSource.create({
         name: "api1",
         uri: "http::/test",
       });
-      const sitesApi = await Api.create({ name: "api1", uri: "http::/test2" });
+      const sitesApi = await DataSource.create({
+        name: "api1",
+        uri: "http::/test2",
+      });
       const site = await AirQualitySite.create({
         siteId: 5,
-        apiId: sitesApi.id,
+        dataSourceId: sitesApi.id,
         lat: 5.2,
         lng: 2.235,
       });
-      const frequency = await AirQualityReadingFrequency.findOne({
+      const frequency = await UpdateFrequency.findOne({
         where: { frequency: Frequency.DAILY },
       });
 
@@ -93,9 +96,9 @@ describe("airQuality Controller", () => {
           return AirQualityReading.create({
             date: new Date(aqReadingToAdd.date),
             value: aqReadingToAdd.value,
-            apiId: readingsApi.id,
+            dataSourceId: readingsApi.id,
             airQualitySiteId: site.id,
-            airQualityReadingFrequencyId: frequency?.id,
+            updateFrequencyId: frequency?.id,
           });
         })
       );

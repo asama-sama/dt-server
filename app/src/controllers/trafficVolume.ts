@@ -4,14 +4,14 @@ import {
   getStations,
 } from "../clients/nswTrafficVolume";
 import { APIS } from "../const/api";
-import { Api } from "../db/models/Api";
+import { DataSource } from "../db/models/DataSource";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
 
 export const updateStations = async () => {
   const stations = await getStations();
-  const api = await Api.findOne({
+  const api = await DataSource.findOne({
     where: {
       name: APIS.nswTrafficVolumeStations.name,
     },
@@ -26,7 +26,7 @@ export const updateStations = async () => {
         ],
       },
       defaults: {
-        apiId: api?.id,
+        dataSourceId: api?.id,
         stationKey: station.station_key,
         stationId: station.station_id,
         lat: station.latitude,
@@ -48,7 +48,7 @@ export const updateReadings = async () => {
     })
   ).map((trafficVolumeStation) => trafficVolumeStation.stationKey);
 
-  const api = await Api.findOne({
+  const api = await DataSource.findOne({
     where: { name: APIS.nswTrafficVolumeReadings.name },
   });
 
@@ -83,7 +83,7 @@ export const updateReadings = async () => {
         year: count.year,
         month: count.month,
         value: count.count,
-        apiId: api?.id,
+        dataSourceId: api?.id,
         updateFrequencyId: updateFrequency?.id,
       },
     });

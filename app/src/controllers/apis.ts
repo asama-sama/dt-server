@@ -1,8 +1,8 @@
-import { Api } from "../db/models/Api";
+import { DataSource } from "../db/models/DataSource";
 
 export const getAll = async () => {
-  return (await Api.findAll({})).map((api) => ({
-    id: api.id,
-    name: api.name,
+  return (await DataSource.findAll({})).map((dataSource) => ({
+    id: dataSource.id,
+    name: dataSource.name,
   }));
 };

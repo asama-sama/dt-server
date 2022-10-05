@@ -1,8 +1,8 @@
 import { APIS } from "../const/api";
-import { Api } from "../db/models/Api";
+import { DataSource } from "../db/models/DataSource";
 
 export const seed = async () => {
-  await Api.create({
+  await DataSource.create({
     name: APIS.nswTrafficVolumeStations.name,
     uri: APIS.nswTrafficVolumeStations.uri,
     queryStringParams: APIS.nswTrafficVolumeStations.queryStringParams,

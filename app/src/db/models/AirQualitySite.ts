@@ -10,16 +10,16 @@ import {
   HasMany,
 } from "sequelize-typescript";
 import { AirQualityReading } from "./AirQualityReading";
-import { Api } from "./Api";
+import { DataSource } from "./DataSource";
 
 @Table
 export class AirQualitySite extends Model {
-  @ForeignKey(() => Api)
+  @ForeignKey(() => DataSource)
   @Column
-  apiId: number;
+  dataSourceId: number;
 
-  @BelongsTo(() => Api, "apiId")
-  api: Api;
+  @BelongsTo(() => DataSource, "dataSourceId")
+  api: DataSource;
 
   @HasMany(() => AirQualityReading, "airQualitySiteId")
   airQualityReadings: AirQualityReading[];

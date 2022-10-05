@@ -9,7 +9,7 @@ import {
 } from "sequelize-typescript";
 import { UpdateFrequency } from "./UpdateFrequency";
 import { AirQualitySite } from "./AirQualitySite";
-import { Api } from "./Api";
+import { DataSource } from "./DataSource";
 
 export enum AirQualityCategory {
   "GOOD" = "GOOD",
@@ -34,13 +34,13 @@ export class AirQualityReading extends Model {
   @BelongsTo(() => AirQualitySite, "airQualitySiteId")
   airQualitySite: AirQualitySite;
 
-  @ForeignKey(() => Api)
+  @ForeignKey(() => DataSource)
   @AllowNull(false)
   @Column
-  apiId: number;
+  dataSourceId: number;
 
-  @BelongsTo(() => Api, "apiId")
-  api: Api;
+  @BelongsTo(() => DataSource, "dataSourceId")
+  dataSource: DataSource;
 
   @Column
   date: Date;

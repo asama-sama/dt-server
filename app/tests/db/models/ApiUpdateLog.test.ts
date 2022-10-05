@@ -1,19 +1,19 @@
-import { Api } from "../../../src/db/models/Api";
+import { DataSource } from "../../../src/db/models/DataSource";
 import {
-  ApiUpdateLog,
+  DataSourceUpdateLog,
   UpdateStatus,
-} from "../../../src/db/models/ApiUpdateLog";
+} from "../../../src/db/models/DataSourceUpdateLog";
 
 describe("ApiUpdateLog", () => {
-  let api: Api;
+  let api: DataSource;
   beforeEach(async () => {
-    api = await Api.create({
+    api = await DataSource.create({
       name: "api1",
     });
   });
 
   test("it should update the log status to SUCCESS", async () => {
-    const updateLog = await ApiUpdateLog.create({
+    const updateLog = await DataSourceUpdateLog.create({
       apiId: api.id,
       status: UpdateStatus.SUCCESS,
     });
@@ -21,7 +21,7 @@ describe("ApiUpdateLog", () => {
   });
 
   test("it should update the log status to FAIL", async () => {
-    const updateLog = await ApiUpdateLog.create({
+    const updateLog = await DataSourceUpdateLog.create({
       apiId: api.id,
       status: UpdateStatus.FAIL,
     });
@@ -30,7 +30,7 @@ describe("ApiUpdateLog", () => {
 
   test("it should throw an error if not updating with enum", async () => {
     expect(async () => {
-      await ApiUpdateLog.create({
+      await DataSourceUpdateLog.create({
         apiId: api.id,
         status: "test",
       });

@@ -1,9 +1,12 @@
 import { initConnection } from "../db/connect";
-import { Api } from "../db/models/Api";
-import { ApiUpdateLog, UpdateStatus } from "../db/models/ApiUpdateLog";
+import { DataSource } from "../db/models/DataSource";
+import {
+  DataSourceUpdateLog,
+  UpdateStatus,
+} from "../db/models/DataSourceUpdateLog";
 import { ApiConsts } from "../const/api";
 import { apisToLoad } from "./apisToLoad";
-import { updateSuburbGeoJson } from "./updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 
 export interface ApiInitialisor {
@@ -30,14 +33,13 @@ const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
       status = UpdateStatus.FAIL;
       if (e instanceof Error) errorMessage = e.message;
     }
-    const api = await Api.findOne({
+    const dataSource = await DataSource.findOne({
       where: {
         name: apiInitialisor.apiConsts.name,
       },
     });
-    const apiId = api?.id;
-    await ApiUpdateLog.create({
-      apiId: apiId,
+    await DataSourceUpdateLog.create({
+      dataSourceId: dataSource?.id,
       updateAt: new Date(),
       status,
       message: errorMessage,

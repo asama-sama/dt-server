@@ -7,19 +7,18 @@ import {
   DataType,
   AllowNull,
 } from "sequelize-typescript";
-import { ApiUpdateLog } from "./ApiUpdateLog";
+import { DataSourceUpdateLog } from "./DataSourceUpdateLog";
 import { AirQualityReading } from "./AirQualityReading";
 import { AirQualitySite } from "./AirQualitySite";
 import { TrafficVolumeReading } from "./TrafficVolumeReading";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 
 @Table
-export class Api extends Model {
+export class DataSource extends Model {
   @AllowNull(false)
   @Column
   name: string;
 
-  @AllowNull(false)
   @Column
   uri: string;
 
@@ -32,18 +31,18 @@ export class Api extends Model {
   @Column
   historicalFetched: boolean;
 
-  @HasMany(() => ApiUpdateLog, "apiId")
-  apiUpdateLogs: ApiUpdateLog[];
+  @HasMany(() => DataSourceUpdateLog, "dataSourceId")
+  dataSourceUpdateLogs: DataSourceUpdateLog[];
 
-  @HasMany(() => AirQualityReading, "apidId")
+  @HasMany(() => AirQualityReading, "dataSourceId")
   airQualityReadings: AirQualityReading[];
 
-  @HasMany(() => AirQualitySite, "apiId")
+  @HasMany(() => AirQualitySite, "dataSourceId")
   airQualitySites: AirQualitySite[];
 
-  @HasMany(() => TrafficVolumeReading, "apidId")
+  @HasMany(() => TrafficVolumeReading, "dataSourceId")
   trafficVolumeReadings: TrafficVolumeReading[];
 
-  @HasMany(() => TrafficVolumeStation, "apiId")
+  @HasMany(() => TrafficVolumeStation, "dataSourceId")
   trafficVolumeStations: TrafficVolumeStation[];
 }

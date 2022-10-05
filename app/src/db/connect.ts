@@ -71,8 +71,6 @@ export const initConnection = async ({
     await connection.createSchema(schemaToReset, {});
     await connection.sync({ logging: logging && console.log });
   } else {
-    console.log("run sync tables: alter");
-
     try {
       await connection.sync({ alter: true, logging: logging && console.log });
     } catch (e) {

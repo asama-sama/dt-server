@@ -9,7 +9,7 @@ import {
   updateReadings,
   updateStations,
 } from "../../src/controllers/trafficVolume";
-import { Api } from "../../src/db/models/Api";
+import { DataSource } from "../../src/db/models/DataSource";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
 
@@ -29,9 +29,9 @@ const getStationsCountByMonthMock =
 
 describe("trafficVolume controller", () => {
   describe("updateStations", () => {
-    let api: Api | null;
+    let dataSource: DataSource | null;
     beforeEach(async () => {
-      api = await Api.findOne({
+      dataSource = await DataSource.findOne({
         where: { name: APIS.nswTrafficVolumeStations.name },
       });
       await TrafficVolumeStation.create({
@@ -39,7 +39,7 @@ describe("trafficVolume controller", () => {
         lng: 321,
         stationId: "100",
         stationKey: "200",
-        apiId: api?.id,
+        dataSourceId: dataSource?.id,
       });
     });
 
@@ -95,7 +95,7 @@ describe("trafficVolume controller", () => {
     }));
 
     beforeEach(async () => {
-      const api = await Api.findOne({
+      const api = await DataSource.findOne({
         where: { name: APIS.nswTrafficVolumeStations.name },
       });
       const stationsToAdd = [1, 2, 3].map((i) => ({
@@ -103,7 +103,7 @@ describe("trafficVolume controller", () => {
         stationId: (i * 100).toString(),
         lat: i * 100,
         lng: i * 100,
-        apiId: api?.id,
+        dataSourceId: api?.id,
       }));
       await TrafficVolumeStation.bulkCreate(stationsToAdd);
     });

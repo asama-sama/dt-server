@@ -8,18 +8,18 @@ import {
   HasMany,
   Unique,
 } from "sequelize-typescript";
-import { Api } from "./Api";
+import { DataSource } from "./DataSource";
 import { TrafficVolumeReading } from "./TrafficVolumeReading";
 
 @Table
 export class TrafficVolumeStation extends Model {
-  @ForeignKey(() => Api)
+  @ForeignKey(() => DataSource)
   @AllowNull(false)
   @Column
-  apiId: number;
+  dataSourceId: number;
 
-  @BelongsTo(() => Api, "apiId")
-  api: Api;
+  @BelongsTo(() => DataSource, "dataSourceId")
+  dataSource: DataSource;
 
   @HasMany(() => TrafficVolumeReading, "trafficVolumeStationId")
   trafficVolumeReadings: TrafficVolumeReading[];

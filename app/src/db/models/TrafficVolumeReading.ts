@@ -7,7 +7,7 @@ import {
   BelongsTo,
 } from "sequelize-typescript";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
-import { Api } from "./Api";
+import { DataSource } from "./DataSource";
 import { UpdateFrequency } from "./UpdateFrequency";
 
 @Table
@@ -33,13 +33,13 @@ export class TrafficVolumeReading extends Model {
   @BelongsTo(() => TrafficVolumeStation, "trafficVolumeStationId")
   station: TrafficVolumeStation;
 
-  @ForeignKey(() => Api)
+  @ForeignKey(() => DataSource)
   @AllowNull(false)
   @Column
-  apiId: number;
+  dataSourceId: number;
 
-  @BelongsTo(() => Api, "apidId")
-  api: Api;
+  @BelongsTo(() => DataSource, "dataSourceId")
+  dataSource: DataSource;
 
   @ForeignKey(() => UpdateFrequency)
   @AllowNull(false)

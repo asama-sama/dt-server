@@ -6,7 +6,7 @@ import {
   BelongsTo,
 } from "sequelize-typescript";
 import { DataType } from "sequelize-typescript";
-import { Api } from "./Api";
+import { DataSource } from "./DataSource";
 
 export enum UpdateStatus {
   "SUCCESS" = "SUCCESS",
@@ -14,13 +14,13 @@ export enum UpdateStatus {
 }
 
 @Table
-export class ApiUpdateLog extends Model {
-  @ForeignKey(() => Api)
+export class DataSourceUpdateLog extends Model {
+  @ForeignKey(() => DataSource)
   @Column
-  apiId: number;
+  dataSourceId: number;
 
-  @BelongsTo(() => Api, "apiId")
-  api: Api;
+  @BelongsTo(() => DataSource, "dataSourceId")
+  dataSource: DataSource;
 
   @Column
   updatedAt: Date;
