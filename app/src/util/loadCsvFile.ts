@@ -209,24 +209,27 @@ export const loadDataFile = async (dataFile: DataFile) => {
       .on("data", (data) => results.push(data))
       .on("end", async () => {
         try {
-          sequelize.transaction(async (t: Transaction) => {
+          await sequelize.transaction(async (t: Transaction) => {
             const handler = dataFileHandlerMap[dataFile.dataSource.name];
             await handler(results, dataFile, t);
             await dataFile.update(
               {
                 processed: true,
+                processedOn: new Date(),
               },
               {
                 transaction: t,
               }
             );
-            resolve(loadFileResult);
           });
+          resolve(loadFileResult);
         } catch (e) {
+          console.error(e);
           reject(e);
         }
       })
       .on("error", (err) => {
+        console.error(err);
         reject(err);
       });
   });
@@ -238,11 +241,11 @@ export const loadCsvFiles = async () => {
     include: { model: DataSource, as: "dataSource" },
   });
 
-  filesToProcess.forEach(async (fileToProcess) => {
+  for (const fileToProcess of filesToProcess) {
     try {
       await loadDataFile(fileToProcess);
     } catch (e) {
       console.error(e);
     }
-  });
+  }
 };

@@ -2,7 +2,12 @@
 import { DATASOURCES } from "../../src/const/datasource";
 import { DataFile } from "../../src/db/models/DataFile";
 import { DataSource } from "../../src/db/models/DataSource";
-import { handleCrimeData, loadDataFile } from "../../src/util/loadCsvFile";
+import {
+  handleCrimeData,
+  loadCsvFiles,
+  loadDataFile,
+} from "../../src/util/loadCsvFile";
+import * as loadCsvFileModule from "../../src/util/loadCsvFile";
 import { getConnection } from "../../src/db/connect";
 import { CrimeIncident } from "../../src/db/models/CrimeIncident";
 import { Suburb } from "../../src/db/models/Suburb";
@@ -137,6 +142,37 @@ describe("loadCsvFile", () => {
       expect(async () => await loadDataFile(file)).rejects.toBe(
         "crimeDataTest.csv has already been processed"
       );
+    });
+
+    test("it should mark the time the file was processed", async () => {
+      await dataFile?.reload();
+      expect(dataFile?.processedOn).not.toBe(null);
+    });
+  });
+
+  describe("loadCsvFiles", () => {
+    beforeEach(async () => {
+      const dataSource = await DataSource.findOne({
+        where: {
+          name: DATASOURCES.nswCrimeBySuburb.name,
+        },
+      });
+
+      await DataFile.create({
+        name: "crimeDataTest.csv",
+        dataSourceId: dataSource?.id,
+      });
+
+      await DataFile.create({
+        name: "crimeDataTest.csv",
+        dataSourceId: dataSource?.id,
+      });
+    });
+
+    test("loadCsvFiles calls loadDataFile for each file to process", async () => {
+      const spy = jest.spyOn(loadCsvFileModule, "loadDataFile");
+      await loadCsvFiles();
+      expect(spy).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -2,6 +2,7 @@ import {
   AllowNull,
   BelongsTo,
   Column,
+  DataType,
   Default,
   ForeignKey,
   Model,
@@ -12,6 +13,14 @@ import { DataSource } from "./DataSource";
 @Table
 export class DataFile extends Model {
   @AllowNull(false)
+  @ForeignKey(() => DataSource)
+  @Column
+  dataSourceId: number;
+
+  @BelongsTo(() => DataSource, "dataSourceId")
+  dataSource: DataSource;
+
+  @AllowNull(false)
   @Column
   name: string;
 
@@ -20,11 +29,7 @@ export class DataFile extends Model {
   @Column
   processed: boolean;
 
-  @AllowNull(false)
-  @ForeignKey(() => DataSource)
-  @Column
-  dataSourceId: number;
-
-  @BelongsTo(() => DataSource, "dataSourceId")
-  dataSource: DataSource;
+  @Column(DataType.DATE)
+  processedOn: Date;
+  //
 }
