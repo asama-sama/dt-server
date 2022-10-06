@@ -1,6 +1,6 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
-import { updateSuburbGeoJson } from "../../src/initialise/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
 import { Suburb } from "../../src/db/models/Suburb";
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;

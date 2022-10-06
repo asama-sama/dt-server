@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { listToSqlStringList } from "../../src/util/sql";
 
 describe("sql", () => {

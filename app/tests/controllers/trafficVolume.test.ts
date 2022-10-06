@@ -4,7 +4,7 @@ import {
   Station,
   MonthlyStationCount,
 } from "../../src/clients/nswTrafficVolume";
-import { DATASOURCES } from "../../src/const/api";
+import { DATASOURCES } from "../../src/const/datasource";
 import {
   updateReadings,
   updateStations,

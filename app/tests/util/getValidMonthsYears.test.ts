@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { getValidMonthsYears } from "../../src/util/getValidMonthsYears";
 
 describe("getValidMonthsYears", () => {

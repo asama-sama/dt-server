@@ -1,7 +1,8 @@
-import { Column, Model, Table } from "sequelize-typescript";
+import { AllowNull, Column, Model, Table } from "sequelize-typescript";
 
 @Table
 export class CrimeCategory extends Model {
+  @AllowNull(false)
   @Column
   Category: string;
 

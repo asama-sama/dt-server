@@ -1,9 +1,9 @@
 export type DataSourceConsts = {
   name: string;
-  uri: string;
-  method: "post" | "get";
-  queryStringParams: string | null;
-  updateFrequency: number;
+  uri?: string;
+  method?: "post" | "get";
+  queryStringParams?: string | null;
+  updateFrequency?: number;
 };
 
 type DataSource = {
@@ -44,5 +44,8 @@ export const DATASOURCES: DataSource = {
     queryStringParams:
       "q=SELECT * FROM ds_aadt_reference WHERE publish='1' and ST_DWithin(ST_MakePoint(cast(wgs84_longitude as float), cast(wgs84_latitude as float)), ST_MakePoint(150.999919,-33.816228)::geography, 100000)",
     updateFrequency: millisecondsInDay,
+  },
+  nswCrimeBySuburb: {
+    name: "NSW_CRIME_BY_SUBURB",
   },
 };

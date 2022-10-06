@@ -35,7 +35,6 @@ export const initConnection = async ({
     port: parseInt(dbPort),
     logging: logging && console.log,
   });
-
   if (dbSchema) {
     try {
       await connection.createSchema(dbSchema, {});

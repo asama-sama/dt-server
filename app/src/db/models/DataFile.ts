@@ -20,6 +20,7 @@ export class DataFile extends Model {
   @Column
   processed: boolean;
 
+  @AllowNull(false)
   @ForeignKey(() => DataSource)
   @Column
   dataSourceId: number;

@@ -9,7 +9,7 @@ import {
 } from "../../../src/db/models/UpdateFrequency";
 import { AirQualitySite } from "../../../src/db/models/AirQualitySite";
 import { DataSource } from "../../../src/db/models/DataSource";
-import { DATASOURCES } from "../../../src/const/api";
+import { DATASOURCES } from "../../../src/const/datasource";
 
 describe("AirQualityReading", () => {
   let site: AirQualitySite;
