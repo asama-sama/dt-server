@@ -11,7 +11,7 @@ type DataSource = {
 };
 
 // export const API_UPDATE_MS = 60 * 1000; // each api should be checked once an hour
-const millisecondsInHour = 1000 * 60 * 60;
+// const millisecondsInHour = 1000 * 60 * 60;
 const millisecondsInDay = 1000 * 60 * 60 * 24;
 
 export const DATASOURCES: DataSource = {

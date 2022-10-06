@@ -2,7 +2,7 @@
 import { DATASOURCES } from "../../src/const/datasource";
 import { DataFile } from "../../src/db/models/DataFile";
 import { DataSource } from "../../src/db/models/DataSource";
-import { handleCrimeData } from "../../src/util/loadCsvFile";
+import { handleCrimeData, loadDataFile } from "../../src/util/loadCsvFile";
 import { getConnection } from "../../src/db/connect";
 import { CrimeIncident } from "../../src/db/models/CrimeIncident";
 import { Suburb } from "../../src/db/models/Suburb";
@@ -83,90 +83,60 @@ describe("loadCsvFile", () => {
       expect(crimeIncidents.length).toBe(4);
     });
   });
+
+  describe("loadDataFile", () => {
+    let dataFile: DataFile | null;
+    beforeEach(async () => {
+      const dataSource = await DataSource.findOne({
+        where: {
+          name: DATASOURCES.nswCrimeBySuburb.name,
+        },
+      });
+
+      await DataFile.create({
+        name: "crimeDataTest.csv",
+        dataSourceId: dataSource?.id,
+      });
+
+      dataFile = await DataFile.findOne({
+        where: {
+          name: "crimeDataTest.csv",
+        },
+        include: {
+          model: DataSource,
+          as: "dataSource",
+        },
+      });
+
+      if (!dataFile) throw new Error("DataFile not loaded");
+      await loadDataFile(dataFile);
+    });
+
+    test("it should load crime incidents from the file", async () => {
+      const incidents = await CrimeIncident.findAll({});
+      expect(incidents.length).toBe(8);
+    });
+
+    test("it should create CrimeCategories", async () => {
+      const categories = await CrimeCategory.findAll();
+      expect(categories.length).toBe(3);
+    });
+
+    test("it should create Suburbs", async () => {
+      const suburbs = await Suburb.findAll();
+      expect(suburbs.length).toBe(2);
+    });
+
+    test("it should set the dataFile to be processed", async () => {
+      await dataFile?.reload();
+      expect(dataFile?.processed).toBe(true);
+    });
+
+    test("it should not process the dataFile again", async () => {
+      const file = dataFile as DataFile;
+      expect(async () => await loadDataFile(file)).rejects.toBe(
+        "crimeDataTest.csv has already been processed"
+      );
+    });
+  });
 });
-
-// emissions loading code
-// describe("loadDataFiles", () => {
-//   describe("loadDataFiles", () => {
-//     beforeEach(async () => {
-//       await loadDataFiles();
-//     });
-
-//     test("it should load all emissions from the files", async () => {
-//       const emissions = await Emission.findAll();
-//       expect(emissions.length).toBe(14 * 10 + 4);
-//     });
-//   });
-
-//   describe("loadDataFile: multiple rows", () => {
-//     beforeEach(async () => {
-//       await loadDataFile(
-//         "ghgEmissionsTest.csv",
-//         "./tests/dataFiles/ghgEmissionsTest.csv"
-//       );
-//     });
-
-//     test("correct number of suburbs loaded", async () => {
-//       const SUBURB_LIST = [
-//         "NEWTOWN + ST PETERS",
-//         "ALEXANDRIA",
-//         "WATERLOO + MOORE PARK",
-//         "CHIPPENDALE",
-//         "ZETLAND",
-//       ];
-//       const suburbs = await Suburb.findAll();
-//       expect(suburbs.length).toBe(5);
-//       suburbs.forEach((suburb) => {
-//         expect(SUBURB_LIST).toContain(suburb.name);
-//       });
-//     });
-
-//     test("correct number of categories loaded", async () => {
-//       const CATEGORY_LIST = [
-//         "Electricity (Disaggregated)",
-//         "Waste Water (Disaggregated)",
-//         "Gas (Disaggregated)",
-//       ];
-//       const categories = await Category.findAll();
-//       expect(categories.length).toBe(3);
-//       categories.forEach((category) => {
-//         expect(CATEGORY_LIST).toContain(category.name);
-//       });
-//     });
-
-//     test("correct number of emissions loaded", async () => {
-//       const emissions = await Emission.findAll();
-//       expect(emissions.length).toBe(14 * 10);
-//       emissions.forEach((emission) => {
-//         expect(emission.reading).not.toBeNaN();
-//       });
-//     });
-//   });
-
-//   describe("loadDataFile: small", () => {
-//     let promiseResult: LoadDataFileResult;
-//     beforeEach(async () => {
-//       promiseResult = await loadDataFile(
-//         "ghgEmissionsTest_small.csv",
-//         "./tests/dataFiles/ghgEmissionsTest_small.csv"
-//       );
-//     });
-//     test("it has the correct number of emissions", async () => {
-//       const emissions = await Emission.findAll({});
-//       expect(emissions.length).toBe(4);
-//     });
-//     test("it read the emissions correctly", async () => {
-//       const emissions = await Emission.findAll();
-//       const EMISSION_READINGS = [68244.71853, null, 3, null];
-//       for (let i = 0; i < emissions.length; i++) {
-//         expect(emissions[i].reading).toBe(EMISSION_READINGS[i]);
-//       }
-//     });
-//     test("it should have the correct returned values from the promise", () => {
-//       expect(promiseResult).toMatchObject({
-//         totalReads: 4,
-//         nullReads: 2,
-//       });
-//     });
-//   });
-// });

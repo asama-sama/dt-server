@@ -194,6 +194,9 @@ const dataFileHandlerMap: { [key: string]: HandleProcessCsvFile } = {
 };
 
 export const loadDataFile = async (dataFile: DataFile) => {
+  if (dataFile.processed) {
+    return Promise.reject(`${dataFile.name} has already been processed`);
+  }
   const { DATA_FILES_PATH } = process.env;
   if (!DATA_FILES_PATH) throw new Error("Must provide path to data files");
 
@@ -208,7 +211,7 @@ export const loadDataFile = async (dataFile: DataFile) => {
         try {
           sequelize.transaction(async (t: Transaction) => {
             const handler = dataFileHandlerMap[dataFile.dataSource.name];
-            handler(results, dataFile, t);
+            await handler(results, dataFile, t);
             await dataFile.update(
               {
                 processed: true,
@@ -232,7 +235,6 @@ export const loadDataFile = async (dataFile: DataFile) => {
 
 export const loadCsvFiles = async () => {
   const filesToProcess = await DataFile.findAll({
-    where: { processed: false },
     include: { model: DataSource, as: "dataSource" },
   });
 

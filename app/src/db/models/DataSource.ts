@@ -12,6 +12,7 @@ import { AirQualityReading } from "./AirQualityReading";
 import { AirQualitySite } from "./AirQualitySite";
 import { TrafficVolumeReading } from "./TrafficVolumeReading";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
+import { DataFile } from "./DataFile";
 
 @Table
 export class DataSource extends Model {
@@ -45,4 +46,7 @@ export class DataSource extends Model {
 
   @HasMany(() => TrafficVolumeStation, "dataSourceId")
   trafficVolumeStations: TrafficVolumeStation[];
+
+  @HasMany(() => DataFile, "dataSourceId")
+  dataFiles: DataFile[];
 }
