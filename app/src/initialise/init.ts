@@ -8,6 +8,7 @@ import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
+import { Sequelize } from "sequelize-typescript";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -22,7 +23,13 @@ const loadAndSyncApis = async () => {
   }
 };
 
-const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
+export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
+  const dataSource = await DataSource.findOne({
+    where: {
+      name: apiInitialisor.apiConsts.name,
+    },
+  });
+
   const update = async () => {
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
@@ -33,26 +40,36 @@ const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
       status = UpdateStatus.FAIL;
       if (e instanceof Error) errorMessage = e.message;
     }
-    const dataSource = await DataSource.findOne({
-      where: {
-        name: apiInitialisor.apiConsts.name,
-      },
-    });
     await DataSourceUpdateLog.create({
       dataSourceId: dataSource?.id,
-      updateAt: new Date(),
       status,
       message: errorMessage,
     });
   };
 
-  const timerId = setInterval(
-    () => update(),
-    apiInitialisor.apiConsts.updateFrequency
-  );
-  timers.push(timerId);
-  await update(); // first call
-  console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
+  const lastUpdated = await DataSourceUpdateLog.findOne({
+    where: {
+      dataSourceId: dataSource?.id,
+    },
+    attributes: [
+      [Sequelize.fn("max", Sequelize.col("createdAt")), "createdAt"],
+    ],
+  });
+  let timeUntilUpdate = 0;
+  if (lastUpdated?.createdAt) {
+    const currentTime = new Date().getTime();
+    const lastUpdatedTime = lastUpdated.createdAt?.getTime();
+    timeUntilUpdate = currentTime - lastUpdatedTime;
+  }
+  const timeout = setTimeout(() => {
+    const timerId = setInterval(
+      () => update(),
+      apiInitialisor.apiConsts.updateFrequency
+    );
+    timers.push(timerId);
+    console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
+  }, timeUntilUpdate);
+  return { timeout, delay: timeUntilUpdate };
 };
 
 export const init = async () => {

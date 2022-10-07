@@ -3,7 +3,7 @@ export type DataSourceConsts = {
   uri?: string;
   method?: "post" | "get";
   queryStringParams?: string | null;
-  updateFrequency?: number;
+  updateFrequency: number;
 };
 
 type DataSource = {
@@ -47,5 +47,6 @@ export const DATASOURCES: DataSource = {
   },
   nswCrimeBySuburb: {
     name: "NSW_CRIME_BY_SUBURB",
+    updateFrequency: 0,
   },
 };

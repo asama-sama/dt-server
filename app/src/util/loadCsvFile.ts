@@ -238,6 +238,9 @@ export const loadDataFile = async (dataFile: DataFile) => {
 
 export const loadCsvFiles = async () => {
   const filesToProcess = await DataFile.findAll({
+    where: {
+      processed: false,
+    },
     include: { model: DataSource, as: "dataSource" },
   });
 

@@ -4,8 +4,9 @@ import {
   Model,
   ForeignKey,
   BelongsTo,
+  DataType,
+  AllowNull,
 } from "sequelize-typescript";
-import { DataType } from "sequelize-typescript";
 import { DataSource } from "./DataSource";
 
 export enum UpdateStatus {
@@ -22,9 +23,7 @@ export class DataSourceUpdateLog extends Model {
   @BelongsTo(() => DataSource, "dataSourceId")
   dataSource: DataSource;
 
-  @Column
-  updatedAt: Date;
-
+  @AllowNull(false)
   @Column({
     type: DataType.STRING,
     validate: {
