@@ -1,4 +1,4 @@
-import { initConnection } from "../db/connect";
+import { initConnection, getConnection } from "../db/connect";
 import { DataSource } from "../db/models/DataSource";
 import {
   DataSourceUpdateLog,
@@ -9,19 +9,14 @@ import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 import { Sequelize } from "sequelize-typescript";
+import { Transaction } from "sequelize";
 
 export interface ApiInitialisor {
-  update(): Promise<void>;
+  update(trx: Transaction): Promise<void>;
   apiConsts: DataSourceConsts;
 }
 
 const timers: NodeJS.Timer[] = [];
-
-const loadAndSyncApis = async () => {
-  for (let i = 0; i < apisToLoad.length; i++) {
-    await loadAndSyncApi(apisToLoad[i]);
-  }
-};
 
 export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   const dataSource = await DataSource.findOne({
@@ -33,42 +28,60 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   const update = async () => {
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
-    try {
-      await apiInitialisor.update();
-    } catch (e) {
-      console.error(e);
-      status = UpdateStatus.FAIL;
-      if (e instanceof Error) errorMessage = e.message;
-    }
-    await DataSourceUpdateLog.create({
-      dataSourceId: dataSource?.id,
-      status,
-      message: errorMessage,
+    const sequelize = getConnection();
+    await sequelize.transaction(async (trx) => {
+      try {
+        await apiInitialisor.update(trx);
+      } catch (e) {
+        status = UpdateStatus.FAIL;
+        if (e instanceof Error) errorMessage = e.message;
+      }
+      await DataSourceUpdateLog.create(
+        {
+          dataSourceId: dataSource?.id,
+          status,
+          message: errorMessage,
+        },
+        {
+          transaction: trx,
+        }
+      );
     });
   };
 
+  // fixthis to return the item with the highest updated properly
   const lastUpdated = await DataSourceUpdateLog.findOne({
     where: {
       dataSourceId: dataSource?.id,
+      status: UpdateStatus.SUCCESS,
     },
     attributes: [
+      "status",
       [Sequelize.fn("max", Sequelize.col("createdAt")), "createdAt"],
     ],
   });
+  console.log(lastUpdated);
   let timeUntilUpdate = 0;
   if (lastUpdated?.createdAt) {
     const currentTime = new Date().getTime();
     const lastUpdatedTime = lastUpdated.createdAt?.getTime();
-    timeUntilUpdate = currentTime - lastUpdatedTime;
+    const timeSinceUpdate = currentTime - lastUpdatedTime;
+    timeUntilUpdate =
+      apiInitialisor.apiConsts.updateFrequency - timeSinceUpdate;
   }
-  const timeout = setTimeout(() => {
-    const timerId = setInterval(
-      () => update(),
-      apiInitialisor.apiConsts.updateFrequency
-    );
-    timers.push(timerId);
-    console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
-  }, timeUntilUpdate);
+
+  const timeout = new Promise<void>((resolve) => {
+    setTimeout(async () => {
+      const timerId = setInterval(
+        async () => await update(),
+        apiInitialisor.apiConsts.updateFrequency
+      );
+      timers.push(timerId);
+      console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
+      await update();
+      resolve();
+    }, timeUntilUpdate);
+  });
   return { timeout, delay: timeUntilUpdate };
 };
 
@@ -90,6 +103,8 @@ export const init = async () => {
   });
 
   await runSeeds();
-  await loadAndSyncApis();
+  for (const apiToLoad of apisToLoad) {
+    await loadAndSyncApi(apiToLoad);
+  }
   await updateSuburbGeoJson();
 };

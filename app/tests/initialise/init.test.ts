@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { DataSource } from "../../src/db/models/DataSource";
 import {
   DataSourceUpdateLog,
@@ -18,16 +19,28 @@ describe("init", () => {
       update: mockUpdate,
       apiConsts: {
         name: "testApi",
-        updateFrequency: 10000,
+        updateFrequency: 10 * 60 * 1000, // 10 minutes
       },
     };
     let delay: number;
+    let timeout: Promise<void>;
 
     beforeEach(async () => {
       dataSource = await DataSource.create({
         name: "testApi",
       });
+      ({ delay, timeout } = await loadAndSyncApi(apiToInitialise));
+    });
 
+    afterEach(() => {
+      jest.clearAllTimers();
+    });
+
+    test.only("it should call the API with the correct timeout if it has been called previously", async () => {
+      let oneMinuteAgo = new Date();
+      oneMinuteAgo = new Date(
+        oneMinuteAgo.setMinutes(oneMinuteAgo.getMinutes() - 1)
+      );
       let twoMinutesAgo = new Date();
       twoMinutesAgo = new Date(
         twoMinutesAgo.setMinutes(twoMinutesAgo.getMinutes() - 2)
@@ -46,36 +59,49 @@ describe("init", () => {
         status: UpdateStatus.SUCCESS,
         createdAt: twoMinutesAgo.getTime(),
       });
+      await DataSourceUpdateLog.create({
+        dataSourceId: dataSource.id,
+        status: UpdateStatus.SUCCESS,
+        createdAt: oneMinuteAgo.getTime(),
+      });
       ({ delay } = await loadAndSyncApi(apiToInitialise));
-    });
-
-    afterEach(() => {
-      jest.clearAllTimers();
-    });
-
-    test("it should call the API with the correct timeout if it has been called previously", async () => {
-      expect(delay).toBeGreaterThanOrEqual(2 * 60 * 1000);
-      expect(delay).toBeLessThan(2.1 * 60 * 1000);
+      expect(delay).toBeGreaterThanOrEqual(8 * 60 * 1000);
+      expect(delay).toBeLessThan(8.1 * 60 * 1000);
     });
 
     test("it should call the API with the correct timeout if it hasn't been called before", async () => {
-      await DataSource.create({
-        name: "testApi2",
-      });
-      const apiToInitialise: ApiInitialisor = {
-        update: jest.fn(),
-        apiConsts: {
-          name: "testApi2",
-          updateFrequency: 10000,
-        },
-      };
       const { timeout, delay } = await loadAndSyncApi(apiToInitialise);
       expect(timeout).not.toBeNull();
       expect(delay).toBe(0);
     });
 
+    test("it should call update when setTimeout is called", async () => {
+      jest.runOnlyPendingTimers();
+      await timeout;
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    test("it should create a DataSourceUpdateLog when update is called", async () => {
+      jest.runOnlyPendingTimers();
+      await timeout;
+      const logs = await DataSourceUpdateLog.findAll({});
+      expect(logs.length).toBe(1);
+      expect(logs[0].status).toBe(UpdateStatus.SUCCESS);
+    });
+
+    test("it should create a DataSourceUpdateLog with status failed if update fails", async () => {
+      mockUpdate.mockRejectedValueOnce(new Error("error updating"));
+      jest.runOnlyPendingTimers();
+      await timeout;
+      const logs = await DataSourceUpdateLog.findAll();
+      expect(logs.length).toBe(1);
+      expect(logs[0].status).toBe(UpdateStatus.FAIL);
+      expect(logs[0].message).toBe("error updating");
+    });
+
     test("it should call setInterval after setTimeout", async () => {
       jest.runOnlyPendingTimers();
+      await timeout;
       expect(setInterval).toHaveBeenCalled();
     });
 
@@ -87,10 +113,18 @@ describe("init", () => {
       );
     });
 
-    test("it should call update after setInterval is called", () => {
+    test("it should call update after setInterval is called", async () => {
       jest.runOnlyPendingTimers();
       jest.runOnlyPendingTimers();
+      await timeout;
       expect(mockUpdate).toHaveBeenCalled();
+    });
+
+    test("it should create an entry in DataSourceUpdateLog after setTimeout is run", async () => {
+      // jest.runOnlyPendingTimers();
+      // const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
+      // expect(dataSourceUpdateLogs.length).toBe(1);
+      // jest.clearAllTimers();
     });
   });
 });
