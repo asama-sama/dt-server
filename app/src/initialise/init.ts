@@ -1,4 +1,4 @@
-import { initConnection, getConnection } from "../db/connect";
+import { initConnection } from "../db/connect";
 import { DataSource } from "../db/models/DataSource";
 import {
   DataSourceUpdateLog,
@@ -8,10 +8,9 @@ import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
-import { Transaction } from "sequelize";
 
 export interface ApiInitialisor {
-  update(trx: Transaction): Promise<void>;
+  update(): Promise<void>;
   apiConsts: DataSourceConsts;
 }
 
@@ -24,28 +23,21 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     },
   });
 
-  const update = async () => {
+  const update = async (resolve: (value: void | PromiseLike<void>) => void) => {
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
-    const sequelize = getConnection();
-    await sequelize.transaction(async (trx) => {
-      try {
-        await apiInitialisor.update(trx);
-      } catch (e) {
-        status = UpdateStatus.FAIL;
-        if (e instanceof Error) errorMessage = e.message;
-      }
-      await DataSourceUpdateLog.create(
-        {
-          dataSourceId: dataSource?.id,
-          status,
-          message: errorMessage,
-        },
-        {
-          transaction: trx,
-        }
-      );
+    try {
+      await apiInitialisor.update();
+    } catch (e) {
+      status = UpdateStatus.FAIL;
+      if (e instanceof Error) errorMessage = e.message;
+    }
+    await DataSourceUpdateLog.create({
+      dataSourceId: dataSource?.id,
+      status,
+      message: errorMessage,
     });
+    resolve();
   };
 
   const lastUpdatedTime: Date = await DataSourceUpdateLog.max("createdAt", {
@@ -70,14 +62,12 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   }
 
   const timeout = new Promise<void>((resolve) => {
-    setTimeout(async () => {
-      const timerId = setInterval(
-        async () => await update(),
-        apiInitialisor.apiConsts.updateFrequency
-      );
+    setTimeout(() => {
+      const timerId = setInterval(() => {
+        return new Promise((resolve) => update(resolve));
+      }, apiInitialisor.apiConsts.updateFrequency);
       timers.push(timerId);
-      await update();
-      resolve();
+      update(resolve);
     }, timeUntilUpdate);
   });
   return { timeout, delay: timeUntilUpdate };

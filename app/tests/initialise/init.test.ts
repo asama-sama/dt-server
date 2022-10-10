@@ -14,7 +14,9 @@ jest.spyOn(global, "setInterval");
 describe("init", () => {
   describe("loadAndSyncApi", () => {
     let dataSource: DataSource;
-    const mockUpdate = jest.fn();
+    const mockUpdate = jest.fn(() => {
+      return Promise.resolve();
+    });
     const apiToInitialise: ApiInitialisor = {
       update: mockUpdate,
       apiConsts: {
@@ -108,8 +110,9 @@ describe("init", () => {
       expect(setInterval).toHaveBeenCalled();
     });
 
-    test("it should call setInterval with the correct ms value", () => {
+    test("it should call setInterval with the correct ms value", async () => {
       jest.runOnlyPendingTimers();
+      await timeout;
       expect(setInterval).toHaveBeenCalledWith(
         expect.any(Function),
         apiToInitialise.apiConsts.updateFrequency
@@ -120,14 +123,25 @@ describe("init", () => {
       jest.runOnlyPendingTimers();
       jest.runOnlyPendingTimers();
       await timeout;
-      expect(mockUpdate).toHaveBeenCalled();
+      await Promise.resolve();
+      expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
-    test("it should create an entry in DataSourceUpdateLog after setTimeout is run", async () => {
-      // jest.runOnlyPendingTimers();
-      // const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
-      // expect(dataSourceUpdateLogs.length).toBe(1);
-      // jest.clearAllTimers();
+    test("it should create a success entry in DataSourceUpdateLog after update is run", async () => {
+      jest.runOnlyPendingTimers();
+      await timeout;
+      const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
+      expect(dataSourceUpdateLogs[0].status).toBe("SUCCESS");
+      jest.clearAllTimers();
+    });
+
+    test("it should create a fail entry in DataSourceUpdateLog after update is run and throw an error", async () => {
+      mockUpdate.mockRejectedValueOnce("error");
+      jest.runOnlyPendingTimers();
+      await timeout;
+      const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
+      expect(dataSourceUpdateLogs[0].status).toBe("FAIL");
+      jest.clearAllTimers();
     });
   });
 });
