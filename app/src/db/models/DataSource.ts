@@ -6,6 +6,7 @@ import {
   HasMany,
   DataType,
   AllowNull,
+  Unique,
 } from "sequelize-typescript";
 import { DataSourceUpdateLog } from "./DataSourceUpdateLog";
 import { AirQualityReading } from "./AirQualityReading";
@@ -16,6 +17,7 @@ import { DataFile } from "./DataFile";
 
 @Table
 export class DataSource extends Model {
+  @Unique
   @AllowNull(false)
   @Column
   name: string;

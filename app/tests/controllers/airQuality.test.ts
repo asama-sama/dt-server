@@ -78,7 +78,7 @@ describe("airQuality Controller", () => {
         uri: "http::/test",
       });
       const sitesApi = await DataSource.create({
-        name: "api1",
+        name: "api2",
         uri: "http::/test2",
       });
       const site = await AirQualitySite.create({
@@ -101,6 +101,17 @@ describe("airQuality Controller", () => {
             updateFrequencyId: frequency?.id,
           });
         })
+      );
+    });
+
+    test("it should call getDailyObservations with the correct values", async () => {
+      getDailyObservationsMock.mockResolvedValueOnce([]);
+      await updateDailyReadings(new Date("2022-07-07"));
+      expect(getDailyObservationsMock).toHaveBeenCalledWith(
+        ["NO2"],
+        [5],
+        "2022-6-30",
+        "2022-7-7"
       );
     });
 

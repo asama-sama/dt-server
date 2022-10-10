@@ -74,6 +74,20 @@ describe("init", () => {
       expect(delay).toBeLessThanOrEqual(maxDelay);
     });
 
+    test("it should not call update if it is not yet time since the last update", async () => {
+      let oneMinuteAgo = new Date();
+      oneMinuteAgo = new Date(
+        oneMinuteAgo.setMinutes(oneMinuteAgo.getMinutes() - 1)
+      );
+      await DataSourceUpdateLog.create({
+        dataSourceId: dataSource.id,
+        status: UpdateStatus.SUCCESS,
+        createdAt: oneMinuteAgo.getTime(),
+      });
+      await loadAndSyncApi(apiToInitialise);
+      expect(mockUpdate).not.toHaveBeenCalled();
+    });
+
     test("it should call the API with the correct timeout if it hasn't been called before", async () => {
       const { timeout, delay } = await loadAndSyncApi(apiToInitialise);
       expect(timeout).not.toBeNull();
@@ -131,16 +145,15 @@ describe("init", () => {
       await timeout;
       const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
       expect(dataSourceUpdateLogs[0].status).toBe("SUCCESS");
-      jest.clearAllTimers();
     });
 
     test("it should create a fail entry in DataSourceUpdateLog after update is run and throw an error", async () => {
-      mockUpdate.mockRejectedValueOnce("error");
+      mockUpdate.mockRejectedValueOnce(new Error("error updating"));
       jest.runOnlyPendingTimers();
       await timeout;
       const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
       expect(dataSourceUpdateLogs[0].status).toBe("FAIL");
-      jest.clearAllTimers();
+      expect(dataSourceUpdateLogs[0].message).toBe("error updating");
     });
   });
 });

@@ -105,11 +105,11 @@ export const updateDailyReadings = async (endDate: Date) => {
 
   const todayParsed = `${endDate.getFullYear()}-${
     endDate.getMonth() + 1
-  }-${endDate.getDay()}`;
+  }-${endDate.getDate()}`;
 
   const startDateParsed = `${startDate.getFullYear()}-${
     startDate.getMonth() + 1
-  }-${startDate.getDay()}`;
+  }-${startDate.getDate()}`;
 
   const observations = (
     await getDailyObservations(
@@ -123,7 +123,6 @@ export const updateDailyReadings = async (endDate: Date) => {
     if (date < startDate || date > endDate) return false;
     return true;
   });
-
   const dailyReadingsInDb = await AirQualityReading.findAll({
     where: {
       date: {

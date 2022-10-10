@@ -1,5 +1,7 @@
+/// <reference types="@types/jest" />;
 import { getConnection, initConnection } from "../src/db/connect";
 import { runSeeds } from "../src/seeds/runSeeds";
+import { seeds } from "../src/seeds/seedList";
 
 beforeAll(() => {
   // set new env vars
@@ -18,7 +20,7 @@ beforeEach(async () => {
     dbSchema: "dbtwins_test",
     logging: false,
   });
-  await runSeeds();
+  await runSeeds(seeds);
 });
 
 afterEach(async () => {

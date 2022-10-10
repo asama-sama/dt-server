@@ -1,13 +1,27 @@
-import { seed as airQualityReadingSeed } from "./airQualityReadings";
-import { seed as airQualitySitesSeed } from "./airQualitySites";
-import { seed as trafficVolumeStationsSeed } from "./trafficVolumeStations";
-import { seed as trafficVolumeReadingsSeed } from "./trafficVolumeReadings";
-import { seed as crimeBySuburb } from "./crimeBySuburb";
+import { Seed } from "../db/models/Seed";
 
-export const runSeeds = async () => {
-  await airQualityReadingSeed();
-  await airQualitySitesSeed();
-  await trafficVolumeStationsSeed();
-  await trafficVolumeReadingsSeed();
-  await crimeBySuburb();
+export type SeedRunner = {
+  name: string;
+  seedFunction: (value: void) => Promise<void>;
+};
+
+export const runSeeds = async (seeds: SeedRunner[]) => {
+  for (const seed of seeds) {
+    try {
+      const processedSeed = await Seed.findOne({
+        where: { name: seed.name, processed: true },
+      });
+      if (processedSeed) continue;
+      await seed.seedFunction();
+      await Seed.create({ name: seed.name, processed: true });
+    } catch (e) {
+      if (e instanceof Error) {
+        await Seed.create({
+          name: seed.name,
+          processed: false,
+          message: e.message,
+        });
+      }
+    }
+  }
 };

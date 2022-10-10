@@ -8,6 +8,7 @@ import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
+import { seeds } from "../seeds/seedList";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -32,18 +33,22 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
       status = UpdateStatus.FAIL;
       if (e instanceof Error) errorMessage = e.message;
     }
-    await DataSourceUpdateLog.create({
-      dataSourceId: dataSource?.id,
-      status,
-      message: errorMessage,
-    });
+    try {
+      await DataSourceUpdateLog.create({
+        dataSourceId: dataSource?.id,
+        status,
+        message: errorMessage,
+      });
+    } catch (e) {
+      console.error(e);
+    }
     resolve();
   };
 
   const lastUpdatedTime: Date = await DataSourceUpdateLog.max("createdAt", {
     where: {
       dataSourceId: dataSource?.id,
-      status: "SUCCESS",
+      status: UpdateStatus.SUCCESS,
     },
   });
   const lastUpdated = await DataSourceUpdateLog.findOne({
@@ -60,7 +65,6 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     timeUntilUpdate =
       apiInitialisor.apiConsts.updateFrequency - timeSinceUpdate;
   }
-
   const timeout = new Promise<void>((resolve) => {
     setTimeout(() => {
       const timerId = setInterval(() => {
@@ -89,10 +93,10 @@ export const init = async () => {
     dropTables: DROP_TABLES === "yes",
     dbPort: DB_PORT,
   });
-
-  await runSeeds();
+  await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
-    await loadAndSyncApi(apiToLoad);
+    const { timeout } = await loadAndSyncApi(apiToLoad);
+    await timeout;
   }
   await updateSuburbGeoJson();
 };
