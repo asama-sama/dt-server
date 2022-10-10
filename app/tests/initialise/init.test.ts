@@ -123,7 +123,6 @@ describe("init", () => {
       jest.runOnlyPendingTimers();
       jest.runOnlyPendingTimers();
       await timeout;
-      await Promise.resolve();
       expect(mockUpdate).toHaveBeenCalledTimes(2);
     });
 
