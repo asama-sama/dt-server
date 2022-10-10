@@ -8,7 +8,6 @@ import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
-import { Sequelize } from "sequelize-typescript";
 import { Transaction } from "sequelize";
 
 export interface ApiInitialisor {
@@ -49,18 +48,18 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     });
   };
 
-  // fixthis to return the item with the highest updated properly
-  const lastUpdated = await DataSourceUpdateLog.findOne({
+  const lastUpdatedTime: Date = await DataSourceUpdateLog.max("createdAt", {
     where: {
       dataSourceId: dataSource?.id,
-      status: UpdateStatus.SUCCESS,
+      status: "SUCCESS",
     },
-    attributes: [
-      "status",
-      [Sequelize.fn("max", Sequelize.col("createdAt")), "createdAt"],
-    ],
   });
-  console.log(lastUpdated);
+  const lastUpdated = await DataSourceUpdateLog.findOne({
+    where: {
+      createdAt: lastUpdatedTime,
+      dataSourceId: dataSource?.id,
+    },
+  });
   let timeUntilUpdate = 0;
   if (lastUpdated?.createdAt) {
     const currentTime = new Date().getTime();
@@ -77,7 +76,6 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
         apiInitialisor.apiConsts.updateFrequency
       );
       timers.push(timerId);
-      console.log(`Registered Api ${apiInitialisor.apiConsts.name}`);
       await update();
       resolve();
     }, timeUntilUpdate);

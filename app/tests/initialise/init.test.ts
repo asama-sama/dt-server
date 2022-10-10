@@ -36,7 +36,7 @@ describe("init", () => {
       jest.clearAllTimers();
     });
 
-    test.only("it should call the API with the correct timeout if it has been called previously", async () => {
+    test("it should call the API with the correct timeout if it has been called previously", async () => {
       let oneMinuteAgo = new Date();
       oneMinuteAgo = new Date(
         oneMinuteAgo.setMinutes(oneMinuteAgo.getMinutes() - 1)
@@ -61,12 +61,15 @@ describe("init", () => {
       });
       await DataSourceUpdateLog.create({
         dataSourceId: dataSource.id,
-        status: UpdateStatus.SUCCESS,
+        status: UpdateStatus.FAIL,
         createdAt: oneMinuteAgo.getTime(),
       });
       ({ delay } = await loadAndSyncApi(apiToInitialise));
-      expect(delay).toBeGreaterThanOrEqual(8 * 60 * 1000);
-      expect(delay).toBeLessThan(8.1 * 60 * 1000);
+      const maxDelay =
+        apiToInitialise.apiConsts.updateFrequency -
+        (new Date().getTime() - twoMinutesAgo.getTime());
+      expect(delay).toBeGreaterThanOrEqual(maxDelay - 1000);
+      expect(delay).toBeLessThanOrEqual(maxDelay);
     });
 
     test("it should call the API with the correct timeout if it hasn't been called before", async () => {
