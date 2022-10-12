@@ -6,6 +6,7 @@ import {
   handleCrimeData,
   loadCsvFiles,
   loadDataFile,
+  splitUpCsvFile,
 } from "../../src/util/loadCsvFile";
 import * as loadCsvFileModule from "../../src/util/loadCsvFile";
 import { getConnection } from "../../src/db/connect";
@@ -31,14 +32,14 @@ describe("loadCsvFile", () => {
         {
           "Offence category": "Derp",
           Subcategory: "derpderp",
-          LGA: "suburb 1",
+          Suburb: "suburb 1",
           "jan 2020": "20",
           "feb 2020": "35",
         },
         {
           "Offence category": "Derp",
           Subcategory: "derpderp 2",
-          LGA: "suburb 2",
+          Suburb: "suburb 2",
           "jan 2020": "20",
           "feb 2020": "35",
         },
@@ -68,24 +69,6 @@ describe("loadCsvFile", () => {
       expect(suburbs.length).toBe(2);
       const crimeCategories = await CrimeCategory.findAll({});
       expect(crimeCategories.length).toBe(2);
-    });
-
-    test("it should should not create new entries for repeat values", async () => {
-      const crimeResults = [
-        {
-          "Offence category": "Derp",
-          Subcategory: "derpderp",
-          LGA: "suburb 1",
-          "jan 2020": "20",
-          "feb 2020": "35",
-        },
-      ];
-      const connection = getConnection();
-      await connection.transaction(async (trx) => {
-        await handleCrimeData(crimeResults, dataFile, trx);
-      });
-      const crimeIncidents = await CrimeIncident.findAll({});
-      expect(crimeIncidents.length).toBe(4);
     });
   });
 
@@ -173,6 +156,14 @@ describe("loadCsvFile", () => {
       const spy = jest.spyOn(loadCsvFileModule, "loadDataFile");
       await loadCsvFiles();
       expect(spy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("splitUpCsvFile", () => {
+    test("it should return the correct number of chunks", () => {
+      const records = Array.from({ length: 20 }).map(() => ({}));
+      const chunks = splitUpCsvFile(records, 5);
+      expect(chunks.length).toBe(4);
     });
   });
 });

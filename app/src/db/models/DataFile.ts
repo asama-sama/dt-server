@@ -31,5 +31,4 @@ export class DataFile extends Model {
 
   @Column(DataType.DATE)
   processedOn: Date;
-  //
 }

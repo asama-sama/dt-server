@@ -10,6 +10,12 @@ import { DataSource } from "../db/models/DataSource";
 import { DATASOURCES } from "../const/datasource";
 import { CrimeCategory } from "../db/models/CrimeCategory";
 import { CrimeIncident } from "../db/models/CrimeIncident";
+import { InferAttributes } from "sequelize";
+import { createLoadIndicator, markLoaded } from "./loader";
+import {
+  DataSourceUpdateLog,
+  UpdateStatus,
+} from "../db/models/DataSourceUpdateLog";
 
 type SuburbAttributes = {
   name: string;
@@ -111,6 +117,27 @@ const handleAggregateEmissionData: HandleProcessCsvFile = async (
   };
 };
 
+type SplitUpCsvFile = (
+  results: Record<string, string>[],
+  chunkSize: number
+) => Record<string, string>[][];
+
+export const splitUpCsvFile: SplitUpCsvFile = (results, chunkSize) => {
+  const csvChunks: Record<string, string>[][] = [];
+  let startIdx = 0;
+  let elementsRemaining = true;
+  while (elementsRemaining) {
+    const chunk = results.slice(startIdx, startIdx + chunkSize);
+    if (chunk.length === 0) {
+      elementsRemaining = false;
+      break;
+    }
+    csvChunks.push(chunk);
+    startIdx = startIdx + chunkSize;
+  }
+  return csvChunks;
+};
+
 export const handleCrimeData: HandleProcessCsvFile = async (
   results,
   dataFile,
@@ -123,8 +150,21 @@ export const handleCrimeData: HandleProcessCsvFile = async (
   const crimeCategoryMap: { [key: string]: { [key: string]: CrimeCategory } } =
     {};
 
-  for (const result of results) {
-    const suburbName = result["LGA"];
+  const crimeIncidentsToCreate: Omit<
+    InferAttributes<CrimeIncident>,
+    "suburb" | "dataFile" | "crimeCategory"
+  >[] = [];
+
+  const loadIndicator = createLoadIndicator();
+
+  for (let i = 0; i < results.length; i++) {
+    markLoaded(loadIndicator, i / results.length);
+    const result = results[i];
+    const suburbName = result["Suburb"];
+    if (!suburbName) {
+      console.error("No suburb name found");
+      continue;
+    }
 
     let suburb: Suburb = suburbMap[suburbName];
     if (!suburb) {
@@ -132,6 +172,7 @@ export const handleCrimeData: HandleProcessCsvFile = async (
         where: {
           name: suburbName.toUpperCase(),
         },
+        transaction: trx,
       });
       suburbMap[suburbName] = suburb;
     }
@@ -149,14 +190,14 @@ export const handleCrimeData: HandleProcessCsvFile = async (
           Category: categoryName,
           Subcategory: subcategoryName,
         },
+        transaction: trx,
       });
       crimeCategoryMap[categoryName][subcategoryName] = crimeCategory;
     }
-
     const headers = Object.keys(result);
     for (const header of headers) {
       if (
-        header === "LGA" ||
+        header === "Suburb" ||
         header === "Offence category" ||
         header === "Subcategory"
       )
@@ -166,25 +207,19 @@ export const handleCrimeData: HandleProcessCsvFile = async (
       const month = date.getMonth();
       const year = date.getFullYear();
 
-      await CrimeIncident.findOrCreate({
-        where: {
-          year,
-          month,
-          crimeCategoryId: crimeCategory.id,
-          suburbId: suburb.id,
-        },
-        defaults: {
-          year,
-          month,
-          value: result[header],
-          crimeCategoryId: crimeCategory.id,
-          suburbId: suburb.id,
-          dataFileId: dataFile.id,
-        },
-        transaction: trx,
+      crimeIncidentsToCreate.push({
+        year,
+        month,
+        value: parseInt(result[header]),
+        crimeCategoryId: crimeCategory.id,
+        suburbId: suburb.id,
+        dataFileId: dataFile.id,
       });
     }
   }
+  await CrimeIncident.bulkCreate(crimeIncidentsToCreate, {
+    transaction: trx,
+  });
 
   return { totalReads, nullReads };
 };
@@ -208,25 +243,52 @@ export const loadDataFile = async (dataFile: DataFile) => {
       .pipe(csv())
       .on("data", (data) => results.push(data))
       .on("end", async () => {
+        const handler = dataFileHandlerMap[dataFile.dataSource.name];
+        const CHUNK_SIZE = 25;
+        const chunks = splitUpCsvFile(results, CHUNK_SIZE);
+
+        //TODO: figure out why the connection pipe breaks and doesn't recover
         try {
-          await sequelize.transaction(async (t: Transaction) => {
-            const handler = dataFileHandlerMap[dataFile.dataSource.name];
-            await handler(results, dataFile, t);
-            await dataFile.update(
-              {
-                processed: true,
-                processedOn: new Date(),
-              },
-              {
-                transaction: t,
+          for (let i = 0; i < chunks.length; i++) {
+            await sequelize.transaction(async (t: Transaction) => {
+              const chunk = chunks[i];
+              try {
+                await sequelize.authenticate();
+              } catch (e) {
+                console.error("Could not connect");
+                throw e;
               }
-            );
+              await handler(chunk, dataFile, t);
+              await DataSourceUpdateLog.create(
+                {
+                  dataSourceId: dataFile.dataSource.id,
+                  status: UpdateStatus.SUCCESS,
+                  message: `part ${i + 1}/${
+                    chunks.length
+                  }. Chunk size: ${CHUNK_SIZE}`,
+                },
+                { transaction: t }
+              );
+            });
+          }
+          await dataFile.update({
+            processed: true,
+            processedOn: new Date(),
           });
-          resolve(loadFileResult);
         } catch (e) {
           console.error(e);
+          let message = "";
+          if (e instanceof Error) {
+            message = e.message;
+          }
+          await DataSourceUpdateLog.create({
+            dataSourceId: dataFile.dataSource.id,
+            status: UpdateStatus.FAIL,
+            message,
+          });
           reject(e);
         }
+        resolve(loadFileResult);
       })
       .on("error", (err) => {
         console.error(err);
@@ -243,7 +305,6 @@ export const loadCsvFiles = async () => {
     },
     include: { model: DataSource, as: "dataSource" },
   });
-
   for (const fileToProcess of filesToProcess) {
     try {
       await loadDataFile(fileToProcess);

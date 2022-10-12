@@ -110,7 +110,6 @@ export const updateDailyReadings = async (endDate: Date) => {
   const startDateParsed = `${startDate.getFullYear()}-${
     startDate.getMonth() + 1
   }-${startDate.getDate()}`;
-
   const observations = (
     await getDailyObservations(
       [PollutantType.NO2],
@@ -131,7 +130,6 @@ export const updateDailyReadings = async (endDate: Date) => {
       },
     },
   });
-
   const dailyReadingsMapped: {
     [key: string]: { [key: number]: AirQualityReading };
   } = {};

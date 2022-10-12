@@ -9,6 +9,7 @@ import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 import { seeds } from "../seeds/seedList";
+import { loadCsvFiles } from "../util/loadCsvFile";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -95,8 +96,8 @@ export const init = async () => {
   });
   await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
-    const { timeout } = await loadAndSyncApi(apiToLoad);
-    await timeout;
+    await loadAndSyncApi(apiToLoad);
   }
-  await updateSuburbGeoJson();
+  await loadCsvFiles();
+  updateSuburbGeoJson();
 };
