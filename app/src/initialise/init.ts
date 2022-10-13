@@ -85,7 +85,7 @@ export const init = async () => {
   if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
     throw new Error("DB connection details must be provided");
   }
-
+  console.log("init");
   await initConnection({
     dbName: DB_NAME,
     dbHost: DB_HOST,
@@ -94,6 +94,7 @@ export const init = async () => {
     dropTables: DROP_TABLES === "yes",
     dbPort: DB_PORT,
   });
+  console.log("run seeds");
   await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
     await loadAndSyncApi(apiToLoad);

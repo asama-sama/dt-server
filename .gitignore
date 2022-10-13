@@ -1,5 +1,5 @@
 node_modules
 dist
 .env
-app/dataFiles
+dataFiles
 .DS_STORE

@@ -9,6 +9,7 @@ services:
     working_dir: /app
     volumes:
       - ./app:/app
+      - ./dataFiles:/dataFiles
   db:
     image: postgres:14.5-alpine
     restart: always

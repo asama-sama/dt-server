@@ -17,7 +17,7 @@ export const initConnection = async ({
   dbPort,
   dbSchema,
   dropTables,
-  logging = true,
+  logging = false,
 }: {
   dbName: string;
   dbUser: string;
@@ -38,6 +38,7 @@ export const initConnection = async ({
       idle: 10000,
       acquire: 30000,
     },
+    logging,
   });
   if (dbSchema) {
     try {

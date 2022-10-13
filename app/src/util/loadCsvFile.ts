@@ -229,6 +229,8 @@ const dataFileHandlerMap: { [key: string]: HandleProcessCsvFile } = {
 };
 
 export const loadDataFile = async (dataFile: DataFile) => {
+  console.log("read file", dataFile.name);
+
   if (dataFile.processed) {
     return Promise.reject(`${dataFile.name} has already been processed`);
   }
@@ -246,8 +248,6 @@ export const loadDataFile = async (dataFile: DataFile) => {
         const handler = dataFileHandlerMap[dataFile.dataSource.name];
         const CHUNK_SIZE = 25;
         const chunks = splitUpCsvFile(results, CHUNK_SIZE);
-
-        //TODO: figure out why the connection pipe breaks and doesn't recover
         try {
           for (let i = 0; i < chunks.length; i++) {
             await sequelize.transaction(async (t: Transaction) => {
