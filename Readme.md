@@ -1,4 +1,33 @@
-# Development machine
+# How to get this working on your local development machine
+
+* Install docker https://www.docker.com/
+> Check that it is installed with `docker-compose -v`
+
+* Create a .env file in `/app` with the following credentials. You can change these if needed.
+```
+DB_NAME=root
+DB_USER=root
+DB_PASSWORD=root
+DB_HOST=db
+DB_PORT=5432
+DATA_FILES_PATH=/dataFiles
+DROP_TABLES=no
+NOMINATIM_API_TIMEOUT=1500
+FETCH_SUBURBS=yes
+```
+
+* Run the docker files from the root project directory `/`
+> docker-compose up
+
+# How to access the database
+
+## Using adminer 
+Adminer is running in a docker container. To browser the database, open your browser and navigate to `localhost:8080`. Enter the database credentials (used for the .env file above)
+
+## From your local machine
+Use the credentials above for the database host, use `localhost` and `5433` for the port.
+
+# Creating Docker image for production from development machine
 
 ## Build dockerfile
 
