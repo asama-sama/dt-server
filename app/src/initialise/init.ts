@@ -88,7 +88,7 @@ export const init = async () => {
   if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
     throw new Error("DB connection details must be provided");
   }
-  console.log("init");
+  logger("init");
   await initConnection({
     dbName: DB_NAME,
     dbHost: DB_HOST,
@@ -97,11 +97,12 @@ export const init = async () => {
     dropTables: DROP_TABLES === "yes",
     dbPort: DB_PORT,
   });
-  console.log("run seeds");
+  logger("run seeds");
   await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
-    const { timeout } = await loadAndSyncApi(apiToLoad);
-    await timeout;
+    const { timeout, delay } = await loadAndSyncApi(apiToLoad);
+    logger(`${apiToLoad.apiConsts.name} will run in ${delay} ms`);
+    if (delay === 0) await timeout; // to stop all the apis from running at the same time on first load
   }
   await loadCsvFiles();
   updateSuburbGeoJson();

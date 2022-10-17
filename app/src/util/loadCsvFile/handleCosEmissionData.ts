@@ -27,7 +27,7 @@ export const handleCosEmissionData: HandleProcessCsvFile = async (
     uniqueSuburbs.add(result["Area_suburb"]);
     const [suburb] = await Suburb.findOrCreate({
       where: {
-        name: suburbData.name,
+        name: suburbData.name.toUpperCase(),
       },
       transaction: trx,
     });

@@ -68,6 +68,7 @@ export const loadDataFile = async (dataFile: DataFile) => {
       .on("data", (data) => results.push(data))
       .on("end", async () => {
         const handler = dataFileHandlerMap[dataFile.dataSource.name];
+
         const CHUNK_SIZE = 25;
         const chunks = splitUpCsvFile(results, CHUNK_SIZE);
         try {
@@ -121,6 +122,7 @@ export const loadDataFile = async (dataFile: DataFile) => {
 };
 
 export const loadCsvFiles = async () => {
+  logger("loadCsvFiles");
   const filesToProcess = await DataFile.findAll({
     where: {
       processed: false,
