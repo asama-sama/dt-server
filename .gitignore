@@ -1,5 +1,6 @@
 node_modules
 dist
 .env
-dataFiles
+/dataFiles
+!/tests/dataFiles
 .DS_STORE
