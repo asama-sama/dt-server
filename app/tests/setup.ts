@@ -20,6 +20,7 @@ beforeEach(async () => {
     dbSchema: "dbtwins_test",
   });
   await runSeeds(seeds);
+  jest.clearAllMocks();
 });
 
 afterEach(async () => {
