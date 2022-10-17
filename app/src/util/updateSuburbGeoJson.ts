@@ -21,18 +21,18 @@ export const updateSuburbGeoJson = async () => {
     }
   }
   const uniqueSuburbNames = [...uniqueSuburbNamesSet];
-  const searchResults = await bulkSearch(uniqueSuburbNames);
-  for (let i = 0; i < searchResults.length; i++) {
-    const suburbName = uniqueSuburbNames[i];
-    const suburbKey = suburbKeyNameMapping[suburbName];
-    const suburb = suburbMapping[suburbKey];
-    // for suburbs that span two suburbs ie. with +, make sure to keep data for both
-    await suburb.reload();
-    await suburb.update({
-      geoData: {
-        ...suburb.geoData,
-        [suburbName]: searchResults[i],
-      },
-    });
-  }
+  await bulkSearch(
+    uniqueSuburbNames,
+    async (result: object, suburbName: string) => {
+      const suburbKey = suburbKeyNameMapping[suburbName];
+      const suburb = suburbMapping[suburbKey];
+      await suburb.update({
+        geoData: {
+          ...suburb.geoData,
+          [suburbName]: result,
+        },
+      });
+      await suburb.reload();
+    }
+  );
 };

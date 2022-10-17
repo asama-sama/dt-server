@@ -16,6 +16,7 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
+import { logger } from "./logger";
 
 type SuburbAttributes = {
   name: string;
@@ -229,7 +230,7 @@ const dataFileHandlerMap: { [key: string]: HandleProcessCsvFile } = {
 };
 
 export const loadDataFile = async (dataFile: DataFile) => {
-  console.log("read file", dataFile.name);
+  logger(`read file ${dataFile.name}`);
 
   if (dataFile.processed) {
     return Promise.reject(`${dataFile.name} has already been processed`);

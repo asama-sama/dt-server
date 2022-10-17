@@ -18,7 +18,6 @@ beforeEach(async () => {
     dbHost: "localhost",
     dbPort: "5433",
     dbSchema: "dbtwins_test",
-    logging: false,
   });
   await runSeeds(seeds);
 });

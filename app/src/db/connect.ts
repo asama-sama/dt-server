@@ -63,6 +63,7 @@ export const initConnection = async ({
         idle: 10000,
         acquire: 30000,
       },
+      logging,
     });
   }
 

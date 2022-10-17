@@ -14,7 +14,9 @@ describe("nominatim", () => {
 
     const queries = ["q1", "q2"];
     const startTime = Date.now();
-    await bulkSearch(queries);
+    await bulkSearch(queries, async () => {
+      return;
+    });
     const endTime = Date.now();
     expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
     expect(endTime - startTime).toBeLessThanOrEqual(1500);
@@ -24,7 +26,9 @@ describe("nominatim", () => {
 
   test("it should hit the api the correct number of times", async () => {
     const queries = ["q1", "q2", "q3"];
-    await bulkSearch(queries);
+    await bulkSearch(queries, async () => {
+      return;
+    });
     expect(axios.get).toHaveBeenCalledTimes(3);
   });
 });

@@ -10,6 +10,7 @@ import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 import { runSeeds } from "../seeds/runSeeds";
 import { seeds } from "../seeds/seedList";
 import { loadCsvFiles } from "../util/loadCsvFile";
+import { logger } from "../util/logger";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -19,6 +20,7 @@ export interface ApiInitialisor {
 const timers: NodeJS.Timer[] = [];
 
 export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
+  logger(`initialise ${apiInitialisor.apiConsts.name}`);
   const dataSource = await DataSource.findOne({
     where: {
       name: apiInitialisor.apiConsts.name,
@@ -26,6 +28,7 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
   });
 
   const update = async (resolve: (value: void | PromiseLike<void>) => void) => {
+    logger(`activate ${apiInitialisor.apiConsts.name}`);
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
     try {
@@ -97,7 +100,8 @@ export const init = async () => {
   console.log("run seeds");
   await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
-    await loadAndSyncApi(apiToLoad);
+    const { timeout } = await loadAndSyncApi(apiToLoad);
+    await timeout;
   }
   await loadCsvFiles();
   updateSuburbGeoJson();

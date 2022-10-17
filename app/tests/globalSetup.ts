@@ -11,6 +11,5 @@ module.exports = async () => {
     dbHost: "localhost",
     dbPort: "5433",
     dbSchema: "dbtwins_test",
-    logging: false,
   });
 };
