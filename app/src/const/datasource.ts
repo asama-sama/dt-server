@@ -49,4 +49,8 @@ export const DATASOURCES: DataSource = {
     name: "NSW_CRIME_BY_SUBURB",
     updateFrequency: 0,
   },
+  cosGhgEmissions: {
+    name: "COS_GHG_EMISSIONS",
+    updateFrequency: 0,
+  },
 };

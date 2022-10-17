@@ -2,8 +2,6 @@ import fs from "fs";
 import csv from "csv-parser";
 import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
-// import { ProcessedDataFile } from "./db/models/ProcessedDataFile";
-// import { bulkSearch } from "./clients/nominatim";
 import { Transaction } from "sequelize";
 import { DataFile } from "../db/models/DataFile";
 import { DataSource } from "../db/models/DataSource";
@@ -17,11 +15,11 @@ import {
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
 import { logger } from "./logger";
+import { CosGhgCategory } from "../db/models/CosGhgCategory";
+import { CosGhgEmission } from "../db/models/CosGhgEmission";
 
 type SuburbAttributes = {
   name: string;
-  shapeArea: string;
-  shapeLength: string;
 };
 
 export type LoadDataFileResult = {
@@ -31,13 +29,13 @@ export type LoadDataFileResult = {
 
 type HandleProcessCsvFile = (
   results: Record<string, string>[],
-  dataSource: DataFile,
+  dataFile: DataFile,
   trx: Transaction
 ) => Promise<LoadDataFileResult>;
 
-const handleAggregateEmissionData: HandleProcessCsvFile = async (
+export const handleCosEmissionData: HandleProcessCsvFile = async (
   results,
-  dataSource,
+  dataFile,
   trx
 ) => {
   let nullReads = 0;
@@ -47,38 +45,27 @@ const handleAggregateEmissionData: HandleProcessCsvFile = async (
     // build up normalised tables
     const suburbData: SuburbAttributes = {
       name: result["Area_suburb"],
-      shapeArea: result["Shape__Area"],
-      shapeLength: result["Shape__Length"],
     };
     const categoryData = {
       name: result["Data_Category"],
     };
 
     uniqueSuburbs.add(result["Area_suburb"]);
-    const suburbCreated = await Suburb.findOrCreate({
+    const [suburb] = await Suburb.findOrCreate({
       where: {
         name: suburbData.name,
       },
+      transaction: trx,
+    });
+    const [category] = await CosGhgCategory.findOrCreate({
+      where: {
+        name: categoryData.name,
+      },
       defaults: {
-        name: suburbData.name,
-        shapeArea: parseFloat(suburbData.shapeArea),
-        shapeLength: parseFloat(suburbData.shapeLength),
+        name: categoryData.name,
       },
       transaction: trx,
     });
-    // const categoryCreated = await Category.findOrCreate({
-    //   where: {
-    //     name: categoryData.name,
-    //   },
-    //   defaults: {
-    //     name: categoryData.name,
-    //   },
-    //   transaction: t,
-    // });
-
-    // get table relation
-    const suburb = suburbCreated[0];
-    // const category = categoryCreated[0];
 
     // insert emission values
     const properties = Object.keys(result);
@@ -96,15 +83,16 @@ const handleAggregateEmissionData: HandleProcessCsvFile = async (
         }
         const year = parseInt(yearMatch[0].substring(1, 5));
         try {
-          // await Emission.create(
-          //   {
-          //     year: year,
-          //     reading,
-          //     suburbId: suburb.id,
-          //     categoryId: category.id,
-          //   },
-          //   { transaction: trx }
-          // );
+          await CosGhgEmission.create(
+            {
+              year: year,
+              reading,
+              suburbId: suburb.id,
+              categoryId: category.id,
+              dataFileId: dataFile.id,
+            },
+            { transaction: trx }
+          );
           totalReads += 1;
         } catch (e) {
           console.error("Error inserting emission", e);

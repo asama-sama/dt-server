@@ -19,12 +19,6 @@ export class Suburb extends Model {
   })
   name: string;
 
-  @Column(DataType.FLOAT)
-  shapeArea: number;
-
-  @Column(DataType.FLOAT)
-  shapeLength: number;
-
   @AllowNull(true)
   @Column(DataType.JSON)
   geoData: SuburbJson;

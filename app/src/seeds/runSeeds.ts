@@ -1,4 +1,5 @@
 import { Seed } from "../db/models/Seed";
+import { logger } from "../util/logger";
 
 export type SeedRunner = {
   name: string;
@@ -12,6 +13,7 @@ export const runSeeds = async (seeds: SeedRunner[]) => {
         where: { name: seed.name, processed: true },
       });
       if (processedSeed) continue;
+      logger(`run seed ${seed.name}`);
       await seed.seedFunction();
       await Seed.create({ name: seed.name, processed: true });
     } catch (e) {
