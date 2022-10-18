@@ -21,8 +21,12 @@ export const updateSuburbGeoJson = async () => {
     }
   }
   const uniqueSuburbNames = [...uniqueSuburbNamesSet];
+  const suburbSearchParameters = uniqueSuburbNames.map((name) => ({
+    name,
+    state: "nsw",
+  }));
   await bulkSearch(
-    uniqueSuburbNames,
+    suburbSearchParameters,
     async (result: object, suburbName: string) => {
       const suburbKey = suburbKeyNameMapping[suburbName];
       const suburb = suburbMapping[suburbKey];

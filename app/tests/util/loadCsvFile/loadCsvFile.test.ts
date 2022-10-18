@@ -120,12 +120,12 @@ describe("loadCsvFile", () => {
       });
 
       await DataFile.create({
-        name: "crimeDataTest.csv",
+        name: "testfile.csv",
         dataSourceId: dataSource?.id,
       });
 
       await DataFile.create({
-        name: "crimeDataTest.csv",
+        name: "testfile.csv",
         dataSourceId: dataSource?.id,
       });
     });

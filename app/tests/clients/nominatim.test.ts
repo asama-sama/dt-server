@@ -12,7 +12,10 @@ describe("nominatim", () => {
   test("it should throttle requests", async () => {
     process.env.NOMINATIM_API_TIMEOUT = "500";
 
-    const queries = ["q1", "q2"];
+    const queries = [
+      { name: "q1", state: "state" },
+      { name: "q2", state: "state" },
+    ];
     const startTime = Date.now();
     await bulkSearch(queries, async () => {
       return;
@@ -25,7 +28,11 @@ describe("nominatim", () => {
   });
 
   test("it should hit the api the correct number of times", async () => {
-    const queries = ["q1", "q2", "q3"];
+    const queries = [
+      { name: "q1", state: "state" },
+      { name: "q2", state: "state" },
+      { name: "q3", state: "state" },
+    ];
     await bulkSearch(queries, async () => {
       return;
     });

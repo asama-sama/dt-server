@@ -5,13 +5,9 @@ describe("Suburb", () => {
   test("it should create a suburb object in the database", async () => {
     const s = await Suburb.create({
       name: "test",
-      shapeArea: 234.345,
-      shapeLength: 554.435346,
     });
     expect(s).toMatchObject({
       name: "TEST",
-      shapeArea: 234.345,
-      shapeLength: 554.435346,
     });
   });
 
