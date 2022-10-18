@@ -27,6 +27,40 @@ Adminer is running in a docker container. To browser the database, open your bro
 ## From your local machine
 Use the credentials above for the database host, use `localhost` and `5433` for the port.
 
+# Loading CSV files
+
+Certain csv files may be imported and loaded into the database. These files must be of a specific format. Currently accepted files are
+
+* [Sydney Greenhouse Gas Emissions By Suburb](https://data.cityofsydney.nsw.gov.au/datasets/cityofsydney::greenhouse-gas-emissions-profile-by-suburb-1/explore?location=-33.888930%2C151.203975%2C13.97)
+
+* [NSW Crime Data by Suburb](https://www.bocsar.nsw.gov.au/Pages/bocsar_datasets/Offence.aspx)
+
+To load the CSV file into the database, the following steps should be taken
+
+* create a directory called `dataFiles` in the root project directory
+
+* place the csv file you would like to be read in this directory
+
+* create an entry in the `DataFiles` table to tell the app to process this file
+
+* * Go to adminer, on localhost:8080 in your browser and log in with your DB credentials
+
+* * Click on the `DataFiles` table
+
+* * Click `Add new item` with the following properties
+
+```
+id: leave this blank
+dataSourceId: This should be the primary key from "DataSources" matching the type of file you are trying to upload
+name: this should match the name of the csv file
+processed: leave this blank
+processedOn: leave this blank
+createdAt: NOW()
+updatedAt: NOW()
+```
+
+* * Now restart the app and the file uploading should appear in the logs. When it is complete, the `processed` column for your new entry should be set to true
+
 # Creating Docker image for production from development machine
 
 ## Build dockerfile
