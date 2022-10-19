@@ -111,7 +111,7 @@ describe("trafficVolume controller", () => {
     });
 
     test("it should call updateSuburbGeoJson", () => {
-      expect(updateSuburbGeoJson).toHaveBeenCalled();
+      expect(updateSuburbGeoJsonMock).toHaveBeenCalled();
     });
   });
 
