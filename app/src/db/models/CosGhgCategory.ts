@@ -15,6 +15,6 @@ export class CosGhgCategory extends Model {
   @Column
   name: string;
 
-  @HasMany(() => CosGhgEmission)
+  @HasMany(() => CosGhgEmission, "categoryId")
   emissions: CosGhgEmission[];
 }

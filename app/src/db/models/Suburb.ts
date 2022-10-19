@@ -5,8 +5,10 @@ import {
   Unique,
   DataType,
   AllowNull,
+  HasMany,
 } from "sequelize-typescript";
 import { SuburbJson } from "../../customTypes/suburb";
+import { TrafficIncident } from "./TrafficIncident";
 
 @Table
 export class Suburb extends Model {
@@ -22,4 +24,7 @@ export class Suburb extends Model {
   @AllowNull(true)
   @Column(DataType.JSON)
   geoData: SuburbJson;
+
+  @HasMany(() => TrafficIncident, "suburbId")
+  trafficIncidents: TrafficIncident[];
 }

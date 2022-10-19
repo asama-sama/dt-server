@@ -1,4 +1,5 @@
-import { AllowNull, Column, Model, Table } from "sequelize-typescript";
+import { AllowNull, Column, HasMany, Model, Table } from "sequelize-typescript";
+import { CrimeIncident } from "./CrimeIncident";
 
 @Table
 export class CrimeCategory extends Model {
@@ -8,4 +9,7 @@ export class CrimeCategory extends Model {
 
   @Column
   Subcategory: string;
+
+  @HasMany(() => CrimeIncident, "crimeCategoryId")
+  crimeIncidents: CrimeIncident[];
 }

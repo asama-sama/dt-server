@@ -5,6 +5,7 @@ import { seed as trafficVolumeStationsSeed } from "../seeds/trafficVolumeStation
 import { seed as trafficVolumeReadingsSeed } from "../seeds/trafficVolumeReadings";
 import { seed as crimeBySuburb } from "../seeds/crimeBySuburb";
 import { seed as cosGhgEmissions } from "../seeds/cosGhgEmissions";
+import { seed as trafficIncidents } from "./trafficIncidents";
 
 export const seeds: SeedRunner[] = [
   { name: "airQualityReading", seedFunction: airQualityReadingSeed },
@@ -13,4 +14,5 @@ export const seeds: SeedRunner[] = [
   { name: "trafficVolumeReading", seedFunction: trafficVolumeReadingsSeed },
   { name: "crimeBySuburb", seedFunction: crimeBySuburb },
   { name: "cosGhgEmissions", seedFunction: cosGhgEmissions },
+  { name: "trafficIncidents", seedFunction: trafficIncidents },
 ];

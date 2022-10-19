@@ -31,13 +31,13 @@ export class CosGhgEmission extends Model {
   @Column
   suburbId: number;
 
-  @BelongsTo(() => Suburb)
+  @BelongsTo(() => Suburb, "suburbId")
   suburb: Suburb;
 
   @ForeignKey(() => CosGhgCategory)
   @Column
   categoryId: number;
 
-  @BelongsTo(() => CosGhgCategory)
+  @BelongsTo(() => CosGhgCategory, "categoryId")
   category: CosGhgCategory;
 }

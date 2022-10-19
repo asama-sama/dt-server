@@ -19,7 +19,7 @@ export class AirQualitySite extends Model {
   dataSourceId: number;
 
   @BelongsTo(() => DataSource, "dataSourceId")
-  api: DataSource;
+  dataSource: DataSource;
 
   @HasMany(() => AirQualityReading, "airQualitySiteId")
   airQualityReadings: AirQualityReading[];

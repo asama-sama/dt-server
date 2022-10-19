@@ -53,4 +53,8 @@ export const DATASOURCES: DataSource = {
     name: "COS_GHG_EMISSIONS",
     updateFrequency: 0,
   },
+  trafficIncidents: {
+    name: "NSW_TRAFFIC_INCIDENTS",
+    updateFrequency: millisecondsInDay,
+  },
 };
