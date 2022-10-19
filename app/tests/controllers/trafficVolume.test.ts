@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import {
   getStations,
   getStationCountsByMonth,
@@ -10,8 +11,10 @@ import {
   updateStations,
 } from "../../src/controllers/trafficVolume";
 import { DataSource } from "../../src/db/models/DataSource";
+import { Suburb } from "../../src/db/models/Suburb";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
+import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
 
 jest.mock("../../src/clients/nswTrafficVolume", () => {
   return {
@@ -21,29 +24,48 @@ jest.mock("../../src/clients/nswTrafficVolume", () => {
   };
 });
 
+jest.mock("../../src/util/updateSuburbGeoJson", () => {
+  return {
+    __esModule: true,
+    updateSuburbGeoJson: jest.fn(),
+  };
+});
+
 const getStationsMock = getStations as jest.MockedFunction<typeof getStations>;
 const getStationsCountByMonthMock =
   getStationCountsByMonth as jest.MockedFunction<
     typeof getStationCountsByMonth
   >;
+const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
+  typeof updateSuburbGeoJson
+>;
 
 describe("trafficVolume controller", () => {
   describe("updateStations", () => {
-    let dataSource: DataSource | null;
     beforeEach(async () => {
-      dataSource = await DataSource.findOne({
-        where: { name: DATASOURCES.nswTrafficVolumeStations.name },
-      });
-      await TrafficVolumeStation.create({
-        lat: 123,
-        lng: 321,
-        stationId: "100",
-        stationKey: "200",
-        dataSourceId: dataSource?.id,
-      });
+      const stations: Station[] = [
+        {
+          latitude: 123,
+          longitude: 321,
+          lga: "test",
+          name: "test",
+          post_code: "3000",
+          rms_region: "test",
+          station_id: "1",
+          station_key: "2",
+          suburb: "test",
+        },
+      ];
+      getStationsMock.mockResolvedValueOnce(stations);
+      await updateStations();
     });
 
     test("it should create new stations", async () => {
+      const stationsCreated = await TrafficVolumeStation.findAll({});
+      expect(stationsCreated.length).toBe(1);
+    });
+
+    test("it should not create a new station if the stationId exists", async () => {
       const stations: Station[] = [
         {
           latitude: 123,
@@ -60,10 +82,15 @@ describe("trafficVolume controller", () => {
       getStationsMock.mockResolvedValueOnce(stations);
       await updateStations();
       const stationsCreated = await TrafficVolumeStation.findAll({});
-      expect(stationsCreated.length).toBe(2);
+      expect(stationsCreated.length).toBe(1);
     });
 
-    test("it should not create a new station if the stationId exists", async () => {
+    test("it should create suburbs if they don't exist", async () => {
+      const suburbs = await Suburb.findAll();
+      expect(suburbs.length).toBe(1);
+    });
+
+    test("it should not recreate suburbs", async () => {
       const stations: Station[] = [
         {
           latitude: 123,
@@ -72,15 +99,19 @@ describe("trafficVolume controller", () => {
           name: "test",
           post_code: "3000",
           rms_region: "test",
-          station_id: "100",
+          station_id: "1",
           station_key: "2",
-          suburb: "test",
+          suburb: "TEST",
         },
       ];
       getStationsMock.mockResolvedValueOnce(stations);
       await updateStations();
-      const stationsCreated = await TrafficVolumeStation.findAll({});
-      expect(stationsCreated.length).toBe(1);
+      const suburbs = await Suburb.findAll();
+      expect(suburbs.length).toBe(1);
+    });
+
+    test("it should call updateSuburbGeoJson", () => {
+      expect(updateSuburbGeoJson).toHaveBeenCalled();
     });
   });
 

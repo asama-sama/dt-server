@@ -5,9 +5,11 @@ import {
 } from "../clients/nswTrafficVolume";
 import { DATASOURCES } from "../const/datasource";
 import { DataSource } from "../db/models/DataSource";
+import { Suburb } from "../db/models/Suburb";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
+import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 
 export const updateStations = async () => {
   const stations = await getStations();
@@ -18,6 +20,13 @@ export const updateStations = async () => {
   });
   for (let i = 0; i < stations.length; i++) {
     const station = stations[i];
+
+    const [suburb] = await Suburb.findOrCreate({
+      where: {
+        name: station.suburb.toUpperCase(),
+      },
+    });
+
     await TrafficVolumeStation.findOrCreate({
       where: {
         [Op.or]: [
@@ -32,13 +41,14 @@ export const updateStations = async () => {
         lat: station.latitude,
         lng: station.longitude,
         name: station.name,
-        suburb: station.suburb,
+        suburbId: suburb.id,
         lga: station.lga,
         rmsRegion: station.rms_region,
         postCode: station.post_code,
       },
     });
   }
+  updateSuburbGeoJson();
 };
 
 export const updateReadings = async () => {

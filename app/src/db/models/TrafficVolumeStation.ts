@@ -9,6 +9,7 @@ import {
   Unique,
 } from "sequelize-typescript";
 import { DataSource } from "./DataSource";
+import { Suburb } from "./Suburb";
 import { TrafficVolumeReading } from "./TrafficVolumeReading";
 
 @Table
@@ -45,8 +46,12 @@ export class TrafficVolumeStation extends Model {
   @Column
   name: string;
 
+  @ForeignKey(() => Suburb)
   @Column
-  suburb: string;
+  suburbId: number;
+
+  @BelongsTo(() => Suburb, "suburbId")
+  suburb: Suburb;
 
   @Column
   lga: string;

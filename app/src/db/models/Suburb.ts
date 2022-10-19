@@ -10,6 +10,7 @@ import {
 import { SuburbJson } from "../../customTypes/suburb";
 import { AirQualitySite } from "./AirQualitySite";
 import { TrafficIncident } from "./TrafficIncident";
+import { TrafficVolumeStation } from "./TrafficVolumeStation";
 
 @Table
 export class Suburb extends Model {
@@ -31,4 +32,7 @@ export class Suburb extends Model {
 
   @HasMany(() => AirQualitySite, "suburbId")
   airQualitySites: AirQualitySite[];
+
+  @HasMany(() => TrafficVolumeStation, "suburbId")
+  trafficVolumeStations: TrafficVolumeStation[];
 }
