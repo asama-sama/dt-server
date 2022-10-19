@@ -4,6 +4,7 @@ export type DataSourceConsts = {
   method?: "post" | "get";
   queryStringParams?: string | null;
   updateFrequency: number;
+  params?: object;
 };
 
 type DataSource = {
@@ -56,5 +57,12 @@ export const DATASOURCES: DataSource = {
   trafficIncidents: {
     name: "NSW_TRAFFIC_INCIDENTS",
     updateFrequency: millisecondsInDay,
+    uri: "https://api.transport.nsw.gov.au/v1/traffic/historicaldata",
+    params: {
+      radius: 50,
+      latitude: -33.86734,
+      longitude: 151.20823,
+      showHistory: false,
+    },
   },
 };
