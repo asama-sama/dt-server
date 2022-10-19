@@ -11,6 +11,7 @@ import {
 } from "sequelize-typescript";
 import { AirQualityReading } from "./AirQualityReading";
 import { DataSource } from "./DataSource";
+import { Suburb } from "./Suburb";
 
 @Table
 export class AirQualitySite extends Model {
@@ -30,9 +31,6 @@ export class AirQualitySite extends Model {
   siteId: number;
 
   @Column
-  name: string;
-
-  @Column
   region: string;
 
   @AllowNull(false)
@@ -46,4 +44,11 @@ export class AirQualitySite extends Model {
     type: DataType.FLOAT,
   })
   lng: number;
+
+  @ForeignKey(() => Suburb)
+  @Column
+  suburbId: number;
+
+  @BelongsTo(() => Suburb, "suburbId")
+  suburb: Suburb;
 }

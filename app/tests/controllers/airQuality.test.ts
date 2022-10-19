@@ -19,6 +19,8 @@ import {
   UpdateFrequency,
   Frequency,
 } from "../../src/db/models/UpdateFrequency";
+import { Suburb } from "../../src/db/models/Suburb";
+import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
 
 jest.mock("../../src/clients/nswAirQuality", () => {
   return {
@@ -28,11 +30,22 @@ jest.mock("../../src/clients/nswAirQuality", () => {
   };
 });
 
+jest.mock("../../src/util/updateSuburbGeoJson", () => {
+  return {
+    __esModule: true,
+    updateSuburbGeoJson: jest.fn(),
+  };
+});
+
 const getDailyObservationsMock = getDailyObservations as jest.MockedFunction<
   typeof getDailyObservations
 >;
 
 const getSitesMock = getSites as jest.MockedFunction<typeof getSites>;
+
+const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
+  typeof updateSuburbGeoJson
+>;
 
 describe("airQuality Controller", () => {
   describe("updateDailyReadings", () => {
@@ -156,37 +169,7 @@ describe("airQuality Controller", () => {
   });
 
   describe("updateSites", () => {
-    test("it should add sites within the sydney region", async () => {
-      const sites: Site[] = [
-        {
-          region: "sydney",
-          name: "southside",
-        },
-        {
-          region: "sydney",
-          name: "paramatta",
-        },
-        {
-          region: "sydney",
-          name: "name1",
-        },
-        {
-          region: "test",
-          name: "name2",
-        },
-      ].map((site, i) => ({
-        ...site,
-        siteId: i + 1,
-        lng: 40,
-        lat: 30,
-      }));
-      getSitesMock.mockResolvedValueOnce(sites);
-      await updateSites();
-      const airQualitySites = await AirQualitySite.findAll({});
-      expect(airQualitySites.length).toBe(3);
-    });
-
-    test("it should add suburbs with 'sydney' in the name", async () => {
+    beforeEach(async () => {
       const sites: Site[] = [
         {
           region: "test",
@@ -212,35 +195,20 @@ describe("airQuality Controller", () => {
       }));
       getSitesMock.mockResolvedValueOnce(sites);
       await updateSites();
+    });
+
+    test("it should add sites within the sydney region", async () => {
+      const airQualitySites = await AirQualitySite.findAll({});
+      expect(airQualitySites.length).toBe(3);
+    });
+
+    test("it should add suburbs with 'sydney' in the name", async () => {
       const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(3);
     });
 
     test("it should update the sites", async () => {
       const sites: Site[] = [
-        {
-          region: "test",
-          name: "sydney",
-        },
-        {
-          region: "test",
-          name: "sydney 11###",
-        },
-        {
-          region: "test",
-          name: "woiwej sydney",
-        },
-        {
-          region: "test",
-          name: "name2",
-        },
-      ].map((site, i) => ({
-        ...site,
-        siteId: i + 1,
-        lng: 40,
-        lat: 30,
-      }));
-      const sites2: Site[] = [
         {
           region: "sydney",
           name: "abc",
@@ -260,14 +228,9 @@ describe("airQuality Controller", () => {
         lat: 30,
       }));
       getSitesMock.mockResolvedValueOnce(sites);
-      getSitesMock.mockResolvedValueOnce(sites2);
 
       await updateSites();
-      let airQualitySites = await AirQualitySite.findAll({});
-      expect(airQualitySites.length).toBe(3);
-
-      await updateSites();
-      airQualitySites = await AirQualitySite.findAll({});
+      const airQualitySites = await AirQualitySite.findAll({});
       expect(airQualitySites.length).toBe(5);
     });
 
@@ -284,7 +247,38 @@ describe("airQuality Controller", () => {
       getSitesMock.mockResolvedValueOnce(sites);
       await updateSites();
       const airQualitySites = await AirQualitySite.findAll({});
-      expect(airQualitySites.length).toBe(0);
+      expect(airQualitySites.length).toBe(3);
+    });
+
+    test("it should create suburbs if they don't exist", async () => {
+      const suburbs = await Suburb.findAll();
+      const suburbNames = ["sydney", "sydney 11###", "woiwej sydney"].map(
+        (name) => name.toUpperCase()
+      );
+      expect(suburbs.length).toBe(3);
+      for (const suburb of suburbs) {
+        expect(suburbNames).toContain(suburb.name);
+      }
+    });
+
+    test("it should not create a suburb if it already exists", async () => {
+      const sites: Site[] = [
+        {
+          region: "sydney",
+          name: "ttttttt",
+          lat: null,
+          lng: null,
+          siteId: 1,
+        },
+      ];
+      getSitesMock.mockResolvedValueOnce(sites);
+      await updateSites();
+      const suburbs = await Suburb.findAll();
+      expect(suburbs.length).toBe(3);
+    });
+
+    test("it should call updateSuburbGeoJson", () => {
+      expect(updateSuburbGeoJsonMock).toHaveBeenCalled();
     });
   });
 });

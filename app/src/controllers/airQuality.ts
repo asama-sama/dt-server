@@ -12,6 +12,8 @@ import { PollutantType } from "../db/models/AirQualityReading";
 import { Op } from "sequelize";
 import { UpdateFrequency, Frequency } from "../db/models/UpdateFrequency";
 import { DATASOURCES } from "../const/datasource";
+import { Suburb } from "../db/models/Suburb";
+import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
 
 const DAYS_TO_SEARCH = 7;
 
@@ -66,32 +68,47 @@ export const updateSites = async () => {
   const dataSource = await DataSource.findOne({
     where: { name: DATASOURCES.nswAirQualitySites.name },
   });
+
+  const suburbMap: { [key: string]: Suburb } = {}; // cache loaded suburbs
+
   for (const site of sites) {
-    const { name: _name, region: _region, siteId, lat, lng } = site;
+    const { name: _suburbName, region: _region, siteId, lat, lng } = site;
 
     if (!lat || !lng) continue;
 
     const region = _region.toUpperCase();
-    const name = _name.toUpperCase();
+    const suburbName = _suburbName.toUpperCase();
     // there are many other readings across nsw, only include those close to sydney
     // https://www.dpie.nsw.gov.au/air-quality/air-quality-concentration-data-updated-hourly
-    if (!region.includes("SYDNEY") && !name.includes("SYDNEY")) continue;
-    const aqSite = await AirQualitySite.findOne({
+    if (!region.includes("SYDNEY") && !suburbName.includes("SYDNEY")) continue;
+
+    let suburb: Suburb | null = suburbMap[suburbName];
+    if (!suburb) {
+      suburb = await Suburb.findOne({
+        where: { name: suburbName },
+      });
+      if (!suburb) {
+        suburb = await Suburb.create({
+          name: suburbName,
+        });
+      }
+    }
+
+    await AirQualitySite.findOrCreate({
       where: {
         siteId,
       },
-    });
-    if (!aqSite) {
-      await AirQualitySite.create({
+      defaults: {
         siteId,
         lng,
         lat,
-        name,
         region,
         dataSourceId: dataSource?.id,
-      });
-    }
+        suburbId: suburb.id,
+      },
+    });
   }
+  updateSuburbGeoJson();
 };
 
 export const updateDailyReadings = async (endDate: Date) => {

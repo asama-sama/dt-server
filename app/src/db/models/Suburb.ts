@@ -8,6 +8,7 @@ import {
   HasMany,
 } from "sequelize-typescript";
 import { SuburbJson } from "../../customTypes/suburb";
+import { AirQualitySite } from "./AirQualitySite";
 import { TrafficIncident } from "./TrafficIncident";
 
 @Table
@@ -27,4 +28,7 @@ export class Suburb extends Model {
 
   @HasMany(() => TrafficIncident, "suburbId")
   trafficIncidents: TrafficIncident[];
+
+  @HasMany(() => AirQualitySite, "suburbId")
+  airQualitySites: AirQualitySite[];
 }
