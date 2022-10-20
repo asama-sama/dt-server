@@ -65,7 +65,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         );
       }
     });
-    updateSuburbGeoJson();
+    await updateSuburbGeoJson();
   } catch (e) {
     let message = "error";
     if (e instanceof Error) {

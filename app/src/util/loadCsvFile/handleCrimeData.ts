@@ -54,8 +54,8 @@ export const handleCrimeData: HandleProcessCsvFile = async (
     if (!crimeCategory) {
       [crimeCategory] = await CrimeCategory.findOrCreate({
         where: {
-          Category: categoryName,
-          Subcategory: subcategoryName,
+          category: categoryName,
+          subcategory: subcategoryName,
         },
         transaction: trx,
       });

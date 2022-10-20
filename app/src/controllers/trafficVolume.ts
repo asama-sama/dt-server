@@ -48,7 +48,7 @@ export const updateStations = async () => {
       },
     });
   }
-  updateSuburbGeoJson();
+  await updateSuburbGeoJson();
 };
 
 export const updateReadings = async () => {

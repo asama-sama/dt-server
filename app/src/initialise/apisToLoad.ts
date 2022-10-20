@@ -1,6 +1,7 @@
 import { DataSourceConsts, DATASOURCES } from "../const/datasource";
 import { updateDailyReadings, updateSites } from "../controllers/airQuality";
 import { updateReadings, updateStations } from "../controllers/trafficVolume";
+import { updateIncidents } from "../controllers/nswTrafficIncidents";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -31,5 +32,11 @@ export const apisToLoad: ApiInitialisor[] = [
       await updateReadings();
     },
     apiConsts: DATASOURCES.nswTrafficVolumeReadings,
+  },
+  {
+    async update() {
+      await updateIncidents();
+    },
+    apiConsts: DATASOURCES.trafficIncidents,
   },
 ];

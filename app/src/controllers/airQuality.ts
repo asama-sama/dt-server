@@ -108,7 +108,7 @@ export const updateSites = async () => {
       },
     });
   }
-  updateSuburbGeoJson();
+  await updateSuburbGeoJson();
 };
 
 export const updateDailyReadings = async (endDate: Date) => {
