@@ -17,18 +17,33 @@ export class TrafficIncident extends Model {
   @PrimaryKey
   @Column({
     primaryKey: true,
-    type: DataType.STRING,
     allowNull: false,
+    autoIncrement: false,
   })
-  id: string;
-  //
+  id: number;
+
   @AllowNull(false)
-  @Column
+  @Column({
+    type: DataType.FLOAT,
+  })
   lat: number;
 
   @AllowNull(false)
-  @Column
+  @Column({
+    type: DataType.FLOAT,
+  })
   lng: number;
+
+  @AllowNull(false)
+  @Column({
+    type: DataType.DATE,
+  })
+  created: Date;
+
+  @Column({
+    type: DataType.DATE,
+  })
+  end: Date;
 
   @ForeignKey(() => Suburb)
   @Column

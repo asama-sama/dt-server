@@ -17,6 +17,7 @@ export enum UpdateStatus {
 @Table
 export class DataSourceUpdateLog extends Model {
   @ForeignKey(() => DataSource)
+  @AllowNull(false)
   @Column
   dataSourceId: number;
 
