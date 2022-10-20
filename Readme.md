@@ -14,7 +14,18 @@ DATA_FILES_PATH=/dataFiles
 DROP_TABLES=no
 NOMINATIM_API_TIMEOUT=1500
 FETCH_SUBURBS=yes
+NSW_OPEN_DATA_API_KEY=<opendata api key. see below for how to set>
 ```
+
+* Create an api key for [NSW Open Data](https://opendata.transport.nsw.gov.au/)
+
+* * Create an account at the link above
+
+* * Create a new application for the following APIs
+
+* * * NSW Live Traffic
+
+* * Add this API key to your environment variables for NSW_OPEN_DATA_API_KEY
 
 * Run the docker files from the root project directory `/`
 > docker-compose up
