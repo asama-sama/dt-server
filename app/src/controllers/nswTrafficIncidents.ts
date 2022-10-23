@@ -27,29 +27,42 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
     const now = new Date();
     const results = await fetchIncidents(now, initialise);
     const connection = getConnection();
+
+    const suburbsCache: { [key: string]: Suburb } = {};
+    const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
+
     await connection.transaction(async (trx) => {
       for (const trafficIncident of results.result) {
         const id = trafficIncident.Hazards.features.id;
         const [lat, lng] =
           trafficIncident.Hazards.features.geometry.coordinates;
         const suburbName =
-          trafficIncident.Hazards.features.properties.roads[0].suburb;
+          trafficIncident.Hazards.features.properties.roads[0].suburb.toUpperCase();
         const { created, mainCategory, end } =
           trafficIncident.Hazards.features.properties;
 
-        const [suburb] = await Suburb.findOrCreate({
-          where: { name: suburbName.toUpperCase() },
-          transaction: trx,
-        });
+        let suburb = suburbsCache[suburbName];
+        if (!suburb) {
+          [suburb] = await Suburb.findOrCreate({
+            where: { name: suburbName },
+            transaction: trx,
+          });
+        }
 
-        const [category] = await TrafficIncidentCategory.findOrCreate({
+        let category = categoryCache[mainCategory];
+        if (!category) {
+          [category] = await TrafficIncidentCategory.findOrCreate({
+            where: {
+              name: mainCategory,
+            },
+            transaction: trx,
+          });
+        }
+        await TrafficIncident.findOrCreate({
           where: {
-            name: mainCategory,
+            id,
           },
-          transaction: trx,
-        });
-        await TrafficIncident.create(
-          {
+          defaults: {
             id,
             lat,
             lng,
@@ -59,10 +72,8 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             trafficIncidentCategoryId: category.id,
             dataSourceId: dataSource.id,
           },
-          {
-            transaction: trx,
-          }
-        );
+          transaction: trx,
+        });
       }
     });
     await updateSuburbGeoJson();
