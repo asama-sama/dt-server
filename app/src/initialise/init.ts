@@ -6,7 +6,7 @@ import {
 } from "../db/models/DataSourceUpdateLog";
 import { DataSourceConsts } from "../const/datasource";
 import { apisToLoad } from "./apisToLoad";
-import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { runSeeds } from "../seeds/runSeeds";
 import { seeds } from "../seeds/seedList";
 import { loadCsvFiles } from "../util/loadCsvFile/loadCsvFile";

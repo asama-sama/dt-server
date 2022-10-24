@@ -40,3 +40,10 @@ export const updateSuburbGeoJson = async () => {
     }
   );
 };
+
+export const transformSuburbNames = (originalName: string) => {
+  const nameUpperCase = originalName.toUpperCase();
+  const nameRemovedTo = nameUpperCase.replace(/\sTO\s/, " + ");
+  const nameRemoveHypen = nameRemovedTo.replace(/\s?-\s?/, " + ");
+  return nameRemoveHypen;
+};

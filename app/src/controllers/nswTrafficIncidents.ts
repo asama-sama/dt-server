@@ -9,7 +9,7 @@ import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 import { TrafficIncidentCategory } from "../db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../db/models/TrafficIncident";
-import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../util/suburbUtils";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 

@@ -1,6 +1,9 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
-import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
+import {
+  updateSuburbGeoJson,
+  transformSuburbNames,
+} from "../../src/util/suburbUtils";
 import { Suburb } from "../../src/db/models/Suburb";
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -59,5 +62,37 @@ describe("updateSuburbGeoJson", () => {
     expect(suburbs[3].geoData).toMatchObject({
       S5: { geoJson: "geodata" },
     });
+  });
+});
+
+describe("transformSuburbNames", () => {
+  test("it changes the name to be uppercase", () => {
+    const name = "suburb name";
+    const transformedName = transformSuburbNames(name);
+    expect(transformedName).toBe("SUBURB NAME");
+  });
+
+  test('it replaces "TO" with "+"', () => {
+    const name = "suburb1 to suburb2";
+    const transformedName = transformSuburbNames(name);
+    expect(transformedName).toBe("SUBURB1 + SUBURB2");
+  });
+
+  test('it replaces "-" with "+"', () => {
+    const name = "suburb1 - suburb2";
+    const transformedName = transformSuburbNames(name);
+    expect(transformedName).toBe("SUBURB1 + SUBURB2");
+  });
+
+  test('it replaces "-" with "+"', () => {
+    const name = "suburb1- suburb2";
+    const transformedName = transformSuburbNames(name);
+    expect(transformedName).toBe("SUBURB1 + SUBURB2");
+  });
+
+  test('it replaces "-" with "+"', () => {
+    const name = "suburb1-suburb2";
+    const transformedName = transformSuburbNames(name);
+    expect(transformedName).toBe("SUBURB1 + SUBURB2");
   });
 });

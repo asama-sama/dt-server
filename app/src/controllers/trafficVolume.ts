@@ -9,7 +9,7 @@ import { Suburb } from "../db/models/Suburb";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
-import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
+import { transformSuburbNames, updateSuburbGeoJson } from "../util/suburbUtils";
 
 export const updateStations = async () => {
   const stations = await getStations();
@@ -20,10 +20,10 @@ export const updateStations = async () => {
   });
   for (let i = 0; i < stations.length; i++) {
     const station = stations[i];
-
+    const suburbName = transformSuburbNames(station.suburb.toUpperCase());
     const [suburb] = await Suburb.findOrCreate({
       where: {
-        name: station.suburb.toUpperCase(),
+        name: suburbName,
       },
     });
 

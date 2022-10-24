@@ -13,7 +13,7 @@ import { Op } from "sequelize";
 import { UpdateFrequency, Frequency } from "../db/models/UpdateFrequency";
 import { DATASOURCES } from "../const/datasource";
 import { Suburb } from "../db/models/Suburb";
-import { updateSuburbGeoJson } from "../util/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../util/suburbUtils";
 
 const DAYS_TO_SEARCH = 7;
 
