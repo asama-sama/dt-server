@@ -150,7 +150,6 @@ export const updateAirQualityReadings = async (
       type: params.parameters[0],
     },
   });
-  console.log("readings", readingsForType);
   const readingsMapped: {
     [key: string]: { [key: number]: AirQualityReading };
   } = {};
