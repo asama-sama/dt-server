@@ -1,10 +1,21 @@
+export type AirQualityApiFrequencies =
+  | "24h average derived from 1h average"
+  | "Hourly average";
+
+export type AirQualityUpdateParams = {
+  parameters: string[];
+  categories: string[];
+  subcategories: string[];
+  frequency: AirQualityApiFrequencies[];
+};
+
 export type DataSourceConsts = {
   name: string;
   uri?: string;
   method?: "post" | "get";
   queryStringParams?: string | null;
   updateFrequency: number;
-  params?: object;
+  params?: object | AirQualityUpdateParams[];
 };
 
 type DataSource = {
@@ -22,6 +33,32 @@ export const DATASOURCES: DataSource = {
     method: "post",
     queryStringParams: null,
     updateFrequency: millisecondsInDay,
+    params: [
+      {
+        parameters: ["NO2"],
+        categories: ["Averages"],
+        subcategories: ["Daily"],
+        frequency: ["24h average derived from 1h average"],
+      },
+      {
+        parameters: ["TEMP"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+      {
+        parameters: ["WSP"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+      {
+        parameters: ["WDR"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+    ],
   },
   nswAirQualitySites: {
     name: "NSW_AIR_QUALITY_SITES",

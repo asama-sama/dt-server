@@ -1,5 +1,6 @@
 import axios from "axios";
-import { PollutantType } from "../db/models/AirQualityReading";
+import { AirQualityUpdateParams } from "../const/datasource";
+import { AirQualityType } from "../db/models/AirQualityReading";
 import { Frequency } from "../db/models/UpdateFrequency";
 
 const AIR_QUALITY_API = "https://data.airquality.nsw.gov.au/api/Data";
@@ -35,7 +36,7 @@ export const getSites = async () => {
 type AirQualityDataResponse = {
   Site_Id: number;
   Parameter: {
-    ParameterCode: PollutantType;
+    ParameterCode: AirQualityType;
     ParameterDescription: string;
     Units: string;
     UnitsDescription: string;
@@ -57,7 +58,7 @@ export type AirQualityData = {
   date: string;
   quality: string | null;
   frequency: Frequency;
-  type: PollutantType;
+  type: AirQualityType;
 };
 
 interface AirQualityDataMonthly extends AirQualityData {
@@ -142,7 +143,7 @@ export const getHourlyObservationsAQApi = async (
 };
 
 export const getDailyObservations = async (
-  emissions: string[],
+  params: AirQualityUpdateParams,
   sites: number[],
   startDate: string,
   endDate: string
@@ -150,13 +151,13 @@ export const getDailyObservations = async (
   const res = await axios.post<AirQualityDataResponse[]>(
     `${AIR_QUALITY_API}/get_Observations`,
     {
-      Parameters: emissions,
+      Parameters: params.parameters,
       Sites: sites,
       StartDate: startDate,
       EndDate: endDate,
-      Categories: ["Averages"],
-      SubCategories: ["Daily"],
-      Frequency: ["24h average derived from 1h average"],
+      Categories: params.categories,
+      SubCategories: params.subcategories,
+      Frequency: params.frequency,
     },
     {
       headers: {

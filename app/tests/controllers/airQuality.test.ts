@@ -1,7 +1,7 @@
 /// <reference types="@types/jest" />;
 import {
   AirQualityReading,
-  PollutantType,
+  AirQualityType,
 } from "../../src/db/models/AirQualityReading";
 import { AirQualitySite } from "../../src/db/models/AirQualitySite";
 import { DataSource } from "../../src/db/models/DataSource";
@@ -12,15 +12,21 @@ import {
   Site,
 } from "../../src/clients/nswAirQuality";
 import {
-  updateDailyReadings,
+  callUpdateAirQualityReadings,
+  updateAirQualityReadings,
   updateSites,
 } from "../../src/controllers/airQuality";
+import * as airQualityController from "../../src/controllers/airQuality";
 import {
   UpdateFrequency,
   Frequency,
 } from "../../src/db/models/UpdateFrequency";
 import { Suburb } from "../../src/db/models/Suburb";
-import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../../src/util/suburbUtils";
+import {
+  AirQualityUpdateParams,
+  DATASOURCES,
+} from "../../src/const/datasource";
 
 jest.mock("../../src/clients/nswAirQuality", () => {
   return {
@@ -30,7 +36,7 @@ jest.mock("../../src/clients/nswAirQuality", () => {
   };
 });
 
-jest.mock("../../src/util/updateSuburbGeoJson", () => {
+jest.mock("../../src/util/suburbUtils", () => {
   return {
     __esModule: true,
     updateSuburbGeoJson: jest.fn(),
@@ -40,6 +46,7 @@ jest.mock("../../src/util/updateSuburbGeoJson", () => {
 const getDailyObservationsMock = getDailyObservations as jest.MockedFunction<
   typeof getDailyObservations
 >;
+getDailyObservationsMock.mockResolvedValue([]);
 
 const getSitesMock = getSites as jest.MockedFunction<typeof getSites>;
 
@@ -48,23 +55,82 @@ const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
 >;
 
 describe("airQuality Controller", () => {
-  describe("updateDailyReadings", () => {
+  describe("callUpdateAirQualityReadings", () => {
+    const callUpdateAirQualityReadingsSpy = jest.spyOn(
+      airQualityController,
+      "updateAirQualityReadings"
+    );
+    beforeEach(async () => {
+      const sitesApi = await DataSource.create({
+        name: "api2",
+        uri: "http::/test2",
+      });
+      await AirQualitySite.create({
+        siteId: 5,
+        dataSourceId: sitesApi.id,
+        lat: 5.2,
+        lng: 2.235,
+      });
+    });
+
+    test("it should call getDailyObservations the correct number of times", async () => {
+      await callUpdateAirQualityReadings(new Date("2022-07-07"));
+
+      expect(callUpdateAirQualityReadingsSpy).toBeCalledTimes(
+        (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)
+          .length
+      );
+    });
+
+    test("it should call getDailyObservations with the correct values", async () => {
+      await callUpdateAirQualityReadings(new Date("2022-07-07"));
+      const sitesMap: { [key: number]: AirQualitySite } = {};
+      const sites = await AirQualitySite.findAll();
+      sites.map((site) => (sitesMap[site.siteId] = site));
+      callUpdateAirQualityReadingsSpy.mock.calls.forEach((call, i) => {
+        expect(call).toEqual([
+          (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[
+            i
+          ],
+          sitesMap,
+          new Date("2022-06-30"),
+          new Date("2022-07-07"),
+        ]);
+      });
+    });
+  });
+
+  describe("updateAirQualityReadings", () => {
     const airQualityReadingsInitial = [
       {
         date: "2022-07-03",
         value: 0.1,
+        type: "NO2",
       },
       {
         date: "2022-07-05",
         value: 0.3,
+        type: "NO2",
       },
       {
         date: "2022-07-06",
         value: null,
+        type: "NO2",
       },
       {
         date: "2022-07-7",
         value: 1,
+        type: "NO2",
+      },
+      {
+        date: "2022-07-03",
+        value: 0.1,
+        type: "WSP",
+      },
+      {
+        date: "2022-07-05",
+        value: 0.3,
+        type: "TEMP",
       },
     ];
 
@@ -78,13 +144,14 @@ describe("airQuality Controller", () => {
         value: 0.5,
         siteId: 5,
         frequency: Frequency.DAILY,
-        type: PollutantType.NO2,
+        type: AirQualityType.NO2,
         quality: null,
       };
     });
 
     let initialReadings: AirQualityReading[];
     let readingsApi: DataSource;
+    const sitesMap: { [key: number]: AirQualitySite } = {};
     beforeEach(async () => {
       readingsApi = await DataSource.create({
         name: "api1",
@@ -112,47 +179,39 @@ describe("airQuality Controller", () => {
             dataSourceId: readingsApi.id,
             airQualitySiteId: site.id,
             updateFrequencyId: frequency?.id,
+            type: aqReadingToAdd.type,
           });
         })
       );
-    });
-
-    test("it should call getDailyObservations with the correct values", async () => {
-      getDailyObservationsMock.mockResolvedValueOnce([]);
-      await updateDailyReadings(new Date("2022-07-07"));
-      expect(getDailyObservationsMock).toHaveBeenCalledWith(
-        ["NO2"],
-        [5],
-        "2022-6-30",
-        "2022-7-7"
+      getDailyObservationsMock.mockResolvedValue(airQualityReadingsNew);
+      sitesMap[site.siteId] = site;
+      await updateAirQualityReadings(
+        (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[0],
+        sitesMap,
+        new Date("2022-06-30"),
+        new Date("2022-07-07")
       );
     });
 
     test("it should update with new readings", async () => {
-      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
-      expect(readings.length).toBe(7);
+      expect(readings.length).toBe(9);
     });
 
     test("it should not update existing readings", async () => {
       const lastUpdatedInitialValues = initialReadings.map((initialReading) =>
         initialReading.updatedAt.getTime()
       );
-      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(new Date("2022-07-07"));
       const readings = await AirQualityReading.findAll({});
       let notUpdated = 0;
       readings.forEach((reading) => {
         if (lastUpdatedInitialValues.includes(reading.updatedAt.getTime()))
           notUpdated += 1;
       });
-      expect(notUpdated).toBe(3);
+      expect(notUpdated).toBe(initialReadings.length - 1);
     });
 
     test("it should update any values which were null initially", async () => {
-      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(new Date("2022-07-30"));
       const readings = await AirQualityReading.findAll({});
       const reading = readings.find(
         (reading) => reading.date === new Date("2022-07-06")
@@ -160,11 +219,56 @@ describe("airQuality Controller", () => {
       expect(reading?.value).not.toBeNull();
     });
 
-    test(`it should filter out observations from the API that don't fall within the expected date range`, async () => {
+    test("it should add new readings for the same date and site if they are of different types", async () => {
+      const airQualityReadingsNew: AirQualityData[] = [
+        {
+          date: `2022-07-01`,
+          value: 0.5,
+          siteId: 5,
+          frequency: Frequency.DAILY,
+          type: AirQualityType.WDR,
+          quality: null,
+        },
+      ];
+
       getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
-      await updateDailyReadings(new Date("2022-07-10"));
-      const newReadings = await AirQualityReading.findAll();
-      expect(newReadings.length).toBe(5);
+      const wdrParams = (<AirQualityUpdateParams[]>(
+        DATASOURCES.nswAirQualityReadings.params
+      )).find((params) => params.parameters[0] === "WDR");
+      await updateAirQualityReadings(
+        <AirQualityUpdateParams>wdrParams,
+        sitesMap,
+        new Date("2022-06-30"),
+        new Date("2022-07-07")
+      );
+      const readings = await AirQualityReading.findAll();
+      expect(readings.length).toBe(10);
+    });
+
+    test("it should not add new readings if they have the same date/time/type", async () => {
+      const airQualityReadingsNew: AirQualityData[] = [
+        {
+          date: `2022-07-01`,
+          value: 0.5,
+          siteId: 5,
+          frequency: Frequency.DAILY,
+          type: AirQualityType.NO2,
+          quality: null,
+        },
+      ];
+
+      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
+      const wdrParams = (<AirQualityUpdateParams[]>(
+        DATASOURCES.nswAirQualityReadings.params
+      )).find((params) => params.parameters[0] === "NO2");
+      await updateAirQualityReadings(
+        <AirQualityUpdateParams>wdrParams,
+        sitesMap,
+        new Date("2022-06-30"),
+        new Date("2022-07-07")
+      );
+      const readings = await AirQualityReading.findAll();
+      expect(readings.length).toBe(9);
     });
   });
 

@@ -1,5 +1,8 @@
 import { DataSourceConsts, DATASOURCES } from "../const/datasource";
-import { updateDailyReadings, updateSites } from "../controllers/airQuality";
+import {
+  callUpdateAirQualityReadings,
+  updateSites,
+} from "../controllers/airQuality";
 import { updateReadings, updateStations } from "../controllers/trafficVolume";
 import { updateIncidents } from "../controllers/nswTrafficIncidents";
 
@@ -17,7 +20,7 @@ export const apisToLoad: ApiInitialisor[] = [
   },
   {
     async update() {
-      await updateDailyReadings(new Date());
+      await callUpdateAirQualityReadings(new Date());
     },
     apiConsts: DATASOURCES.nswAirQualityReadings,
   },

@@ -19,9 +19,12 @@ export enum AirQualityCategory {
   "EXTREMELY POOR" = "EXTREMELY POOR",
 }
 
-export enum PollutantType {
+export enum AirQualityType {
   "NO2" = "NO2",
   "CO2" = "CO2",
+  "TEMP" = "TEMP",
+  "WSP" = "WSP",
+  "WDR" = "WDR",
 }
 
 @Table
@@ -71,11 +74,12 @@ export class AirQualityReading extends Model {
     type: DataType.STRING,
     validate: {
       isValidType(value: string) {
-        if (!(value in PollutantType)) {
-          throw new Error(`type must be of type PollutantType: ${value}`);
+        if (!(value in AirQualityType)) {
+          throw new Error(`type must be of type AirQualityType: ${value}`);
         }
       },
     },
+    allowNull: false,
   })
   type: string;
 
