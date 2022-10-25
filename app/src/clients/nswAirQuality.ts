@@ -59,9 +59,10 @@ export type AirQualityData = {
   quality: string | null;
   frequency: Frequency;
   type: AirQualityType;
+  hour: number;
 };
 
-interface AirQualityDataMonthly extends AirQualityData {
+interface AirQualityDataMonthly extends Omit<AirQualityData, "hour"> {
   month: number;
 }
 
@@ -173,6 +174,8 @@ export const getDailyObservations = async (
     value: data.Value,
     frequency: Frequency.DAILY,
     type: data.Parameter.ParameterCode,
+    hour: data.Hour - 1, // javascript date starts with hour 0, api starts with 1
   }));
+
   return airQualityData;
 };

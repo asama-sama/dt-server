@@ -127,14 +127,13 @@ export const updateAirQualityReadings = async (
   startDate: Date,
   endDate: Date
 ) => {
-  const endDateParsed = `${endDate.getFullYear()}-${
+  const endDateParsed = `${endDate.getFullYear()}-${String(
     endDate.getMonth() + 1
-  }-${endDate.getDate()}`;
+  ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-  const startDateParsed = `${startDate.getFullYear()}-${
+  const startDateParsed = `${startDate.getFullYear()}-${String(
     startDate.getMonth() + 1
-  }-${startDate.getDate()}`;
-
+  ).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
   const observations = await getDailyObservations(
     params,
     Object.keys(airQualitySitesMap).map(Number),
@@ -153,16 +152,18 @@ export const updateAirQualityReadings = async (
   const readingsMapped: {
     [key: string]: { [key: number]: AirQualityReading };
   } = {};
-  readingsForType.forEach((dailyReading) => {
-    const year = dailyReading.date.getFullYear();
-    const month = String(dailyReading.date.getMonth() + 1).padStart(2, "0");
-    const day = String(dailyReading.date.getDate()).padStart(2, "0");
-    const dateToString = `${year}-${month}-${day}`;
+  readingsForType.forEach((readingForType) => {
+    const year = readingForType.date.getFullYear();
+    const month = String(readingForType.date.getMonth() + 1).padStart(2, "0");
+    const day = String(readingForType.date.getDate()).padStart(2, "0");
+    const { hour } = readingForType;
+    const dateToString = `${year}-${month}-${day} ${hour}`;
 
     if (!readingsMapped[dateToString]) {
       readingsMapped[dateToString] = {};
     }
-    readingsMapped[dateToString][dailyReading.airQualitySiteId] = dailyReading;
+    readingsMapped[dateToString][readingForType.airQualitySiteId] =
+      readingForType;
   });
 
   const freq =
@@ -183,20 +184,22 @@ export const updateAirQualityReadings = async (
     await Promise.all(
       observations.map(async (observation) => {
         const airQualitySiteId = airQualitySitesMap[observation.siteId].id;
-
+        const lookupDate = `${observation.date} ${observation.hour}`;
         const existingReading =
-          readingsMapped[observation.date] &&
-          readingsMapped[observation.date][airQualitySiteId];
-
+          readingsMapped[lookupDate] &&
+          readingsMapped[lookupDate][airQualitySiteId];
         if (!existingReading) {
+          const date = new Date(observation.date);
+          date.setHours(observation.hour);
           await AirQualityReading.create(
             {
-              date: new Date(observation.date),
+              date,
               value: observation.value,
               type: observation.type,
               dataSourceId: dataSource?.id,
               airQualitySiteId: airQualitySiteId,
               updateFrequencyId: updateFrequency.id,
+              hour: observation.hour,
             },
             { transaction: trx }
           );

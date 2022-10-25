@@ -45,9 +45,11 @@ export class AirQualityReading extends Model {
   @BelongsTo(() => DataSource, "dataSourceId")
   dataSource: DataSource;
 
+  @AllowNull(false)
   @Column
   date: Date;
 
+  @AllowNull(false)
   @Column
   hour: number;
 
