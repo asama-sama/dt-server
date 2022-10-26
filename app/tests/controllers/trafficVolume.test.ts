@@ -14,7 +14,7 @@ import { DataSource } from "../../src/db/models/DataSource";
 import { Suburb } from "../../src/db/models/Suburb";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
-import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
+import { updateSuburbGeoJson } from "../../src/util/suburbUtils";
 
 jest.mock("../../src/clients/nswTrafficVolume", () => {
   return {
@@ -24,9 +24,10 @@ jest.mock("../../src/clients/nswTrafficVolume", () => {
   };
 });
 
-jest.mock("../../src/util/updateSuburbGeoJson", () => {
+jest.mock("../../src/util/suburbUtils", () => {
   return {
     __esModule: true,
+    transformSuburbNames: jest.fn((t) => t),
     updateSuburbGeoJson: jest.fn(),
   };
 });
@@ -148,11 +149,7 @@ describe("trafficVolume controller", () => {
 
     test("it should not update a reading if it has already been inserted", async () => {
       getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
-      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
-      await updateReadings();
-      await updateReadings();
-      const readings = await TrafficVolumeReading.findAll({});
-      expect(readings.length).toBe(10);
+      expect(async () => await updateReadings()).rejects.toThrowError();
     });
   });
 });

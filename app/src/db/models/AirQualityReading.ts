@@ -45,6 +45,14 @@ export class AirQualityReading extends Model {
   @BelongsTo(() => DataSource, "dataSourceId")
   dataSource: DataSource;
 
+  @ForeignKey(() => UpdateFrequency)
+  @AllowNull(false)
+  @Column
+  updateFrequencyId: number;
+
+  @BelongsTo(() => UpdateFrequency, "updateFrequencyId")
+  updateFrequency: UpdateFrequency;
+
   @AllowNull(false)
   @Column
   date: Date;
@@ -84,12 +92,4 @@ export class AirQualityReading extends Model {
     allowNull: false,
   })
   type: string;
-
-  @ForeignKey(() => UpdateFrequency)
-  @AllowNull(false)
-  @Column
-  updateFrequencyId: number;
-
-  @BelongsTo(() => UpdateFrequency, "updateFrequencyId")
-  updateFrequency: UpdateFrequency;
 }

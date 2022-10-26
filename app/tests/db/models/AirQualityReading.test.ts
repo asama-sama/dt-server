@@ -2,7 +2,7 @@
 import {
   AirQualityReading,
   AirQualityCategory,
-  PollutantType,
+  AirQualityType,
 } from "../../../src/db/models/AirQualityReading";
 import {
   Frequency,
@@ -37,17 +37,23 @@ describe("AirQualityReading", () => {
         airQualityCategory: quality,
         dataSourceId: dataSource?.id,
         updateFrequencyId: updateFrequency?.id,
+        date: new Date(),
+        hour: 0,
+        type: AirQualityType.NO2,
       });
     });
   });
 
   test("it should error on invalid airQuality values", async () => {
-    expect(async () => {
+    await expect(async () => {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         airQualityCategory: "test",
         dataSourceId: dataSource?.id,
         updateFrequencyId: updateFrequency?.id,
+        date: new Date(),
+        hour: 0,
+        type: AirQualityType.NO2,
       });
     }).rejects.toThrowError(
       "Validation error: air quality must be of type AirQualityCategory: test"
@@ -55,37 +61,44 @@ describe("AirQualityReading", () => {
   });
 
   test("it should allow valid pollution types", async () => {
-    Object.values(PollutantType).forEach(async (pollutant) => {
+    Object.values(AirQualityType).forEach(async (pollutant) => {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         type: pollutant,
         dataSourceId: dataSource?.id,
         updateFrequencyId: updateFrequency?.id,
+        date: new Date(),
+        hour: 0,
       });
     });
   });
 
   test("it should error on invalid pollution types", async () => {
-    expect(async () => {
+    await expect(async () => {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         type: "test",
         dataSourceId: dataSource?.id,
         updateFrequencyId: updateFrequency?.id,
+        date: new Date(),
+        hour: 0,
       });
     }).rejects.toThrowError(
-      "Validation error: type must be of type PollutantType: test"
+      "Validation error: type must be of type AirQualityType: test"
     );
   });
 
   test("it should allow valid frequency types", async () => {
-    Object.values(Frequency).forEach(async (frequency) => {
+    for (const frequency of Object.values(Frequency)) {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         frequency: frequency,
         dataSourceId: dataSource?.id,
         updateFrequencyId: updateFrequency?.id,
+        date: new Date(),
+        hour: 0,
+        type: AirQualityType.NO2,
       });
-    });
+    }
   });
 });

@@ -4,7 +4,6 @@ import { CrimeIncident } from "./CrimeIncident";
 @Table
 export class CrimeCategory extends Model {
   // TODO: Remove this column
-  @AllowNull(false)
   @Column
   Category: string;
 

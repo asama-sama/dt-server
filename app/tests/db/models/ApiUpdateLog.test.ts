@@ -1,3 +1,4 @@
+/// <reference types="@types/jest" />;
 import { DataSource } from "../../../src/db/models/DataSource";
 import {
   DataSourceUpdateLog,
@@ -14,7 +15,7 @@ describe("ApiUpdateLog", () => {
 
   test("it should update the log status to SUCCESS", async () => {
     const updateLog = await DataSourceUpdateLog.create({
-      apiId: api.id,
+      dataSourceId: api.id,
       status: UpdateStatus.SUCCESS,
     });
     expect(updateLog.status).toBe(UpdateStatus.SUCCESS);
@@ -22,7 +23,7 @@ describe("ApiUpdateLog", () => {
 
   test("it should update the log status to FAIL", async () => {
     const updateLog = await DataSourceUpdateLog.create({
-      apiId: api.id,
+      dataSourceId: api.id,
       status: UpdateStatus.FAIL,
     });
     expect(updateLog.status).toBe(UpdateStatus.FAIL);
@@ -31,7 +32,7 @@ describe("ApiUpdateLog", () => {
   test("it should throw an error if not updating with enum", async () => {
     expect(async () => {
       await DataSourceUpdateLog.create({
-        apiId: api.id,
+        dataSourceId: api.id,
         status: "test",
       });
     }).rejects.toThrowError(
