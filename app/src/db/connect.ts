@@ -34,8 +34,6 @@ export const initConnection = async ({
   dbSchema?: string;
   logging?: boolean;
 }) => {
-  console.log("connect", dbSchema);
-
   let connection = new Sequelize(dbName, dbUser, dbPassword, {
     host: dbHost,
     dialect: "postgres",
@@ -48,7 +46,6 @@ export const initConnection = async ({
     },
     logging,
   });
-  console.log("a1");
   if (dbSchema) {
     try {
       await connection.createSchema(dbSchema, {});
@@ -76,13 +73,11 @@ export const initConnection = async ({
       logging,
     });
   }
-  console.log("a2");
   try {
     await connection.authenticate();
   } catch (error) {
     console.error("Unable to connect to the database:", error);
   }
-  console.log("a3");
   if (dropTables) {
     const schemaToReset = dbSchema ? dbSchema : "public";
     console.log("force schema reset");
@@ -91,16 +86,12 @@ export const initConnection = async ({
     await connection.sync();
   } else {
     try {
-      console.log("a31");
       await connection.sync({ alter: true });
-
-      console.log("a32");
     } catch (e) {
       console.log("sync error");
-      // console.error(e);
+      console.error(e);
     }
   }
-  console.log("a4");
   sequelize = connection;
   return sequelize;
 };
