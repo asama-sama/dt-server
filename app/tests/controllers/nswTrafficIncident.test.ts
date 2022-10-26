@@ -8,7 +8,7 @@ import { Suburb } from "../../src/db/models/Suburb";
 import { TrafficIncidentCategory } from "../../src/db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../../src/db/models/TrafficIncident";
 import { DataSource } from "../../src/db/models/DataSource";
-import { updateSuburbGeoJson } from "../../src/util/updateSuburbGeoJson";
+import * as suburbUtilsModule from "../../src/util/suburbUtils";
 import { DATASOURCES } from "../../src/const/datasource";
 
 jest.mock("../../src/clients/nswTrafficIncidents", () => {
@@ -18,19 +18,20 @@ jest.mock("../../src/clients/nswTrafficIncidents", () => {
   };
 });
 
-jest.mock("../../src/util/updateSuburbGeoJson", () => {
-  return {
-    __esModule: true,
-    updateSuburbGeoJson: jest.fn(),
-  };
-});
-
 const fetchIncidentsMock = fetchIncidents as jest.MockedFunction<
   typeof fetchIncidents
 >;
-const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
-  typeof updateSuburbGeoJson
->;
+
+const updateSuburbGeoJsonSpy = jest.spyOn(
+  suburbUtilsModule,
+  "updateSuburbGeoJson"
+);
+updateSuburbGeoJsonSpy.mockImplementation(jest.fn());
+
+const transformSuburbNamesSpy = jest.spyOn(
+  suburbUtilsModule,
+  "transformSuburbNames"
+);
 
 describe("nswTrafficIncident", () => {
   const response: FetchIncidentsApiResponse = {
@@ -109,6 +110,10 @@ describe("nswTrafficIncident", () => {
   });
 
   test("it should call updateSuburbGeoJson", () => {
-    expect(updateSuburbGeoJsonMock).toHaveBeenCalled();
+    expect(updateSuburbGeoJsonSpy).toHaveBeenCalled();
+  });
+
+  test("it should call transformSuburbNames", () => {
+    expect(transformSuburbNamesSpy).toHaveBeenCalled();
   });
 });

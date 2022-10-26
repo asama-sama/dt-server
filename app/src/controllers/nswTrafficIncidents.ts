@@ -9,7 +9,7 @@ import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 import { TrafficIncidentCategory } from "../db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../db/models/TrafficIncident";
-import { updateSuburbGeoJson } from "../util/suburbUtils";
+import { updateSuburbGeoJson, transformSuburbNames } from "../util/suburbUtils";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -30,14 +30,14 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
 
     const suburbsCache: { [key: string]: Suburb } = {};
     const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
-
     await connection.transaction(async (trx) => {
       for (const trafficIncident of results.result) {
         const id = trafficIncident.Hazards.features.id;
         const [lat, lng] =
           trafficIncident.Hazards.features.geometry.coordinates;
-        const suburbName =
-          trafficIncident.Hazards.features.properties.roads[0].suburb.toUpperCase();
+        const suburbName = transformSuburbNames(
+          trafficIncident.Hazards.features.properties.roads[0].suburb
+        );
         const { created, mainCategory, end } =
           trafficIncident.Hazards.features.properties;
 
@@ -87,5 +87,6 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
       status: UpdateStatus.FAIL,
       message,
     });
+    throw e;
   }
 };
