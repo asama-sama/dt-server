@@ -9,6 +9,7 @@ import {
 } from "sequelize-typescript";
 import { SuburbJson } from "../../customTypes/suburb";
 import { AirQualitySite } from "./AirQualitySite";
+import { BomStation } from "./BomStation";
 import { TrafficIncident } from "./TrafficIncident";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 
@@ -35,4 +36,7 @@ export class Suburb extends Model {
 
   @HasMany(() => TrafficVolumeStation, "suburbId")
   trafficVolumeStations: TrafficVolumeStation[];
+
+  @HasMany(() => BomStation, "suburbId")
+  bomStations: BomStation[];
 }

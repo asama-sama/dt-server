@@ -15,6 +15,7 @@ import { TrafficVolumeReading } from "./TrafficVolumeReading";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { DataFile } from "./DataFile";
 import { TrafficIncident } from "./TrafficIncident";
+import { BomWeatherReading } from "./BomReading";
 
 @Table
 export class DataSource extends Model {
@@ -56,6 +57,6 @@ export class DataSource extends Model {
   @HasMany(() => DataFile, "dataSourceId")
   dataFiles: DataFile[];
 
-  @HasMany(() => DataSourceUpdateLog, "dataSourceId")
-  dataSourceUpdateLog: DataSourceUpdateLog[];
+  @HasMany(() => BomWeatherReading, "dataSourceId")
+  bomWeatherReadings: BomWeatherReading[];
 }

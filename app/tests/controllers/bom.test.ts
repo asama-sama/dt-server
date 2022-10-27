@@ -33,5 +33,13 @@ describe("bom", () => {
     test("it should call get stations", async () => {
       expect(getStationsMock).toHaveBeenCalledTimes(1);
     });
+
+    test("it should set lat lng on station");
+
+    test("it should add the reading");
+
+    test("it should add a reading at the same time but different station");
+
+    test("it should not add a reading of the same station and time");
   });
 });

@@ -102,4 +102,12 @@ export const DATASOURCES: DataSource = {
       showHistory: false,
     },
   },
+  bomSites: {
+    name: "BOM_SITES",
+    updateFrequency: millisecondsInDay,
+  },
+  bomReadings: {
+    name: "BOM_READINGS",
+    updateFrequency: millisecondsInDay,
+  },
 };

@@ -30,47 +30,49 @@ export const getStations = async () => {
   return stations;
 };
 
+export type StationWeatherAttributes = {
+  sort_order: number;
+  wmo: number;
+  name: string;
+  history_product: string;
+  local_date_time: string;
+  local_date_time_full: string;
+  aifstime_utc: string;
+  lat: number;
+  lon: number;
+  apparent_t: number;
+  cloud: string;
+  cloud_base_m: number;
+  cloud_oktas: number;
+  cloud_type: string;
+  cloud_type_id: never;
+  delta_t: number;
+  gust_kmh: number;
+  gust_kt: number;
+  air_temp: number;
+  dewpt: number;
+  press: number;
+  press_msl: number;
+  press_qnh: number;
+  press_tend: string;
+  rain_trace: string;
+  rel_hum: number;
+  sea_state: string;
+  swell_dir_worded: string;
+  swell_height: null;
+  swell_period: null;
+  vis_km: string;
+  weather: string;
+  wind_dir: string;
+  wind_spd_kmh: number;
+  wind_spd_kt: number;
+};
+
 type GetStationWeatherResponse = {
   observations: {
     notice: object;
     header: object;
-    data: {
-      sort_order: number;
-      wmo: number;
-      name: string;
-      history_product: string;
-      local_date_time: string;
-      local_date_time_full: string;
-      aifstime_utc: string;
-      lat: number;
-      lon: number;
-      apparent_t: number;
-      cloud: string;
-      cloud_base_m: number;
-      cloud_oktas: number;
-      cloud_type: string;
-      cloud_type_id: never;
-      delta_t: number;
-      gust_kmh: number;
-      gust_kt: number;
-      air_temp: number;
-      dewpt: number;
-      press: number;
-      press_msl: number;
-      press_qnh: number;
-      press_tend: string;
-      rain_trace: string;
-      rel_hum: number;
-      sea_state: string;
-      swell_dir_worded: string;
-      swell_height: null;
-      swell_period: null;
-      vis_km: string;
-      weather: string;
-      wind_dir: string;
-      wind_spd_kmh: number;
-      wind_spd_kt: number;
-    }[];
+    data: StationWeatherAttributes[];
   };
 };
 
