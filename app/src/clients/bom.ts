@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BomStation } from "../db/models/BomStation";
+import { WithNull } from "../util/typeUtils";
 
 const BOM_NSW_STATIONS_URL =
   "http://www.bom.gov.au/nsw/observations/nswall.shtml";
@@ -45,7 +46,7 @@ export type StationWeatherAttributes = {
   cloud_base_m: number;
   cloud_oktas: number;
   cloud_type: string;
-  cloud_type_id: never;
+  cloud_type_id: number;
   delta_t: number;
   gust_kmh: number;
   gust_kt: number;
@@ -72,7 +73,7 @@ type GetStationWeatherResponse = {
   observations: {
     notice: object;
     header: object;
-    data: StationWeatherAttributes[];
+    data: Partial<WithNull<StationWeatherAttributes>>[];
   };
 };
 

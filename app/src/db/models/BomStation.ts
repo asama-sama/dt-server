@@ -8,7 +8,7 @@ import {
   Model,
   Table,
 } from "sequelize-typescript";
-import { BomWeatherReading } from "./BomReading";
+import { BomReading } from "./BomReading";
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
 
@@ -19,6 +19,7 @@ export class BomStation extends Model {
   stationId: string;
 
   @ForeignKey(() => Suburb)
+  @AllowNull(false)
   @Column
   suburbId: number;
 
@@ -47,6 +48,6 @@ export class BomStation extends Model {
   })
   lng: number;
 
-  @HasMany(() => BomWeatherReading, "bomStationid")
-  bomWeatherReadings: BomWeatherReading[];
+  @HasMany(() => BomReading, "bomStationid")
+  bomReadings: BomReading[];
 }

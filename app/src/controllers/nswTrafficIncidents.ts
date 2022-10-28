@@ -48,7 +48,6 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             transaction: trx,
           });
         }
-
         let category = categoryCache[mainCategory];
         if (!category) {
           [category] = await TrafficIncidentCategory.findOrCreate({

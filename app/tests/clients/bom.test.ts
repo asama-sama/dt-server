@@ -43,7 +43,7 @@ describe("bom", () => {
       ]);
     });
   });
-  describe.only("getStationWeather", () => {
+  describe("getStationWeather", () => {
     let station: BomStation;
     beforeEach(async () => {
       station = await BomStation.create({

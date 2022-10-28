@@ -11,7 +11,7 @@ import { BomStation } from "./BomStation";
 import { DataSource } from "./DataSource";
 
 @Table
-export class BomWeatherReading extends Model {
+export class BomReading extends Model {
   @ForeignKey(() => BomStation)
   @AllowNull(false)
   @Column
