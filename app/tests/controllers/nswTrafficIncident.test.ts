@@ -116,4 +116,34 @@ describe("nswTrafficIncident", () => {
   test("it should call transformSuburbNames", () => {
     expect(transformSuburbNamesSpy).toHaveBeenCalled();
   });
+
+  test('it should update the "end" value of an existing incident if it exists', async () => {
+    const [suburb] = await Suburb.findAll();
+    const [category] = await TrafficIncidentCategory.findAll();
+    const dataSource = await DataSource.findOne({
+      where: {
+        name: DATASOURCES.trafficIncidents.name,
+      },
+    });
+    await TrafficIncident.create({
+      id: 113,
+      lat: 23.3,
+      lng: -123.54,
+      created: new Date("2022-03-01"),
+      suburbId: suburb.id,
+      trafficIncidentCategoryId: category.id,
+      dataSourceId: dataSource?.id,
+    });
+    const newResponse = { ...response };
+    newResponse.result[0].Hazards.features.id = 113;
+    newResponse.result[0].Hazards.features.properties.end =
+      new Date().getTime();
+    await updateIncidents();
+    const incident = await TrafficIncident.findOne({
+      where: {
+        id: 113,
+      },
+    });
+    expect(incident?.end).not.toBe(null);
+  });
 });

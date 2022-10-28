@@ -19,6 +19,7 @@ export class TrafficIncident extends Model {
     primaryKey: true,
     allowNull: false,
     autoIncrement: false,
+    type: DataType.INTEGER,
   })
   id: number;
 

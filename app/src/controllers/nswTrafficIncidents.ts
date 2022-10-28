@@ -58,7 +58,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             transaction: trx,
           });
         }
-        await TrafficIncident.findOrCreate({
+        const [incident] = await TrafficIncident.findOrCreate({
           where: {
             id,
           },
@@ -74,6 +74,11 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
           },
           transaction: trx,
         });
+        if (!incident.end && end) {
+          incident.update({
+            end: new Date(end),
+          });
+        }
       }
     });
     await updateSuburbGeoJson();
@@ -82,6 +87,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
     if (e instanceof Error) {
       message = e.message;
     }
+    console.error(e);
     await DataSourceUpdateLog.create({
       dataSourceId: dataSource?.id,
       status: UpdateStatus.FAIL,

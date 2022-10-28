@@ -48,7 +48,6 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     }
     resolve();
   };
-
   const lastUpdatedTime: Date = await DataSourceUpdateLog.max("createdAt", {
     where: {
       dataSourceId: dataSource?.id,
