@@ -2,7 +2,7 @@ import { InferAttributes } from "sequelize";
 import { CrimeCategory } from "../../db/models/CrimeCategory";
 import { CrimeIncident } from "../../db/models/CrimeIncident";
 import { Suburb } from "../../db/models/Suburb";
-import { createLoadIndicator, markLoaded } from "../loader";
+import { Loader } from "../loader";
 import { HandleProcessCsvFile } from "./loadCsvFile";
 
 export const handleCrimeData: HandleProcessCsvFile = async (
@@ -22,10 +22,10 @@ export const handleCrimeData: HandleProcessCsvFile = async (
     "suburb" | "dataFile" | "crimeCategory"
   >[] = [];
 
-  const loadIndicator = createLoadIndicator();
+  const loader = new Loader(results.length);
 
   for (let i = 0; i < results.length; i++) {
-    markLoaded(loadIndicator, i / results.length);
+    loader.tick();
     const result = results[i];
     const suburbName = result["Suburb"];
     if (!suburbName) {

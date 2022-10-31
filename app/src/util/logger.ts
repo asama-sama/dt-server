@@ -3,13 +3,7 @@ enum LogLevels {
   "ERROR",
 }
 
-export const logger = (
-  message: string,
-  level: LogLevels = LogLevels.LOG,
-  showTest = false
-) => {
-  const { NODE_ENV } = process.env;
-  if (NODE_ENV === "test" && !showTest) return;
+export const logger = (message: string, level: LogLevels = LogLevels.LOG) => {
   if (level === LogLevels.ERROR) {
     console.error(message);
   } else if (level === LogLevels.LOG) {

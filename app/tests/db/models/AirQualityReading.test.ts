@@ -31,7 +31,7 @@ describe("AirQualityReading", () => {
   });
 
   test("it should allow valid airQuality values", async () => {
-    Object.values(AirQualityCategory).forEach(async (quality) => {
+    for (const quality of Object.values(AirQualityCategory)) {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         airQualityCategory: quality,
@@ -41,7 +41,7 @@ describe("AirQualityReading", () => {
         hour: 0,
         type: AirQualityType.NO2,
       });
-    });
+    }
   });
 
   test("it should error on invalid airQuality values", async () => {
@@ -61,7 +61,7 @@ describe("AirQualityReading", () => {
   });
 
   test("it should allow valid pollution types", async () => {
-    Object.values(AirQualityType).forEach(async (pollutant) => {
+    for (const pollutant of Object.values(AirQualityType)) {
       await AirQualityReading.create({
         airQualitySiteId: site.id,
         type: pollutant,
@@ -70,7 +70,7 @@ describe("AirQualityReading", () => {
         date: new Date(),
         hour: 0,
       });
-    });
+    }
   });
 
   test("it should error on invalid pollution types", async () => {

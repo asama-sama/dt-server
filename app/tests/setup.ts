@@ -1,8 +1,7 @@
 /// <reference types="@types/jest" />;
 import path from "path";
 import { Sequelize } from "sequelize-typescript";
-import { getConnection, setConnection } from "../src/db/connect";
-import { Suburb } from "../src/db/models/Suburb";
+import { getConnection } from "../src/db/connect";
 import { runSeeds } from "../src/seeds/runSeeds";
 import { seeds } from "../src/seeds/seedList";
 
@@ -16,6 +15,11 @@ jest.mock("../src/db/connect", () => ({
 const getConnectionMock = getConnection as jest.MockedFunction<
   typeof getConnection
 >;
+
+jest.mock("../src/util/logger", () => ({
+  __esModule: true,
+  logger: jest.fn(),
+}));
 
 let defaultConnection: Sequelize;
 
