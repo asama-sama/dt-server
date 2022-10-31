@@ -4,18 +4,12 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
-import { DataSourceConsts } from "../const/datasource";
-import { apisToLoad } from "./apisToLoad";
+import { ApiInitialisor, apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { runSeeds } from "../seeds/runSeeds";
 import { seeds } from "../seeds/seedList";
 import { loadCsvFiles } from "../util/loadCsvFile/loadCsvFile";
 import { logger } from "../util/logger";
-
-export interface ApiInitialisor {
-  update(): Promise<void>;
-  apiConsts: DataSourceConsts;
-}
 
 const timers: NodeJS.Timer[] = [];
 
@@ -27,12 +21,15 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     },
   });
 
-  const update = async (resolve: (value: void | PromiseLike<void>) => void) => {
+  const update = async (
+    resolve: (value: void | PromiseLike<void>) => void,
+    initialise?: boolean
+  ) => {
     logger(`activate ${apiInitialisor.apiConsts.name}`);
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
     try {
-      await apiInitialisor.update();
+      await apiInitialisor.update({ initialise: initialise ? true : false });
     } catch (e) {
       status = UpdateStatus.FAIL;
       if (e instanceof Error) errorMessage = e.message;
@@ -67,6 +64,7 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     const timeSinceUpdate = currentTime - lastUpdatedTime;
     timeUntilUpdate =
       apiInitialisor.apiConsts.updateFrequency - timeSinceUpdate;
+    if (timeUntilUpdate < 0) timeUntilUpdate = 0;
   }
   const timeout = new Promise<void>((resolve) => {
     setTimeout(() => {
@@ -74,7 +72,7 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
         return new Promise((resolve) => update(resolve));
       }, apiInitialisor.apiConsts.updateFrequency);
       timers.push(timerId);
-      update(resolve);
+      update(resolve, true);
     }, timeUntilUpdate);
   });
   return { timeout, delay: timeUntilUpdate };

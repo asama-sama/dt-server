@@ -52,7 +52,7 @@ export const fetchIncidents: FetchIncidentsFunction = async (
   const startdate = new Date(endDate);
 
   if (initialise) {
-    startdate.setDate(startdate.getDate() - 7);
+    startdate.setMonth(startdate.getMonth() - 2);
   } else {
     startdate.setDate(startdate.getDate() - 2);
   }

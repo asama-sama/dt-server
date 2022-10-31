@@ -51,7 +51,7 @@ describe("nswTrafficIncident", () => {
               created: new Date("2022-03-01").getTime(),
               end: new Date("2022-03-3").getTime(),
               lastUpdated: new Date().getTime(),
-              mainCategory: "category 1",
+              mainCategory: "new roadworks",
               roads: [
                 {
                   region: "sydney",
@@ -79,6 +79,8 @@ describe("nswTrafficIncident", () => {
   test("it should create categories for each suburb", async () => {
     const categories = await TrafficIncidentCategory.findAll();
     expect(categories.length).toBe(1);
+    expect(categories[0].category).toBe("roadworks");
+    expect(categories[0].subcategory).toBe("new roadworks");
   });
 
   test("it should create traffic incidents populated with the correct values", async () => {
@@ -107,6 +109,12 @@ describe("nswTrafficIncident", () => {
     await updateIncidents();
     const incidents = await TrafficIncident.findAll();
     expect(incidents.length).toBe(1);
+  });
+
+  test("it should not create the same TrafficIncidentCategory twice", async () => {
+    await updateIncidents();
+    const categories = await TrafficIncidentCategory.findAll();
+    expect(categories.length).toBe(1);
   });
 
   test("it should call updateSuburbGeoJson", () => {

@@ -10,6 +10,7 @@ import { Suburb } from "../db/models/Suburb";
 import { TrafficIncidentCategory } from "../db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../db/models/TrafficIncident";
 import { updateSuburbGeoJson, transformSuburbNames } from "../util/suburbUtils";
+import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -38,8 +39,11 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         const suburbName = transformSuburbNames(
           trafficIncident.Hazards.features.properties.roads[0].suburb
         );
-        const { created, mainCategory, end } =
-          trafficIncident.Hazards.features.properties;
+        const {
+          created,
+          mainCategory: subcategory,
+          end,
+        } = trafficIncident.Hazards.features.properties;
 
         let suburb = suburbsCache[suburbName];
         if (!suburb) {
@@ -48,14 +52,20 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             transaction: trx,
           });
         }
-        let category = categoryCache[mainCategory];
-        if (!category) {
-          [category] = await TrafficIncidentCategory.findOrCreate({
-            where: {
-              name: mainCategory,
-            },
-            transaction: trx,
-          });
+        let trafficIncidentCategory = categoryCache[subcategory];
+        if (!trafficIncidentCategory) {
+          const category = getTrafficIncidentCategory(subcategory);
+          [trafficIncidentCategory] =
+            await TrafficIncidentCategory.findOrCreate({
+              where: {
+                subcategory,
+              },
+              defaults: {
+                category,
+                subcategory,
+              },
+              transaction: trx,
+            });
         }
         const [incident] = await TrafficIncident.findOrCreate({
           where: {
@@ -68,7 +78,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             created: new Date(created),
             end: end ? new Date(end) : null,
             suburbId: suburb.id,
-            trafficIncidentCategoryId: category.id,
+            trafficIncidentCategoryId: trafficIncidentCategory.id,
             dataSourceId: dataSource.id,
           },
           transaction: trx,

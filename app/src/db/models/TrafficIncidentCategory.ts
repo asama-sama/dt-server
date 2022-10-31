@@ -3,9 +3,12 @@ import { TrafficIncident } from "./TrafficIncident";
 
 @Table
 export class TrafficIncidentCategory extends Model {
+  @Column
+  category: string;
+
   @Unique
   @Column
-  name: string;
+  subcategory: string;
 
   @HasMany(() => TrafficIncident, "trafficIncidentCategoryId")
   trafficIncidents: TrafficIncident;

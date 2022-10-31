@@ -44,7 +44,7 @@ describe("nswTrafficIncidents", () => {
   test("it should call axios with the correct parameters if init=true", async () => {
     const endDate = new Date();
     const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - 7);
+    startDate.setMonth(startDate.getMonth() - 2);
     await fetchIncidents(endDate, true);
     expect(axios.post).toHaveBeenCalledWith(
       DATASOURCES.trafficIncidents.uri,

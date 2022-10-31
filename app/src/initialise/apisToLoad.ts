@@ -10,8 +10,12 @@ import {
   updateStations as updateWeatherStations,
 } from "../controllers/bom";
 
+type ApiInitialisorOptions = {
+  initialise: boolean;
+};
+
 export interface ApiInitialisor {
-  update(): Promise<void>;
+  update(options?: ApiInitialisorOptions): Promise<void>;
   apiConsts: DataSourceConsts;
 }
 
@@ -41,8 +45,8 @@ export const apisToLoad: ApiInitialisor[] = [
     apiConsts: DATASOURCES.nswTrafficVolumeReadings,
   },
   {
-    async update() {
-      await updateIncidents();
+    async update(options) {
+      await updateIncidents(options?.initialise);
     },
     apiConsts: DATASOURCES.trafficIncidents,
   },
