@@ -2,9 +2,7 @@ import {
   Table,
   Column,
   Model,
-  Default,
   HasMany,
-  DataType,
   AllowNull,
   Unique,
 } from "sequelize-typescript";
@@ -23,18 +21,6 @@ export class DataSource extends Model {
   @AllowNull(false)
   @Column
   name: string;
-
-  @Column
-  uri: string;
-
-  @Column({
-    type: DataType.STRING(1000),
-  })
-  queryStringParams: string;
-
-  @Default(false)
-  @Column
-  historicalFetched: boolean;
 
   @HasMany(() => DataSourceUpdateLog, "dataSourceId")
   dataSourceUpdateLogs: DataSourceUpdateLog[];

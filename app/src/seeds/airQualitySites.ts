@@ -10,8 +10,6 @@ export const seed = async () => {
   if (!nswAirQualitySitesApi) {
     await DataSource.create({
       name: DATASOURCES.nswAirQualitySites.name,
-      uri: DATASOURCES.nswAirQualitySites.uri,
-      queryStringParams: DATASOURCES.nswAirQualitySites.queryStringParams,
     });
   }
 };

@@ -11,8 +11,6 @@ export const seed = async () => {
   if (!nswAirQualityReadingsApi) {
     await DataSource.create({
       name: DATASOURCES.nswAirQualityReadings.name,
-      uri: DATASOURCES.nswAirQualityReadings.uri,
-      queryStringParams: DATASOURCES.nswAirQualityReadings.queryStringParams,
     });
   }
   await UpdateFrequency.findOrCreate({

@@ -4,8 +4,8 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../../src/db/models/DataSourceUpdateLog";
-import { ApiInitialisor } from "../../src/initialise/apisToLoad";
 import { loadAndSyncApi } from "../../src/initialise/init";
+import { JobInitialisor } from "../../src/initialise/jobs";
 
 jest.useFakeTimers();
 jest.spyOn(global, "setTimeout");
@@ -17,9 +17,9 @@ describe("init", () => {
     const mockUpdate = jest.fn(() => {
       return Promise.resolve();
     });
-    const apiToInitialise: ApiInitialisor = {
+    const apiToInitialise: JobInitialisor = {
       update: mockUpdate,
-      apiConsts: {
+      params: {
         name: "testApi",
         updateFrequency: 10 * 60 * 1000, // 10 minutes
       },
@@ -68,7 +68,7 @@ describe("init", () => {
       });
       ({ delay } = await loadAndSyncApi(apiToInitialise));
       const maxDelay =
-        apiToInitialise.apiConsts.updateFrequency -
+        apiToInitialise.params.updateFrequency -
         (new Date().getTime() - twoMinutesAgo.getTime());
       expect(delay).toBeGreaterThanOrEqual(maxDelay - 1000);
       expect(delay).toBeLessThanOrEqual(maxDelay);
@@ -129,7 +129,7 @@ describe("init", () => {
       await timeout;
       expect(setInterval).toHaveBeenCalledWith(
         expect.any(Function),
-        apiToInitialise.apiConsts.updateFrequency
+        apiToInitialise.params.updateFrequency
       );
     });
 

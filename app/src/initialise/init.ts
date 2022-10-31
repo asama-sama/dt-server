@@ -4,20 +4,21 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
-import { ApiInitialisor, apisToLoad } from "./apisToLoad";
+import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { runSeeds } from "../seeds/runSeeds";
 import { seeds } from "../seeds/seedList";
 import { loadCsvFiles } from "../util/loadCsvFile/loadCsvFile";
 import { logger } from "../util/logger";
+import { JobInitialisor } from "./jobs";
 
 const timers: NodeJS.Timer[] = [];
 
-export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
-  logger(`initialise ${apiInitialisor.apiConsts.name}`);
+export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
+  logger(`initialise ${apiInitialisor.params.name}`);
   const dataSource = await DataSource.findOne({
     where: {
-      name: apiInitialisor.apiConsts.name,
+      name: apiInitialisor.params.name,
     },
   });
 
@@ -25,7 +26,7 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     resolve: (value: void | PromiseLike<void>) => void,
     initialise?: boolean
   ) => {
-    logger(`activate ${apiInitialisor.apiConsts.name}`);
+    logger(`activate ${apiInitialisor.params.name}`);
     let status: UpdateStatus = UpdateStatus.SUCCESS;
     let errorMessage = "";
     try {
@@ -62,15 +63,14 @@ export const loadAndSyncApi = async (apiInitialisor: ApiInitialisor) => {
     const currentTime = new Date().getTime();
     const lastUpdatedTime = lastUpdated.createdAt?.getTime();
     const timeSinceUpdate = currentTime - lastUpdatedTime;
-    timeUntilUpdate =
-      apiInitialisor.apiConsts.updateFrequency - timeSinceUpdate;
+    timeUntilUpdate = apiInitialisor.params.updateFrequency - timeSinceUpdate;
     if (timeUntilUpdate < 0) timeUntilUpdate = 0;
   }
   const timeout = new Promise<void>((resolve) => {
     setTimeout(() => {
       const timerId = setInterval(() => {
         return new Promise((resolve) => update(resolve));
-      }, apiInitialisor.apiConsts.updateFrequency);
+      }, apiInitialisor.params.updateFrequency);
       timers.push(timerId);
       update(resolve, true);
     }, timeUntilUpdate);
@@ -98,7 +98,7 @@ export const init = async () => {
   await runSeeds(seeds);
   for (const apiToLoad of apisToLoad) {
     const { timeout, delay } = await loadAndSyncApi(apiToLoad);
-    logger(`${apiToLoad.apiConsts.name} will run in ${delay} ms`);
+    logger(`${apiToLoad.params.name} will run in ${delay} ms`);
     if (delay === 0) await timeout; // to stop all the apis from running at the same time on first load
   }
   await loadCsvFiles();

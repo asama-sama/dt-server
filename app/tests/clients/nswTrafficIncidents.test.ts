@@ -27,7 +27,7 @@ describe("nswTrafficIncidents", () => {
     startDate.setDate(startDate.getDate() - 2);
     await fetchIncidents(endDate);
     expect(axios.post).toHaveBeenCalledWith(
-      DATASOURCES.trafficIncidents.uri,
+      "https://api.transport.nsw.gov.au/v1/traffic/historicaldata",
       {
         ...DATASOURCES.trafficIncidents.params,
         created: startDate,
@@ -47,7 +47,7 @@ describe("nswTrafficIncidents", () => {
     startDate.setMonth(startDate.getMonth() - 2);
     await fetchIncidents(endDate, true);
     expect(axios.post).toHaveBeenCalledWith(
-      DATASOURCES.trafficIncidents.uri,
+      "https://api.transport.nsw.gov.au/v1/traffic/historicaldata",
       {
         ...DATASOURCES.trafficIncidents.params,
         created: startDate,

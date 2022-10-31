@@ -1,4 +1,4 @@
-import { DataSourceConsts, DATASOURCES } from "../const/datasource";
+import { DATASOURCES } from "../const/datasource";
 import {
   callUpdateAirQualityReadings,
   updateSites,
@@ -9,57 +9,49 @@ import {
   updateReadings as updateWeatherReadings,
   updateStations as updateWeatherStations,
 } from "../controllers/bom";
+import { JobInitialisor } from "./jobs";
 
-type ApiInitialisorOptions = {
-  initialise: boolean;
-};
-
-export interface ApiInitialisor {
-  update(options?: ApiInitialisorOptions): Promise<void>;
-  apiConsts: DataSourceConsts;
-}
-
-export const apisToLoad: ApiInitialisor[] = [
+export const apisToLoad: JobInitialisor[] = [
   {
     async update() {
       await updateSites();
     },
-    apiConsts: DATASOURCES.nswAirQualitySites,
+    params: DATASOURCES.nswAirQualitySites,
   },
   {
     async update() {
       await callUpdateAirQualityReadings(new Date());
     },
-    apiConsts: DATASOURCES.nswAirQualityReadings,
+    params: DATASOURCES.nswAirQualityReadings,
   },
   {
     async update() {
       await updateStations();
     },
-    apiConsts: DATASOURCES.nswTrafficVolumeStations,
+    params: DATASOURCES.nswTrafficVolumeStations,
   },
   {
     async update() {
       await updateReadings();
     },
-    apiConsts: DATASOURCES.nswTrafficVolumeReadings,
+    params: DATASOURCES.nswTrafficVolumeReadings,
   },
   {
     async update(options) {
       await updateIncidents(options?.initialise);
     },
-    apiConsts: DATASOURCES.trafficIncidents,
+    params: DATASOURCES.trafficIncidents,
   },
   {
     async update() {
       await updateWeatherStations();
     },
-    apiConsts: DATASOURCES.bomSites,
+    params: DATASOURCES.bomSites,
   },
   {
     async update() {
       await updateWeatherReadings();
     },
-    apiConsts: DATASOURCES.bomReadings,
+    params: DATASOURCES.bomReadings,
   },
 ];

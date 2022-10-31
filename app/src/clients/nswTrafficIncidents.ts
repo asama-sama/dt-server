@@ -38,6 +38,8 @@ type FetchIncidentsFunction = (
   initialise?: boolean
 ) => Promise<FetchIncidentsApiResponse>;
 
+const URI = "https://api.transport.nsw.gov.au/v1/traffic/historicaldata";
+
 export const fetchIncidents: FetchIncidentsFunction = async (
   endDate,
   initialise = false
@@ -46,8 +48,7 @@ export const fetchIncidents: FetchIncidentsFunction = async (
   if (!NSW_OPEN_DATA_API_KEY)
     throw new Error("NSW_OPEN_DATA_API_KEY must be defined");
 
-  const { uri, params } = DATASOURCES.trafficIncidents;
-  if (!uri) throw new Error("uri for fetch traffic incidents must be defined");
+  const { params } = DATASOURCES.trafficIncidents;
 
   const startdate = new Date(endDate);
 
@@ -58,7 +59,7 @@ export const fetchIncidents: FetchIncidentsFunction = async (
   }
 
   const res = await axios.post<FetchIncidentsApiResponse>(
-    uri,
+    URI,
     {
       ...params,
       created: startdate,
