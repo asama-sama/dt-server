@@ -6,6 +6,8 @@ import {
   WeatherStation,
 } from "../../src/clients/bom";
 import { BomStation } from "../../src/db/models/BomStation";
+import { DataSource } from "../../src/db/models/DataSource";
+import { Suburb } from "../../src/db/models/Suburb";
 import bomStationWeatherResponse from "../dataArtifacts/bomStationWeatherResponse.json";
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -14,7 +16,6 @@ describe("bom", () => {
   describe("getStations", () => {
     let stations: WeatherStation[];
     beforeEach(async () => {
-      stations = await getStations();
       mockedAxios.get.mockResolvedValueOnce({
         data: `<tr class="rowleftcolumn">
       <th ><a href="/products/IDN11111/IDN11111.11111.shtml">test 1</a></th>
@@ -22,6 +23,7 @@ describe("bom", () => {
       <th ><a href="/products/IDN333333/IDN333333.33333.shtml">test 3</a></th>
       </tr>`,
       });
+      stations = await getStations();
     });
     test("it should make a uri call", () => {
       expect(mockedAxios.get).toHaveBeenCalledTimes(1);
@@ -46,9 +48,17 @@ describe("bom", () => {
   describe("getStationWeather", () => {
     let station: BomStation;
     beforeEach(async () => {
+      const suburb = await Suburb.create({
+        name: "suburb1",
+      });
+      const dataSource = await DataSource.create({
+        name: "ds1",
+      });
       station = await BomStation.create({
-        stationId: "/test/station",
+        stationId: "test/station",
         name: "station name",
+        suburbId: suburb.id,
+        dataSourceId: dataSource.id,
       });
       mockedAxios.get.mockResolvedValueOnce({
         data: bomStationWeatherResponse,

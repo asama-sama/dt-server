@@ -8,6 +8,7 @@ import { updateStations, updateReadings } from "../../src/controllers/bom";
 import { BomReading } from "../../src/db/models/BomReading";
 import { BomStation } from "../../src/db/models/BomStation";
 import { DataSource } from "../../src/db/models/DataSource";
+import { DataSourceUpdateLog } from "../../src/db/models/DataSourceUpdateLog";
 import { Suburb } from "../../src/db/models/Suburb";
 jest.mock("../../src/clients/bom", () => ({
   __esModule: true,
@@ -45,6 +46,16 @@ describe("bom", () => {
 
     test("it should call get stations", async () => {
       expect(getStationsMock).toHaveBeenCalledTimes(1);
+    });
+
+    test("it should create suburbs", async () => {
+      const suburbs = await Suburb.findAll();
+      expect(suburbs.length).toBe(3);
+    });
+
+    test("it should create stations", async () => {
+      const stations = await BomStation.findAll();
+      expect(stations.length).toBe(3);
     });
   });
 
@@ -147,6 +158,22 @@ describe("bom", () => {
       await updateReadings();
       const bomReadings = await BomReading.findAll();
       expect(bomReadings.length).toBe(2);
+    });
+
+    test("it should create one error in DataSourceUpdateLogs", async () => {
+      getStationWeatherMock.mockRejectedValueOnce("could not fetch");
+      const suburb = await Suburb.create({ name: "suburb2" });
+      await BomStation.create({
+        dataSourceId: dataSource?.id,
+        stationId: "stationId",
+        suburbId: suburb.id,
+        name: "station name2",
+      });
+      await updateReadings();
+      const dataSourceUpdateLogs = await DataSourceUpdateLog.findAll();
+      expect(dataSourceUpdateLogs.length).toBe(1);
+      const readings = await BomReading.findAll();
+      expect(readings.length).toBe(2); // created once in before each and once in this test
     });
   });
 });

@@ -80,6 +80,7 @@ beforeEach(async () => {
 
 afterAll(async () => {
   const connection = getConnection();
+  await connection.dropSchema(globalThis.DB_SCHEMA, {});
   await connection.close();
   await defaultConnection.close();
 });

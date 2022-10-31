@@ -1,11 +1,12 @@
 import axios from "axios";
 import { BomStation } from "../db/models/BomStation";
+import { logger } from "../util/logger";
 import { WithNull } from "../util/typeUtils";
 
 const BOM_NSW_STATIONS_URL =
   "http://www.bom.gov.au/nsw/observations/nswall.shtml";
 
-const BOM_STATION_WEATHER_URL = "http://www.bom.gov.au/fwo";
+const BOM_STATION_WEATHER_URL = "http://www.bom.gov.au/fwo/";
 
 export type WeatherStation = {
   name: string;
@@ -78,8 +79,8 @@ type GetStationWeatherResponse = {
 };
 
 export const getStationWeather = async (station: BomStation) => {
-  const res = await axios.get<GetStationWeatherResponse>(
-    `${BOM_STATION_WEATHER_URL}${station.stationId}.json`
-  );
+  const stationWeatherURI = `${BOM_STATION_WEATHER_URL}${station.stationId}.json`;
+  logger(`${stationWeatherURI}`);
+  const res = await axios.get<GetStationWeatherResponse>(stationWeatherURI);
   return res.data.observations.data;
 };

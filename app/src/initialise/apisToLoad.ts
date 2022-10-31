@@ -5,6 +5,10 @@ import {
 } from "../controllers/airQuality";
 import { updateReadings, updateStations } from "../controllers/trafficVolume";
 import { updateIncidents } from "../controllers/nswTrafficIncidents";
+import {
+  updateReadings as updateWeatherReadings,
+  updateStations as updateWeatherStations,
+} from "../controllers/bom";
 
 export interface ApiInitialisor {
   update(): Promise<void>;
@@ -41,5 +45,17 @@ export const apisToLoad: ApiInitialisor[] = [
       await updateIncidents();
     },
     apiConsts: DATASOURCES.trafficIncidents,
+  },
+  {
+    async update() {
+      await updateWeatherStations();
+    },
+    apiConsts: DATASOURCES.bomSites,
+  },
+  {
+    async update() {
+      await updateWeatherReadings();
+    },
+    apiConsts: DATASOURCES.bomReadings,
   },
 ];
