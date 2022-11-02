@@ -11,6 +11,7 @@ import { loadCsvFiles } from "../util/loadCsvFile/loadCsvFile";
 import { logger } from "../util/logger";
 import { JobInitialisor } from "./jobs";
 import { loadDataSources } from "./loadDataSources";
+import { updateTrafficIncidentCategories } from "../util/trafficIncidents";
 
 const timers: NodeJS.Timer[] = [];
 
@@ -103,5 +104,6 @@ export const init = async () => {
     if (delay === 0) await timeout; // to stop all the apis from running at the same time on first load
   }
   await loadCsvFiles();
+  await updateTrafficIncidentCategories();
   updateSuburbGeoJson();
 };

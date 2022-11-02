@@ -58,7 +58,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
           [trafficIncidentCategory] =
             await TrafficIncidentCategory.findOrCreate({
               where: {
-                subcategory,
+                subcategory: subcategory.toUpperCase(),
               },
               defaults: {
                 category,
