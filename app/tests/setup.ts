@@ -3,9 +3,7 @@ import path from "path";
 import { Sequelize } from "sequelize-typescript";
 import { getConnection } from "../src/db/connect";
 import { runSeeds } from "../src/seeds/runSeeds";
-import { seeds } from "../src/seeds/seedList";
-
-// let connection: Sequelize;
+import { loadDataSources } from "../src/initialise/loadDataSources";
 
 jest.mock("../src/db/connect", () => ({
   __esModule: true,
@@ -78,7 +76,9 @@ beforeEach(async () => {
     schema: globalThis.DB_SCHEMA,
     logging: false,
   });
-  await runSeeds(seeds);
+
+  await loadDataSources();
+  await runSeeds();
   jest.clearAllMocks();
 });
 
