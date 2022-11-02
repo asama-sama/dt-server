@@ -79,8 +79,8 @@ describe("nswTrafficIncident", () => {
   test("it should create categories for each suburb", async () => {
     const categories = await TrafficIncidentCategory.findAll();
     expect(categories.length).toBe(1);
-    expect(categories[0].category).toBe("roadworks");
-    expect(categories[0].subcategory).toBe("new roadworks");
+    expect(categories[0].category).toBe("ROADWORKS");
+    expect(categories[0].subcategory).toBe("NEW ROADWORKS");
   });
 
   test("it should create traffic incidents populated with the correct values", async () => {
