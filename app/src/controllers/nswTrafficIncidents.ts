@@ -1,8 +1,5 @@
 import { fetchIncidents } from "../clients/nswTrafficIncidents";
-import {
-  DataSourceUpdateLog,
-  UpdateStatus,
-} from "../db/models/DataSourceUpdateLog";
+import { createBatches } from "../util/createBatches";
 import { DataSource } from "../db/models/DataSource";
 import { DATASOURCES } from "../const/datasource";
 import { getConnection } from "../db/connect";
@@ -11,6 +8,7 @@ import { TrafficIncidentCategory } from "../db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../db/models/TrafficIncident";
 import { updateSuburbGeoJson, transformSuburbNames } from "../util/suburbUtils";
 import { getTrafficIncidentCategory } from "../util/trafficIncidents";
+import { Loader } from "../util/loader";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -24,15 +22,18 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
     throw new Error(
       `No datasource for ${DATASOURCES.trafficIncidents.name} found`
     );
-  try {
-    const now = new Date();
-    const results = await fetchIncidents(now, initialise);
-    const connection = getConnection();
+  const now = new Date();
+  const results = await fetchIncidents(now, initialise);
+  const connection = getConnection();
 
-    const suburbsCache: { [key: string]: Suburb } = {};
-    const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
+  const suburbsCache: { [key: string]: Suburb } = {};
+  const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
+  const loader = new Loader(results.result.length);
+  const incidentResponseBatches = createBatches(results.result, 200);
+  for (const incidentResponseBatch of incidentResponseBatches) {
     await connection.transaction(async (trx) => {
-      for (const trafficIncident of results.result) {
+      for (const trafficIncident of incidentResponseBatch) {
+        loader.tick();
         const id = trafficIncident.Hazards.features.id;
         const [lat, lng] =
           trafficIncident.Hazards.features.geometry.coordinates;
@@ -90,18 +91,6 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         }
       }
     });
-    await updateSuburbGeoJson();
-  } catch (e) {
-    let message = "error";
-    if (e instanceof Error) {
-      message = e.message;
-    }
-    console.error(e);
-    await DataSourceUpdateLog.create({
-      dataSourceId: dataSource?.id,
-      status: UpdateStatus.FAIL,
-      message,
-    });
-    throw e;
   }
+  await updateSuburbGeoJson();
 };

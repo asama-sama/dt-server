@@ -34,6 +34,7 @@ export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
       await apiInitialisor.update({ initialise: initialise ? true : false });
     } catch (e) {
       status = UpdateStatus.FAIL;
+      console.error(e);
       if (e instanceof Error) errorMessage = e.message;
     }
     try {
@@ -45,6 +46,7 @@ export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
     } catch (e) {
       console.error(e);
     }
+    logger(`resolve ${apiInitialisor.params.name}`);
     resolve();
   };
   const lastUpdatedTime: Date = await DataSourceUpdateLog.max("createdAt", {
