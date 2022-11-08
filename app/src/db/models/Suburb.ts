@@ -6,12 +6,15 @@ import {
   DataType,
   AllowNull,
   HasMany,
+  BelongsToMany,
 } from "sequelize-typescript";
 import { SuburbJson } from "../../customTypes/suburb";
 import { AirQualitySite } from "./AirQualitySite";
 import { BomStation } from "./BomStation";
 import { TrafficIncident } from "./TrafficIncident";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
+import { CosGhgEmission } from "./CosGhgEmission";
+import { CosGhgEmissionSuburb } from "./CosGhgEmissionSuburb";
 
 @Table
 export class Suburb extends Model {
@@ -39,4 +42,7 @@ export class Suburb extends Model {
 
   @HasMany(() => BomStation, "suburbId")
   bomStations: BomStation[];
+
+  @BelongsToMany(() => CosGhgEmission, () => CosGhgEmissionSuburb)
+  cosGhgEmissions: CosGhgEmission[];
 }

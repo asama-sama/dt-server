@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   updateSuburbGeoJson,
   transformSuburbNames,
+  parseSuburbNames,
 } from "../../src/util/suburbUtils";
 import { Suburb } from "../../src/db/models/Suburb";
 
@@ -94,5 +95,42 @@ describe("transformSuburbNames", () => {
     const name = "suburb1-suburb2";
     const transformedName = transformSuburbNames(name);
     expect(transformedName).toBe("SUBURB1 + SUBURB2");
+  });
+});
+
+describe.only("parseSuburbNames", () => {
+  test('it parses "suburb" correctly', () => {
+    const suburbs = parseSuburbNames("suburb");
+    expect(suburbs).toMatchObject(["SUBURB"]);
+  });
+
+  test('it parses "suburb1 + suburb2" correctly', () => {
+    const suburbs = parseSuburbNames("suburb1 + suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it parses "suburb1+ suburb2" correctly', () => {
+    const suburbs = parseSuburbNames("suburb1+ suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it parses "suburb1 +suburb2" correctly', () => {
+    const suburbs = parseSuburbNames("suburb1 +suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it parses "suburb1+suburb2" correctly', () => {
+    const suburbs = parseSuburbNames("suburb1+suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it parses "suburb1 to suburb2 correctly', () => {
+    const suburbs = parseSuburbNames("suburb1 to suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it does not split "subtoburb', () => {
+    const suburbs = parseSuburbNames("subtoburb");
+    expect(suburbs).toMatchObject(["SUBTOBURB"]);
   });
 });

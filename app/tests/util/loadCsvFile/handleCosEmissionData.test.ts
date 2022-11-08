@@ -32,8 +32,8 @@ describe("handleCosEmissionData", () => {
       },
       {
         OBJECTID1: "1",
-        Area_suburb: "suburb2",
-        Data_Category: "cat1",
+        Area_suburb: "suburb2 + s3",
+        Data_Category: "cat2",
         F2005_06: "3",
         F2008_09: "34.65",
         F2010_11: "200",
@@ -47,7 +47,7 @@ describe("handleCosEmissionData", () => {
 
   test("it should load emissions into the database", async () => {
     const emissions = await CosGhgEmission.findAll({});
-    expect(emissions.length).toBe(6);
+    expect(emissions.length).toBe(9);
     const years = [2005, 2006, 2007, 2008, 2010];
     for (const emission of emissions) {
       expect(years).toContain(emission.year);
@@ -56,11 +56,18 @@ describe("handleCosEmissionData", () => {
 
   test("it should create suburbs for the emissions data", async () => {
     const suburbs = await Suburb.findAll();
-    expect(suburbs.length).toBe(2);
+    expect(suburbs.map((suburb) => suburb.name)).toEqual([
+      "SUBURB1",
+      "SUBURB2",
+      "S3",
+    ]);
   });
 
   test("it should create categories for the emissions data", async () => {
     const categories = await CosGhgCategory.findAll();
-    expect(categories.length).toBe(1);
+    expect(categories.map((category) => category.name)).toEqual([
+      "cat1",
+      "cat2",
+    ]);
   });
 });

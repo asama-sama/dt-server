@@ -1,6 +1,7 @@
 import {
   AllowNull,
   BelongsTo,
+  BelongsToMany,
   Column,
   DataType,
   ForeignKey,
@@ -10,6 +11,7 @@ import {
 import { Suburb } from "./Suburb";
 import { CosGhgCategory } from "./CosGhgCategory";
 import { DataFile } from "./DataFile";
+import { CosGhgEmissionSuburb } from "./CosGhgEmissionSuburb";
 
 @Table
 export class CosGhgEmission extends Model {
@@ -31,8 +33,8 @@ export class CosGhgEmission extends Model {
   @Column
   suburbId: number;
 
-  @BelongsTo(() => Suburb, "suburbId")
-  suburb: Suburb;
+  @BelongsToMany(() => Suburb, () => CosGhgEmissionSuburb)
+  suburbs: Suburb[];
 
   @ForeignKey(() => CosGhgCategory)
   @Column

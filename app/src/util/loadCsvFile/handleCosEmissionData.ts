@@ -1,42 +1,36 @@
 import { CosGhgCategory } from "../../db/models/CosGhgCategory";
 import { CosGhgEmission } from "../../db/models/CosGhgEmission";
 import { Suburb } from "../../db/models/Suburb";
+import { parseSuburbNames } from "../suburbUtils";
 import { HandleProcessCsvFile } from "./loadCsvFile";
-
-type SuburbAttributes = {
-  name: string;
-};
 
 export const handleCosEmissionData: HandleProcessCsvFile = async (
   results,
   dataFile,
   trx
 ) => {
-  let nullReads = 0;
-  let totalReads = 0;
-  const uniqueSuburbs = new Set<string>();
+  let nullReads = 0,
+    totalReads = 0;
   for (const result of results) {
-    // build up normalised tables
-    const suburbData: SuburbAttributes = {
-      name: result["Area_suburb"],
-    };
-    const categoryData = {
-      name: result["Data_Category"],
-    };
+    const categoryName = result["Data_Category"];
 
-    uniqueSuburbs.add(result["Area_suburb"]);
-    const [suburb] = await Suburb.findOrCreate({
-      where: {
-        name: suburbData.name.toUpperCase(),
-      },
-      transaction: trx,
-    });
+    const suburbNames = parseSuburbNames(result["Area_suburb"]);
+    const suburbs: Suburb[] = [];
+    for (let i = 0; i < suburbNames.length; i++) {
+      const [suburb] = await Suburb.findOrCreate({
+        where: {
+          name: suburbNames[i].toUpperCase(),
+        },
+        transaction: trx,
+      });
+      suburbs.push(suburb);
+    }
     const [category] = await CosGhgCategory.findOrCreate({
       where: {
-        name: categoryData.name,
+        name: categoryName,
       },
       defaults: {
-        name: categoryData.name,
+        name: categoryName,
       },
       transaction: trx,
     });
@@ -57,17 +51,19 @@ export const handleCosEmissionData: HandleProcessCsvFile = async (
         }
         const year = parseInt(yearMatch[0].substring(1, 5));
         try {
-          await CosGhgEmission.create(
-            {
-              year: year,
-              reading,
-              suburbId: suburb.id,
-              categoryId: category.id,
-              dataFileId: dataFile.id,
-            },
-            { transaction: trx }
-          );
-          totalReads += 1;
+          for (let i = 0; i < suburbs.length; i++) {
+            await CosGhgEmission.create(
+              {
+                year: year,
+                reading,
+                suburbId: suburbs[i].id,
+                categoryId: category.id,
+                dataFileId: dataFile.id,
+              },
+              { transaction: trx }
+            );
+            totalReads += 1;
+          }
         } catch (e) {
           console.error("Error inserting emission", e);
         }

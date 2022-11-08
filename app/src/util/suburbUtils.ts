@@ -47,3 +47,12 @@ export const transformSuburbNames = (originalName: string) => {
   const nameRemoveHypen = nameRemovedTo.replace(/\s?-\s?/, " + ");
   return nameRemoveHypen;
 };
+
+export const parseSuburbNames = (name: string) => {
+  const nameUpperCase = name.toUpperCase();
+  const plusReg = new RegExp(/\s?\+\s?/);
+  if (nameUpperCase.match(plusReg)) return nameUpperCase.split(plusReg);
+  const toReg = new RegExp(/\sTO\s/);
+  if (nameUpperCase.match(toReg)) return nameUpperCase.split(toReg);
+  return [nameUpperCase];
+};
