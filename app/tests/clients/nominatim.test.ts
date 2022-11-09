@@ -11,6 +11,7 @@ describe("nominatim", () => {
     mockedAxios.get.mockResolvedValue({ data: [{ geoJson: "geodata" }] });
   });
 
+  // TODO: change tests to use throttle timer
   test("it should throttle requests", async () => {
     process.env.NOMINATIM_API_TIMEOUT = "500";
 
