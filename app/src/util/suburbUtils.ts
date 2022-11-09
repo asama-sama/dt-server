@@ -1,44 +1,37 @@
 import { Suburb } from "../db/models/Suburb";
 import { bulkSearch } from "../clients/nominatim";
 
+const NSW_VIEW_BOX = {
+  lon1: 140.946853,
+  lat1: -27.684145,
+  lon2: 153.053786,
+  lat2: -37.927417,
+};
+
 export const updateSuburbGeoJson = async () => {
   const suburbs = await Suburb.findAll({
     where: {
       geoData: null,
     },
+    order: [["id", "asc"]],
   });
-  const suburbMapping: { [key: string]: Suburb } = {};
-  const suburbKeyNameMapping: { [key: string]: string } = {};
-  const uniqueSuburbNamesSet = new Set<string>();
+  const suburbMap: { [key: string]: Suburb } = {};
 
-  for (const suburb of suburbs) {
-    suburbMapping[suburb.name] = suburb;
-    const suburbNames = suburb.name.split("+");
-    for (const suburbName of suburbNames) {
-      const name = suburbName.trim();
-      suburbKeyNameMapping[name] = suburb.name;
-      uniqueSuburbNamesSet.add(name);
-    }
-  }
-  const uniqueSuburbNames = [...uniqueSuburbNamesSet];
-  const suburbSearchParameters = uniqueSuburbNames.map((name) => ({
-    name,
-    state: "nsw",
-  }));
-  await bulkSearch(
-    suburbSearchParameters,
-    async (result: object, suburbName: string) => {
-      const suburbKey = suburbKeyNameMapping[suburbName];
-      const suburb = suburbMapping[suburbKey];
-      await suburb.update({
-        geoData: {
-          ...suburb.geoData,
-          [suburbName]: result,
-        },
-      });
-      await suburb.reload();
-    }
-  );
+  const suburbSearchParameters = suburbs.map((suburb) => {
+    suburbMap[suburb.name] = suburb;
+    return {
+      name: suburb.name,
+      state: "nsw",
+      viewbox: NSW_VIEW_BOX,
+    };
+  });
+  await bulkSearch(suburbSearchParameters, async (result, suburbName) => {
+    const suburb = suburbMap[suburbName];
+    await suburb.reload();
+    await suburb.update({
+      geoData: result.geojson,
+    });
+  });
 };
 
 export const transformSuburbNames = (originalName: string) => {
