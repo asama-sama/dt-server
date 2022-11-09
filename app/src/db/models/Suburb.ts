@@ -15,6 +15,7 @@ import { TrafficIncident } from "./TrafficIncident";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { CosGhgEmission } from "./CosGhgEmission";
 import { CosGhgEmissionSuburb } from "./CosGhgEmissionSuburb";
+import { TrafficIncidentSuburb } from "./TrafficIncidentSuburb";
 
 @Table
 export class Suburb extends Model {
@@ -31,9 +32,6 @@ export class Suburb extends Model {
   @Column(DataType.JSON)
   geoData: SuburbJson;
 
-  @HasMany(() => TrafficIncident, "suburbId")
-  trafficIncidents: TrafficIncident[];
-
   @HasMany(() => AirQualitySite, "suburbId")
   airQualitySites: AirQualitySite[];
 
@@ -45,4 +43,7 @@ export class Suburb extends Model {
 
   @BelongsToMany(() => CosGhgEmission, () => CosGhgEmissionSuburb)
   cosGhgEmissions: CosGhgEmission[];
+
+  @BelongsToMany(() => TrafficIncident, () => TrafficIncidentSuburb)
+  trafficIncidents: TrafficIncident[];
 }

@@ -29,10 +29,6 @@ export class CosGhgEmission extends Model {
   @BelongsTo(() => DataFile, "dataFileId")
   dataFile: DataFile;
 
-  @ForeignKey(() => Suburb)
-  @Column
-  suburbId: number;
-
   @BelongsToMany(() => Suburb, () => CosGhgEmissionSuburb)
   suburbs: Suburb[];
 

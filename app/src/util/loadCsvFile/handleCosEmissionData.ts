@@ -1,5 +1,6 @@
 import { CosGhgCategory } from "../../db/models/CosGhgCategory";
 import { CosGhgEmission } from "../../db/models/CosGhgEmission";
+import { CosGhgEmissionSuburb } from "../../db/models/CosGhgEmissionSuburb";
 import { Suburb } from "../../db/models/Suburb";
 import { parseSuburbNames } from "../suburbUtils";
 import { HandleProcessCsvFile } from "./loadCsvFile";
@@ -51,18 +52,24 @@ export const handleCosEmissionData: HandleProcessCsvFile = async (
         }
         const year = parseInt(yearMatch[0].substring(1, 5));
         try {
+          const cosGhgEmission = await CosGhgEmission.create(
+            {
+              year: year,
+              reading,
+              categoryId: category.id,
+              dataFileId: dataFile.id,
+            },
+            { transaction: trx }
+          );
+          totalReads += 1;
           for (let i = 0; i < suburbs.length; i++) {
-            await CosGhgEmission.create(
+            await CosGhgEmissionSuburb.create(
               {
-                year: year,
-                reading,
                 suburbId: suburbs[i].id,
-                categoryId: category.id,
-                dataFileId: dataFile.id,
+                cosGhgEmissionId: cosGhgEmission.id,
               },
               { transaction: trx }
             );
-            totalReads += 1;
           }
         } catch (e) {
           console.error("Error inserting emission", e);

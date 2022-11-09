@@ -10,6 +10,7 @@ import { TrafficIncident } from "../../src/db/models/TrafficIncident";
 import { DataSource } from "../../src/db/models/DataSource";
 import * as suburbUtilsModule from "../../src/util/suburbUtils";
 import { DATASOURCES } from "../../src/const/datasource";
+import { TrafficIncidentSuburb } from "../../src/db/models/TrafficIncidentSuburb";
 
 jest.mock("../../src/clients/nswTrafficIncidents", () => {
   return {
@@ -28,10 +29,7 @@ const updateSuburbGeoJsonSpy = jest.spyOn(
 );
 updateSuburbGeoJsonSpy.mockImplementation(jest.fn());
 
-const transformSuburbNamesSpy = jest.spyOn(
-  suburbUtilsModule,
-  "transformSuburbNames"
-);
+const parseSuburbNamesSpy = jest.spyOn(suburbUtilsModule, "parseSuburbNames");
 
 describe("nswTrafficIncident", () => {
   const response: FetchIncidentsApiResponse = {
@@ -49,13 +47,12 @@ describe("nswTrafficIncident", () => {
             },
             properties: {
               created: new Date("2022-03-01").getTime(),
-              end: new Date("2022-03-3").getTime(),
               lastUpdated: new Date().getTime(),
               mainCategory: "new roadworks",
               roads: [
                 {
                   region: "sydney",
-                  suburb: "suburb",
+                  suburb: "suburb to burb",
                 },
               ],
             },
@@ -65,18 +62,28 @@ describe("nswTrafficIncident", () => {
     ],
   };
 
-  fetchIncidentsMock.mockResolvedValue(response);
-
   beforeEach(async () => {
+    fetchIncidentsMock.mockResolvedValueOnce(response);
     await updateIncidents();
   });
 
-  test("it should create suburbs", async () => {
-    const suburbs = await Suburb.findAll();
-    expect(suburbs.length).toBe(1);
+  test("it should create an incident", async () => {
+    const numTrafficIncidents = await TrafficIncident.findAndCountAll();
+    expect(numTrafficIncidents.count).toBe(1);
   });
 
-  test("it should create categories for each suburb", async () => {
+  test("it should create suburbs", async () => {
+    const numSuburbs = await Suburb.findAndCountAll();
+    expect(numSuburbs.count).toBe(2);
+  });
+
+  test("it should create a mapping between incident and suburb", async () => {
+    const numTrafficIncidentSuburbs =
+      await TrafficIncidentSuburb.findAndCountAll();
+    expect(numTrafficIncidentSuburbs.count).toBe(2);
+  });
+
+  test("it should create categories for each incident", async () => {
     const categories = await TrafficIncidentCategory.findAll();
     expect(categories.length).toBe(1);
     expect(categories[0].category).toBe("ROADWORKS");
@@ -85,7 +92,6 @@ describe("nswTrafficIncident", () => {
 
   test("it should create traffic incidents populated with the correct values", async () => {
     const incidents = await TrafficIncident.findAll();
-    const [suburb] = await Suburb.findAll();
     const [category] = await TrafficIncidentCategory.findAll();
     const dataSource = await DataSource.findOne({
       where: {
@@ -98,21 +104,17 @@ describe("nswTrafficIncident", () => {
       lat: 23.3,
       lng: -123.54,
       created: new Date("2022-03-01"),
-      end: new Date("2022-03-3"),
-      suburbId: suburb.id,
       trafficIncidentCategoryId: category.id,
       dataSourceId: dataSource?.id,
     });
   });
 
   test("it should not reinsert an incident with the same id", async () => {
-    await updateIncidents();
     const incidents = await TrafficIncident.findAll();
     expect(incidents.length).toBe(1);
   });
 
   test("it should not create the same TrafficIncidentCategory twice", async () => {
-    await updateIncidents();
     const categories = await TrafficIncidentCategory.findAll();
     expect(categories.length).toBe(1);
   });
@@ -122,34 +124,18 @@ describe("nswTrafficIncident", () => {
   });
 
   test("it should call transformSuburbNames", () => {
-    expect(transformSuburbNamesSpy).toHaveBeenCalled();
+    expect(parseSuburbNamesSpy).toHaveBeenCalled();
   });
 
   test('it should update the "end" value of an existing incident if it exists', async () => {
-    const [suburb] = await Suburb.findAll();
-    const [category] = await TrafficIncidentCategory.findAll();
-    const dataSource = await DataSource.findOne({
-      where: {
-        name: DATASOURCES.trafficIncidents.name,
-      },
-    });
-    await TrafficIncident.create({
-      id: 113,
-      lat: 23.3,
-      lng: -123.54,
-      created: new Date("2022-03-01"),
-      suburbId: suburb.id,
-      trafficIncidentCategoryId: category.id,
-      dataSourceId: dataSource?.id,
-    });
     const newResponse = { ...response };
-    newResponse.result[0].Hazards.features.id = 113;
     newResponse.result[0].Hazards.features.properties.end =
       new Date().getTime();
+    fetchIncidentsMock.mockResolvedValueOnce(newResponse);
     await updateIncidents();
     const incident = await TrafficIncident.findOne({
       where: {
-        id: 113,
+        id: 112,
       },
     });
     expect(incident?.end).not.toBe(null);

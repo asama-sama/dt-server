@@ -1,6 +1,7 @@
 import {
   AllowNull,
   BelongsTo,
+  BelongsToMany,
   Column,
   DataType,
   ForeignKey,
@@ -11,6 +12,7 @@ import {
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
 import { TrafficIncidentCategory } from "./TrafficIncidentCategory";
+import { TrafficIncidentSuburb } from "./TrafficIncidentSuburb";
 
 @Table
 export class TrafficIncident extends Model {
@@ -46,12 +48,8 @@ export class TrafficIncident extends Model {
   })
   end: Date;
 
-  @ForeignKey(() => Suburb)
-  @Column
-  suburbId: number;
-
-  @BelongsTo(() => Suburb, "suburbId")
-  suburb: Suburb;
+  @BelongsToMany(() => Suburb, () => TrafficIncidentSuburb)
+  suburb: Suburb[];
 
   @AllowNull(false)
   @ForeignKey(() => TrafficIncidentCategory)

@@ -6,9 +6,10 @@ import { getConnection } from "../db/connect";
 import { Suburb } from "../db/models/Suburb";
 import { TrafficIncidentCategory } from "../db/models/TrafficIncidentCategory";
 import { TrafficIncident } from "../db/models/TrafficIncident";
-import { updateSuburbGeoJson, transformSuburbNames } from "../util/suburbUtils";
+import { updateSuburbGeoJson, parseSuburbNames } from "../util/suburbUtils";
 import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
+import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -37,22 +38,25 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         const id = trafficIncident.Hazards.features.id;
         const [lat, lng] =
           trafficIncident.Hazards.features.geometry.coordinates;
-        const suburbName = transformSuburbNames(
+
+        const suburbs: Suburb[] = [];
+        const suburbNames = parseSuburbNames(
           trafficIncident.Hazards.features.properties.roads[0].suburb
         );
-        const {
-          created,
-          mainCategory: subcategory,
-          end,
-        } = trafficIncident.Hazards.features.properties;
-
-        let suburb = suburbsCache[suburbName];
-        if (!suburb) {
-          [suburb] = await Suburb.findOrCreate({
-            where: { name: suburbName },
-            transaction: trx,
-          });
+        for (let i = 0; i < suburbNames.length; i++) {
+          const suburbName = suburbNames[i];
+          let suburb = suburbsCache[suburbName];
+          if (!suburb) {
+            [suburb] = await Suburb.findOrCreate({
+              where: { name: suburbName },
+              transaction: trx,
+            });
+          }
+          suburbs.push(suburb);
         }
+
+        const { mainCategory: subcategory } =
+          trafficIncident.Hazards.features.properties;
         let trafficIncidentCategory = categoryCache[subcategory];
         if (!trafficIncidentCategory) {
           const category = getTrafficIncidentCategory(subcategory);
@@ -68,6 +72,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
               transaction: trx,
             });
         }
+        const { end, created } = trafficIncident.Hazards.features.properties;
         const [incident] = await TrafficIncident.findOrCreate({
           where: {
             id,
@@ -78,7 +83,6 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
             lng,
             created: new Date(created),
             end: end ? new Date(end) : null,
-            suburbId: suburb.id,
             trafficIncidentCategoryId: trafficIncidentCategory.id,
             dataSourceId: dataSource.id,
           },
@@ -87,6 +91,16 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         if (!incident.end && end) {
           incident.update({
             end: new Date(end),
+          });
+        }
+        for (let i = 0; i < suburbs.length; i++) {
+          const suburb = suburbs[i];
+          await TrafficIncidentSuburb.findOrCreate({
+            where: {
+              trafficIncidentId: incident.id,
+              suburbId: suburb.id,
+            },
+            transaction: trx,
           });
         }
       }

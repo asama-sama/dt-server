@@ -3,6 +3,7 @@ import { DATASOURCES } from "../../../src/const/datasource";
 import { getConnection } from "../../../src/db/connect";
 import { CosGhgCategory } from "../../../src/db/models/CosGhgCategory";
 import { CosGhgEmission } from "../../../src/db/models/CosGhgEmission";
+import { CosGhgEmissionSuburb } from "../../../src/db/models/CosGhgEmissionSuburb";
 import { DataFile } from "../../../src/db/models/DataFile";
 import { DataSource } from "../../../src/db/models/DataSource";
 import { Suburb } from "../../../src/db/models/Suburb";
@@ -47,7 +48,7 @@ describe("handleCosEmissionData", () => {
 
   test("it should load emissions into the database", async () => {
     const emissions = await CosGhgEmission.findAll({});
-    expect(emissions.length).toBe(9);
+    expect(emissions.length).toBe(6);
     const years = [2005, 2006, 2007, 2008, 2010];
     for (const emission of emissions) {
       expect(years).toContain(emission.year);
@@ -69,5 +70,10 @@ describe("handleCosEmissionData", () => {
       "cat1",
       "cat2",
     ]);
+  });
+
+  test("it should create mapping between emissions and suburbs", async () => {
+    const cosGhgEmissionSuburbs = await CosGhgEmissionSuburb.findAll();
+    expect(cosGhgEmissionSuburbs.length).toBe(3);
   });
 });
