@@ -7,6 +7,7 @@ import {
   AllowNull,
   HasMany,
   BelongsToMany,
+  Default,
 } from "sequelize-typescript";
 import { AirQualitySite } from "./AirQualitySite";
 import { BomStation } from "./BomStation";
@@ -32,6 +33,11 @@ export class Suburb extends Model {
     },
   })
   name: string;
+
+  @AllowNull(false)
+  @Default(false)
+  @Column
+  fetchFailed: boolean;
 
   @AllowNull(true)
   @Column(DataType.GEOMETRY)

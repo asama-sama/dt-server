@@ -12,6 +12,7 @@ export const updateSuburbGeoJson = async () => {
   const suburbs = await Suburb.findAll({
     where: {
       geometry: null,
+      fetchFailed: false,
     },
     order: [["id", "asc"]],
   });
@@ -25,13 +26,21 @@ export const updateSuburbGeoJson = async () => {
       viewbox: NSW_VIEW_BOX,
     };
   });
-  await bulkSearch(suburbSearchParameters, async (result, suburbName) => {
-    const suburb = suburbMap[suburbName];
-    await suburb.reload();
-    await suburb.update({
-      geometry: result.geojson,
-    });
-  });
+  await bulkSearch(
+    suburbSearchParameters,
+    async (result, suburbName) => {
+      const suburb = suburbMap[suburbName];
+      await suburb.reload();
+      await suburb.update({
+        geometry: result.geojson,
+      });
+    },
+    async (suburbName) => {
+      const suburb = suburbMap[suburbName];
+      await suburb.reload();
+      await suburb.update({ fetchFailed: true });
+    }
+  );
 };
 
 export const parseSuburbNames = (name: string) => {

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { logger } from "../util/logger";
+import { Loader } from "../util/loader";
 
 // handles queries to nominatim to abide by terms of use
 
@@ -18,6 +19,8 @@ type CallbackFn = (
   result: NominatimResponse,
   suburbName: string
 ) => Promise<void>;
+
+type CallbackFailFn = (suburbName: string) => Promise<void>;
 
 type NominatimResponse = {
   place_id: number;
@@ -48,7 +51,8 @@ type NominatimResponse = {
 
 export const bulkSearch = async (
   suburbSearchParameters: SuburbSearchParameters[],
-  callback: CallbackFn
+  callback: CallbackFn,
+  callbackFail: CallbackFailFn
 ) => {
   logger("start bulkSearch");
   const { FETCH_SUBURBS, NOMINATIM_API_TIMEOUT } = process.env;
@@ -58,11 +62,13 @@ export const bulkSearch = async (
   if (FETCH_SUBURBS !== "yes") {
     return [];
   }
+  const loader = new Loader(suburbSearchParameters.length);
   for (const {
     name,
     state,
     viewbox: { lon1, lat1, lon2, lat2 },
   } of suburbSearchParameters) {
+    loader.tick();
     logger(`fetch ${name},${state} from nomatim`);
     const res = await axios.get<NominatimResponse[]>(
       `https://nominatim.openstreetmap.org/search?q=${name},${state}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&viewbox=${lon1},${lat1},${lon2},${lat2}`
@@ -74,6 +80,7 @@ export const bulkSearch = async (
         break;
       }
     }
+    await callbackFail(name);
     await new Promise((r) => setTimeout(r, apiTimeout)); // wait 1.5 seconds to not make nominatim angry
   }
   logger("nomatim fetch complete");

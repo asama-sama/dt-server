@@ -65,6 +65,7 @@ describe("updateSuburbGeoJson", () => {
       },
     });
     expect(suburb?.geometry).toBeNull();
+    expect(suburb?.fetchFailed).toBe(true);
   });
 
   test("it should only fetch data for suburbs that don't have geojson set", async () => {
