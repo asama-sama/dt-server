@@ -8,6 +8,7 @@ import {
   Model,
   Table,
 } from "sequelize-typescript";
+import { Point } from "../../customTypes/geometry";
 import { BomReading } from "./BomReading";
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
@@ -38,15 +39,8 @@ export class BomStation extends Model {
   @Column
   name: string;
 
-  @Column({
-    type: DataType.FLOAT,
-  })
-  lat: number;
-
-  @Column({
-    type: DataType.FLOAT,
-  })
-  lng: number;
+  @Column(DataType.GEOMETRY)
+  position: Point;
 
   @HasMany(() => BomReading, "bomStationid")
   bomReadings: BomReading[];

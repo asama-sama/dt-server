@@ -58,14 +58,13 @@ export const updateReadings = async () => {
         .then(async (observations) => {
           for (const observation of observations) {
             const { lat, lon } = observation;
-            if (
-              station.lat === null ||
-              (station.lng === null && (lat || lon))
-            ) {
+            if (station.position === null && (lat || lon)) {
               await station.update(
                 {
-                  lat,
-                  lng: lon,
+                  position: {
+                    type: "Point",
+                    coordinates: [lon, lat],
+                  },
                 },
                 { transaction: trx }
               );

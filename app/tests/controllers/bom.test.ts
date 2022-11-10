@@ -122,10 +122,12 @@ describe("bom", () => {
       expect(readings.length).toBe(1);
     });
 
-    test("it should set lat lng on station", async () => {
+    test("it should set position on station", async () => {
       const stations = await BomStation.findAll();
-      expect(stations[0].lat).not.toBeNull();
-      expect(stations[0].lng).not.toBeNull();
+      expect(stations[0].position).toMatchObject({
+        type: "Point",
+        coordinates: [153.1, -28.9],
+      });
     });
 
     test("it should add a reading at the same time but different station", async () => {
