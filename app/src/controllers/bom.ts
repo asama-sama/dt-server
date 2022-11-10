@@ -10,6 +10,7 @@ import {
   DataSourceUpdateLog,
   UpdateStatus,
 } from "../db/models/DataSourceUpdateLog";
+import { Loader } from "../util/loader";
 
 export const updateStations = async () => {
   const stations = await getStations();
@@ -49,6 +50,7 @@ export const updateReadings = async () => {
       name: DATASOURCES.bomReadings.name,
     },
   });
+  const loader = new Loader(stations.length);
   const connection = getConnection();
   for (const station of stations) {
     await connection.transaction(async (trx) => {
@@ -114,6 +116,7 @@ export const updateReadings = async () => {
             message,
           });
         });
+      loader.tick();
     });
   }
 };
