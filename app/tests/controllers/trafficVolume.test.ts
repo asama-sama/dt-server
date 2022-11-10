@@ -65,6 +65,25 @@ describe("trafficVolume controller", () => {
       expect(stationsCreated.length).toBe(1);
     });
 
+    test("it sets properties correctly", async () => {
+      const station = await TrafficVolumeStation.findOne({
+        where: { name: "test" },
+      });
+      expect(station).toMatchObject({
+        position: {
+          type: "Point",
+          coordinates: [321, 123],
+        },
+        lga: "test",
+        name: "test",
+        postCode: "3000",
+        rmsRegion: "test",
+        stationId: "1",
+        stationKey: "2",
+        suburbId: expect.anything(),
+      });
+    });
+
     test("it should not create a new station if the stationId exists", async () => {
       const stations: Station[] = [
         {
@@ -132,8 +151,7 @@ describe("trafficVolume controller", () => {
       const stationsToAdd = [1, 2, 3].map((i) => ({
         stationKey: (i * 100).toString(),
         stationId: (i * 100).toString(),
-        lat: i * 100,
-        lng: i * 100,
+        position: { type: "Point", coordinates: [i * 100, i * 100] },
         dataSourceId: api?.id,
       }));
       await TrafficVolumeStation.bulkCreate(stationsToAdd);

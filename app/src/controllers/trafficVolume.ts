@@ -38,8 +38,10 @@ export const updateStations = async () => {
         dataSourceId: api?.id,
         stationKey: station.station_key,
         stationId: station.station_id,
-        lat: station.latitude,
-        lng: station.longitude,
+        position: {
+          type: "Point",
+          coordinates: [station.longitude, station.latitude],
+        },
         name: station.name,
         suburbId: suburb.id,
         lga: station.lga,

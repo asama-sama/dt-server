@@ -7,7 +7,9 @@ import {
   BelongsTo,
   HasMany,
   Unique,
+  DataType,
 } from "sequelize-typescript";
+import { Point } from "../../customTypes/geometry";
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
 import { TrafficVolumeReading } from "./TrafficVolumeReading";
@@ -36,12 +38,8 @@ export class TrafficVolumeStation extends Model {
   stationId: string;
 
   @AllowNull(false)
-  @Column
-  lat: number;
-
-  @AllowNull(false)
-  @Column
-  lng: number;
+  @Column(DataType.GEOMETRY)
+  position: Point;
 
   @Column
   name: string;
