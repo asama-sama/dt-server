@@ -1,4 +1,4 @@
-enum LogLevels {
+export const enum LogLevels {
   "LOG",
   "ERROR",
 }

@@ -25,7 +25,7 @@ beforeAll(async () => {
   // set new env vars
   process.env.DATA_FILES_PATH = "./tests/dataFiles";
   process.env.FETCH_SUBURBS = "yes";
-  process.env.NOMINATIM_API_TIMEOUT = "0";
+  process.env.NOMINATIM_API_TIMEOUT = "500";
   defaultConnection = new Sequelize("root", "root", "root", {
     host: "localhost",
     dialect: "postgres",

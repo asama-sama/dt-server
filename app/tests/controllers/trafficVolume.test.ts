@@ -27,7 +27,6 @@ jest.mock("../../src/clients/nswTrafficVolume", () => {
 jest.mock("../../src/util/suburbUtils", () => {
   return {
     __esModule: true,
-    transformSuburbNames: jest.fn((t) => t),
     updateSuburbGeoJson: jest.fn(),
   };
 });

@@ -123,7 +123,7 @@ describe("nswTrafficIncident", () => {
     expect(updateSuburbGeoJsonSpy).toHaveBeenCalled();
   });
 
-  test("it should call transformSuburbNames", () => {
+  test("it should call parseSuburbNames", () => {
     expect(parseSuburbNamesSpy).toHaveBeenCalled();
   });
 

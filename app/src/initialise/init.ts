@@ -8,7 +8,7 @@ import { apisToLoad } from "./apisToLoad";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { runSeeds } from "../seeds/runSeeds";
 import { loadCsvFiles } from "../util/loadCsvFile/loadCsvFile";
-import { logger } from "../util/logger";
+import { logger, LogLevels } from "../util/logger";
 import { JobInitialisor } from "./jobs";
 import { loadDataSources } from "./loadDataSources";
 import { updateTrafficIncidentCategories } from "../util/trafficIncidents";
@@ -34,8 +34,8 @@ export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
       await apiInitialisor.update({ initialise: initialise ? true : false });
     } catch (e) {
       status = UpdateStatus.FAIL;
-      console.error(e);
       if (e instanceof Error) errorMessage = e.message;
+      logger(errorMessage, LogLevels.ERROR);
     }
     try {
       await DataSourceUpdateLog.create({
@@ -44,7 +44,11 @@ export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
         message: errorMessage,
       });
     } catch (e) {
-      console.error(e);
+      let newErrorMessage = "";
+      if (e instanceof Error) {
+        newErrorMessage = e.message;
+      }
+      logger(newErrorMessage, LogLevels.ERROR);
     }
     logger(`resolve ${apiInitialisor.params.name}`);
     resolve();

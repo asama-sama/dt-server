@@ -74,6 +74,6 @@ describe("handleCosEmissionData", () => {
 
   test("it should create mapping between emissions and suburbs", async () => {
     const cosGhgEmissionSuburbs = await CosGhgEmissionSuburb.findAll();
-    expect(cosGhgEmissionSuburbs.length).toBe(3);
+    expect(cosGhgEmissionSuburbs.length).toBe(9);
   });
 });

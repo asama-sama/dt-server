@@ -2,7 +2,6 @@
 import axios from "axios";
 import {
   updateSuburbGeoJson,
-  transformSuburbNames,
   parseSuburbNames,
 } from "../../src/util/suburbUtils";
 import { Suburb } from "../../src/db/models/Suburb";
@@ -126,38 +125,6 @@ describe("updateSuburbGeoJson", () => {
   });
 });
 
-describe("transformSuburbNames", () => {
-  test("it changes the name to be uppercase", () => {
-    const name = "suburb name";
-    const transformedName = transformSuburbNames(name);
-    expect(transformedName).toBe("SUBURB NAME");
-  });
-
-  test('it replaces "TO" with "+"', () => {
-    const name = "suburb1 to suburb2";
-    const transformedName = transformSuburbNames(name);
-    expect(transformedName).toBe("SUBURB1 + SUBURB2");
-  });
-
-  test('it replaces "-" with "+"', () => {
-    const name = "suburb1 - suburb2";
-    const transformedName = transformSuburbNames(name);
-    expect(transformedName).toBe("SUBURB1 + SUBURB2");
-  });
-
-  test('it replaces "-" with "+"', () => {
-    const name = "suburb1- suburb2";
-    const transformedName = transformSuburbNames(name);
-    expect(transformedName).toBe("SUBURB1 + SUBURB2");
-  });
-
-  test('it replaces "-" with "+"', () => {
-    const name = "suburb1-suburb2";
-    const transformedName = transformSuburbNames(name);
-    expect(transformedName).toBe("SUBURB1 + SUBURB2");
-  });
-});
-
 describe("parseSuburbNames", () => {
   test('it parses "suburb" correctly', () => {
     const suburbs = parseSuburbNames("suburb");
@@ -192,5 +159,10 @@ describe("parseSuburbNames", () => {
   test('it does not split "subtoburb', () => {
     const suburbs = parseSuburbNames("subtoburb");
     expect(suburbs).toMatchObject(["SUBTOBURB"]);
+  });
+
+  test('it splits "suburb1", "suburb2"', () => {
+    const suburbs = parseSuburbNames("suburb1, suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
   });
 });
