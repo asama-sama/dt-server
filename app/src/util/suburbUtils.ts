@@ -11,7 +11,7 @@ const NSW_VIEW_BOX = {
 export const updateSuburbGeoJson = async () => {
   const suburbs = await Suburb.findAll({
     where: {
-      geometry: null,
+      boundary: null,
       fetchFailed: false,
     },
     order: [["id", "asc"]],
@@ -22,7 +22,6 @@ export const updateSuburbGeoJson = async () => {
     suburbMap[suburb.name] = suburb;
     return {
       name: suburb.name,
-      state: "nsw",
       viewbox: NSW_VIEW_BOX,
     };
   });
@@ -31,8 +30,10 @@ export const updateSuburbGeoJson = async () => {
     async (result, suburbName) => {
       const suburb = suburbMap[suburbName];
       await suburb.reload();
+      const { geojson, lat, lon } = result;
       await suburb.update({
-        geometry: result.geojson,
+        boundary: geojson,
+        position: { type: "Point", coordinates: [lon, lat] },
       });
     },
     async (suburbName) => {

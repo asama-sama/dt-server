@@ -6,7 +6,6 @@ import { Loader } from "../util/loader";
 
 type SuburbSearchParameters = {
   name: string;
-  state: string;
   viewbox: {
     lon1: number; // long 1
     lat1: number; // lat 1
@@ -65,13 +64,12 @@ export const bulkSearch = async (
   const loader = new Loader(suburbSearchParameters.length);
   for (const {
     name,
-    state,
     viewbox: { lon1, lat1, lon2, lat2 },
   } of suburbSearchParameters) {
     loader.tick();
-    logger(`fetch ${name},${state} from nomatim`);
+    logger(`fetch ${name} from nomatim`);
     const res = await axios.get<NominatimResponse[]>(
-      `https://nominatim.openstreetmap.org/search?q=${name},${state}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&viewbox=${lon1},${lat1},${lon2},${lat2}`
+      `https://nominatim.openstreetmap.org/search?q=${name}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&viewbox=${lon1},${lat1},${lon2},${lat2}`
     );
     for (let i = 0; i < res.data.length; i++) {
       const result = res.data[i];

@@ -41,7 +41,11 @@ export class Suburb extends Model {
 
   @AllowNull(true)
   @Column(DataType.GEOMETRY)
-  geometry: Geometry;
+  boundary: Geometry;
+
+  @AllowNull(true)
+  @Column(DataType.GEOMETRY)
+  position: Geometry;
 
   @HasMany(() => AirQualitySite, "suburbId")
   airQualitySites: AirQualitySite[];

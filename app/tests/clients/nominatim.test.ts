@@ -8,7 +8,7 @@ const viewbox = { lon1: 0, lat1: 0, lon2: 0, lat2: 0 };
 
 describe("nominatim", () => {
   beforeAll(() => {
-    mockedAxios.get.mockResolvedValue({ data: [{ geometry: "geometry" }] });
+    mockedAxios.get.mockResolvedValue({ data: [{ boundary: "boundary" }] });
   });
 
   // TODO: change tests to use throttle timer
@@ -16,13 +16,11 @@ describe("nominatim", () => {
     process.env.NOMINATIM_API_TIMEOUT = "500";
 
     const queries = [
-      { name: "q1", state: "state", viewbox },
-      { name: "q2", state: "state", viewbox },
+      { name: "q1", viewbox },
+      { name: "q2", viewbox },
     ];
     const startTime = Date.now();
-    await bulkSearch(queries, async () => {
-      return;
-    });
+    await bulkSearch(queries, jest.fn(), jest.fn());
     const endTime = Date.now();
     expect(endTime - startTime).toBeGreaterThanOrEqual(1000);
     expect(endTime - startTime).toBeLessThanOrEqual(1500);
@@ -32,13 +30,11 @@ describe("nominatim", () => {
 
   test("it should hit the api the correct number of times", async () => {
     const queries = [
-      { name: "q1", state: "state", viewbox },
-      { name: "q2", state: "state", viewbox },
-      { name: "q3", state: "state", viewbox },
+      { name: "q1", viewbox },
+      { name: "q2", viewbox },
+      { name: "q3", viewbox },
     ];
-    await bulkSearch(queries, async () => {
-      return;
-    });
+    await bulkSearch(queries, jest.fn(), jest.fn());
     expect(axios.get).toHaveBeenCalledTimes(3);
   });
 
@@ -47,7 +43,7 @@ describe("nominatim", () => {
     mockedAxios.get.mockResolvedValue({
       data: [{ geojson: { type: "point" } }, { geojson: { type: "Polygon" } }],
     });
-    await bulkSearch([{ name: "q1", state: "state", viewbox }], callbackMock);
+    await bulkSearch([{ name: "q1", viewbox }], callbackMock, jest.fn());
     expect(callbackMock).toHaveBeenCalledWith(
       { geojson: { type: "Polygon" } },
       "q1"
@@ -57,9 +53,9 @@ describe("nominatim", () => {
   test("it should not call the callback function if there are no valid types", async () => {
     const callbackMock = jest.fn();
     mockedAxios.get.mockResolvedValue({
-      data: [{ geometry: { type: "none" } }],
+      data: [{ boundary: { type: "none" } }],
     });
-    await bulkSearch([{ name: "q1", state: "state", viewbox }], callbackMock);
+    await bulkSearch([{ name: "q1", viewbox }], callbackMock, jest.fn());
     expect(callbackMock).not.toHaveBeenCalled();
   });
 });

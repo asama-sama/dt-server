@@ -12,7 +12,7 @@ describe("Suburb", () => {
   });
 
   test("it should create geojson correctly", async () => {
-    const geometry = {
+    const boundary = {
       type: "Polygon",
       coordinates: [
         [
@@ -32,8 +32,8 @@ describe("Suburb", () => {
     };
     const s = await Suburb.create({
       name: "test",
-      geometry,
+      boundary,
     });
-    expect(s.geometry).toMatchObject(geometry);
+    expect(s.boundary).toMatchObject(boundary);
   });
 });
