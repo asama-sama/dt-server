@@ -10,7 +10,7 @@ import { Op } from "sequelize";
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe("updateSuburbGeoJson", () => {
-  test("it should set geoData in suburb properly", async () => {
+  test("it should set geometry in suburb properly", async () => {
     await Suburb.create({
       name: "s0",
     });
@@ -20,8 +20,10 @@ describe("updateSuburbGeoJson", () => {
           geojson: {
             type: "Polygon",
             coordinates: [
-              [1, 1],
-              [2, 2],
+              [
+                [1, 1],
+                [2, 2],
+              ],
             ],
           },
         },
@@ -33,16 +35,18 @@ describe("updateSuburbGeoJson", () => {
         name: "S0",
       },
     });
-    expect(suburb?.geoData).toMatchObject({
+    expect(suburb?.geometry).toMatchObject({
       type: "Polygon",
       coordinates: [
-        [1, 1],
-        [2, 2],
+        [
+          [1, 1],
+          [2, 2],
+        ],
       ],
     });
   });
 
-  test("it should not set geoData for suburbs if a polygon was not received", async () => {
+  test("it should not set geometry for suburbs if a polygon was not received", async () => {
     await Suburb.create({ name: "s1" });
     mockedAxios.get.mockResolvedValueOnce({
       data: [
@@ -60,11 +64,22 @@ describe("updateSuburbGeoJson", () => {
         name: "S1",
       },
     });
-    expect(suburb?.geoData).toBeNull();
+    expect(suburb?.geometry).toBeNull();
   });
 
   test("it should only fetch data for suburbs that don't have geojson set", async () => {
-    await Suburb.create({ name: "s2", geoData: { data: "data" } });
+    await Suburb.create({
+      name: "s2",
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [1, 1],
+            [2, 2],
+          ],
+        ],
+      },
+    });
 
     await updateSuburbGeoJson();
     await Suburb.findOne({
@@ -88,7 +103,7 @@ describe("updateSuburbGeoJson", () => {
         name: "S3",
       },
     });
-    expect(s3?.geoData).toBeNull();
+    expect(s3?.geometry).toBeNull();
   });
 
   test("it should set geojson for multiple suburbs", async () => {
@@ -106,8 +121,10 @@ describe("updateSuburbGeoJson", () => {
           geojson: {
             type: "Polygon",
             coordinates: [
-              [1, 1],
-              [2, 2],
+              [
+                [1, 1],
+                [2, 2],
+              ],
             ],
           },
         },
@@ -116,7 +133,7 @@ describe("updateSuburbGeoJson", () => {
     await updateSuburbGeoJson();
     const suburbsCount = await Suburb.findAndCountAll({
       where: {
-        geoData: {
+        geometry: {
           [Op.ne]: null,
         },
       },
@@ -164,5 +181,20 @@ describe("parseSuburbNames", () => {
   test('it splits "suburb1", "suburb2"', () => {
     const suburbs = parseSuburbNames("suburb1, suburb2");
     expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it splits "suburb1- suburb2"', () => {
+    const suburbs = parseSuburbNames("suburb1- suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it splits "suburb1 and suburb2"', () => {
+    const suburbs = parseSuburbNames("suburb1 and suburb2");
+    expect(suburbs).toMatchObject(["SUBURB1", "SUBURB2"]);
+  });
+
+  test('it does not split "suburb1andsuburb2"', () => {
+    const suburbs = parseSuburbNames("suburb1andsuburb2");
+    expect(suburbs).toMatchObject(["SUBURB1ANDSUBURB2"]);
   });
 });

@@ -8,7 +8,7 @@ const viewbox = { lon1: 0, lat1: 0, lon2: 0, lat2: 0 };
 
 describe("nominatim", () => {
   beforeAll(() => {
-    mockedAxios.get.mockResolvedValue({ data: [{ geoJson: "geodata" }] });
+    mockedAxios.get.mockResolvedValue({ data: [{ geometry: "geometry" }] });
   });
 
   // TODO: change tests to use throttle timer
@@ -57,7 +57,7 @@ describe("nominatim", () => {
   test("it should not call the callback function if there are no valid types", async () => {
     const callbackMock = jest.fn();
     mockedAxios.get.mockResolvedValue({
-      data: [{ geojson: { type: "none" } }],
+      data: [{ geometry: { type: "none" } }],
     });
     await bulkSearch([{ name: "q1", state: "state", viewbox }], callbackMock);
     expect(callbackMock).not.toHaveBeenCalled();

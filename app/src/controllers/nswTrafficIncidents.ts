@@ -26,7 +26,6 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   const now = new Date();
   const results = await fetchIncidents(now, initialise);
   const connection = getConnection();
-
   const suburbsCache: { [key: string]: Suburb } = {};
   const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
   const loader = new Loader(results.result.length);
@@ -89,9 +88,12 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
           transaction: trx,
         });
         if (!incident.end && end) {
-          incident.update({
-            end: new Date(end),
-          });
+          incident.update(
+            {
+              end: new Date(end),
+            },
+            { transaction: trx }
+          );
         }
         for (let i = 0; i < suburbs.length; i++) {
           const suburb = suburbs[i];

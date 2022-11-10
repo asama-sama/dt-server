@@ -131,7 +131,7 @@ describe("nswTrafficIncident", () => {
     const newResponse = { ...response };
     newResponse.result[0].Hazards.features.properties.end =
       new Date().getTime();
-    fetchIncidentsMock.mockResolvedValueOnce(newResponse);
+    fetchIncidentsMock.mockResolvedValue(newResponse);
     await updateIncidents();
     const incident = await TrafficIncident.findOne({
       where: {

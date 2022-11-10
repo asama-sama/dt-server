@@ -11,7 +11,7 @@ const NSW_VIEW_BOX = {
 export const updateSuburbGeoJson = async () => {
   const suburbs = await Suburb.findAll({
     where: {
-      geoData: null,
+      geometry: null,
     },
     order: [["id", "asc"]],
   });
@@ -29,7 +29,7 @@ export const updateSuburbGeoJson = async () => {
     const suburb = suburbMap[suburbName];
     await suburb.reload();
     await suburb.update({
-      geoData: result.geojson,
+      geometry: result.geojson,
     });
   });
 };
@@ -42,5 +42,9 @@ export const parseSuburbNames = (name: string) => {
   if (nameUpperCase.match(toReg)) return nameUpperCase.split(toReg);
   const commaReg = new RegExp(/\s?,\s?/);
   if (nameUpperCase.match(commaReg)) return nameUpperCase.split(commaReg);
+  const hyphenReg = new RegExp(/\s?-\s?/);
+  if (nameUpperCase.match(hyphenReg)) return nameUpperCase.split(hyphenReg);
+  const andReg = new RegExp(/\sAND\s/);
+  if (nameUpperCase.match(andReg)) return nameUpperCase.split(andReg);
   return [nameUpperCase];
 };

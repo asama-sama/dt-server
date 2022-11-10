@@ -8,7 +8,6 @@ import {
   HasMany,
   BelongsToMany,
 } from "sequelize-typescript";
-import { SuburbJson } from "../../customTypes/suburb";
 import { AirQualitySite } from "./AirQualitySite";
 import { BomStation } from "./BomStation";
 import { TrafficIncident } from "./TrafficIncident";
@@ -16,6 +15,12 @@ import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { CosGhgEmission } from "./CosGhgEmission";
 import { CosGhgEmissionSuburb } from "./CosGhgEmissionSuburb";
 import { TrafficIncidentSuburb } from "./TrafficIncidentSuburb";
+
+type Geometry = {
+  crs: { type: string; properties: { name: string } };
+  type: string;
+  coordinates: number[][][];
+};
 
 @Table
 export class Suburb extends Model {
@@ -29,8 +34,8 @@ export class Suburb extends Model {
   name: string;
 
   @AllowNull(true)
-  @Column(DataType.JSON)
-  geoData: SuburbJson;
+  @Column(DataType.GEOMETRY)
+  geometry: Geometry;
 
   @HasMany(() => AirQualitySite, "suburbId")
   airQualitySites: AirQualitySite[];
