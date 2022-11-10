@@ -33,6 +33,10 @@ describe("Suburb", () => {
     const s = await Suburb.create({
       name: "test",
       boundary,
+      position: {
+        type: "Point",
+        coordinates: [10, 15],
+      },
     });
     expect(s.boundary).toMatchObject(boundary);
   });

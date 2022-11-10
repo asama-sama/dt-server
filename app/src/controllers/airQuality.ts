@@ -110,8 +110,10 @@ export const updateSites = async () => {
       },
       defaults: {
         siteId,
-        lng,
-        lat,
+        position: {
+          type: "Point",
+          coordinates: [lng, lat],
+        },
         region,
         dataSourceId: dataSource?.id,
         suburbId: suburb.id,

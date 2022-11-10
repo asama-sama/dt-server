@@ -16,12 +16,7 @@ import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { CosGhgEmission } from "./CosGhgEmission";
 import { CosGhgEmissionSuburb } from "./CosGhgEmissionSuburb";
 import { TrafficIncidentSuburb } from "./TrafficIncidentSuburb";
-
-type Geometry = {
-  crs: { type: string; properties: { name: string } };
-  type: string;
-  coordinates: number[][][];
-};
+import { Point, Polygon } from "../../customTypes/geometry";
 
 @Table
 export class Suburb extends Model {
@@ -41,11 +36,11 @@ export class Suburb extends Model {
 
   @AllowNull(true)
   @Column(DataType.GEOMETRY)
-  boundary: Geometry;
+  boundary: Polygon;
 
   @AllowNull(true)
   @Column(DataType.GEOMETRY)
-  position: Geometry;
+  position: Point;
 
   @HasMany(() => AirQualitySite, "suburbId")
   airQualitySites: AirQualitySite[];

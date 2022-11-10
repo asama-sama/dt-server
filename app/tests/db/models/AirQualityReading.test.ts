@@ -19,8 +19,10 @@ describe("AirQualityReading", () => {
   beforeEach(async () => {
     site = await AirQualitySite.create({
       siteId: "1234",
-      lat: 20,
-      lng: 40,
+      position: {
+        type: "Point",
+        coordinates: [20, 40],
+      },
     });
     dataSource = await DataSource.findOne({
       where: { name: DATASOURCES.nswAirQualityReadings.name },

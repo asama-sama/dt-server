@@ -9,6 +9,7 @@ import {
   Unique,
   HasMany,
 } from "sequelize-typescript";
+import { Point } from "../../customTypes/geometry";
 import { AirQualityReading } from "./AirQualityReading";
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
@@ -34,16 +35,8 @@ export class AirQualitySite extends Model {
   region: string;
 
   @AllowNull(false)
-  @Column({
-    type: DataType.FLOAT,
-  })
-  lat: number;
-
-  @AllowNull(false)
-  @Column({
-    type: DataType.FLOAT,
-  })
-  lng: number;
+  @Column(DataType.GEOMETRY)
+  position: Point;
 
   @ForeignKey(() => Suburb)
   @Column

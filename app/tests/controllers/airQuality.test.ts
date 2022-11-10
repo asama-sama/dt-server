@@ -69,8 +69,10 @@ describe("airQuality Controller", () => {
       await AirQualitySite.create({
         siteId: 5,
         dataSourceId: sitesApi.id,
-        lat: 5.2,
-        lng: 2.235,
+        position: {
+          type: "Point",
+          coordinates: [2.235, 5.2],
+        },
       });
     });
 
@@ -117,8 +119,10 @@ describe("airQuality Controller", () => {
       const site = await AirQualitySite.create({
         siteId: 5,
         dataSourceId: sitesApi.id,
-        lat: 5.2,
-        lng: 2.235,
+        position: {
+          type: "Point",
+          coordinates: [2.235, 5.2],
+        },
       });
       const frequency = await UpdateFrequency.findOne({
         where: { frequency: Frequency.DAILY },
