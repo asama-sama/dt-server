@@ -3,7 +3,7 @@ import {
   getHourlyObservationsAQApi,
   AirQualityDataLive,
   getSites,
-  getDailyObservations,
+  getObservations,
 } from "../clients/nswAirQuality";
 import { AirQualitySite } from "../db/models/AirQualitySite";
 import { DataSource } from "../db/models/DataSource";
@@ -14,6 +14,8 @@ import { AirQualityUpdateParams, DATASOURCES } from "../const/datasource";
 import { Suburb } from "../db/models/Suburb";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { getConnection } from "../db/connect";
+import { logger, LogLevels } from "../util/logger";
+import { Loader } from "../util/loader";
 
 const DAYS_TO_SEARCH = 7;
 
@@ -129,6 +131,7 @@ export const updateAirQualityReadings = async (
   startDate: Date,
   endDate: Date
 ) => {
+  logger(`get airquality readings for ${params.parameters[0]}`);
   const endDateParsed = `${endDate.getFullYear()}-${String(
     endDate.getMonth() + 1
   ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
@@ -136,7 +139,7 @@ export const updateAirQualityReadings = async (
   const startDateParsed = `${startDate.getFullYear()}-${String(
     startDate.getMonth() + 1
   ).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
-  const observations = await getDailyObservations(
+  const observations = await getObservations(
     params,
     Object.keys(airQualitySitesMap).map(Number),
     startDateParsed,
@@ -182,35 +185,35 @@ export const updateAirQualityReadings = async (
   if (!updateFrequency || !updateFrequency.id)
     throw new Error(`updateFrequency not found: ${Frequency.DAILY}`);
   const connection = getConnection();
+  const loader = new Loader(observations.length);
   await connection.transaction(async (trx) => {
-    await Promise.all(
-      observations.map(async (observation) => {
-        const airQualitySiteId = airQualitySitesMap[observation.siteId].id;
-        const lookupDate = `${observation.date} ${observation.hour}`;
-        const existingReading =
-          readingsMapped[lookupDate] &&
-          readingsMapped[lookupDate][airQualitySiteId];
-        if (!existingReading) {
-          const date = new Date(observation.date);
-          date.setHours(observation.hour);
-          await AirQualityReading.create(
-            {
-              date,
-              value: observation.value,
-              type: observation.type,
-              dataSourceId: dataSource?.id,
-              airQualitySiteId: airQualitySiteId,
-              updateFrequencyId: updateFrequency.id,
-              hour: observation.hour,
-            },
-            { transaction: trx }
-          );
-        }
-        if (existingReading && existingReading.value === null) {
-          await existingReading.update({ value: observation.value });
-        }
-      })
-    );
+    for (const observation of observations) {
+      const airQualitySiteId = airQualitySitesMap[observation.siteId].id;
+      const lookupDate = `${observation.date} ${observation.hour}`;
+      const existingReading =
+        readingsMapped[lookupDate] &&
+        readingsMapped[lookupDate][airQualitySiteId];
+      if (!existingReading) {
+        const date = new Date(observation.date);
+        date.setHours(observation.hour);
+        await AirQualityReading.create(
+          {
+            date,
+            value: observation.value,
+            type: observation.type,
+            dataSourceId: dataSource?.id,
+            airQualitySiteId: airQualitySiteId,
+            updateFrequencyId: updateFrequency.id,
+            hour: observation.hour,
+          },
+          { transaction: trx }
+        );
+      }
+      if (existingReading && existingReading.value === null) {
+        await existingReading.update({ value: observation.value });
+      }
+      loader.tick();
+    }
   });
 };
 
@@ -228,12 +231,26 @@ export const callUpdateAirQualityReadings = async (endDate: Date) => {
     DATASOURCES.nswAirQualityReadings.params
   );
 
+  const errorMessages: string[] = [];
   for (const params of updateParameters) {
-    await updateAirQualityReadings(
-      params,
-      airQualitySitesMap,
-      startDate,
-      endDate
-    );
+    try {
+      await updateAirQualityReadings(
+        params,
+        airQualitySitesMap,
+        startDate,
+        endDate
+      );
+    } catch (e) {
+      let message = `Error ${params.categories[0]}`;
+      if (e instanceof Error) {
+        message = `${message}: ${e.message}`;
+      }
+      logger(message, LogLevels.ERROR);
+    }
+  }
+
+  if (errorMessages.length) {
+    const errorMessage = errorMessages.join(", ");
+    throw new Error(errorMessage);
   }
 };

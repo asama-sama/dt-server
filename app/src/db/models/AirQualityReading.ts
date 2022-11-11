@@ -21,10 +21,14 @@ export enum AirQualityCategory {
 
 export enum AirQualityType {
   "NO2" = "NO2",
-  "CO2" = "CO2",
-  "TEMP" = "TEMP",
-  "WSP" = "WSP",
-  "WDR" = "WDR",
+  "NO" = "NO",
+  "NEPH" = "NEPH",
+  "CO" = "CO",
+  "SO2" = "SO2",
+  "PM10" = "PM10",
+  "PM2.5" = "PM2.5",
+  "OZONE" = "OZONE",
+  "SOLAR" = "SOLAR",
 }
 
 @Table

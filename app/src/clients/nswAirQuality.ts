@@ -143,7 +143,7 @@ export const getHourlyObservationsAQApi = async (
   return airQualityData;
 };
 
-export const getDailyObservations = async (
+export const getObservations = async (
   params: AirQualityUpdateParams,
   sites: number[],
   startDate: string,
