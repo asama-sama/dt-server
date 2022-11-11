@@ -78,8 +78,10 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
           },
           defaults: {
             id,
-            lat,
-            lng,
+            position: {
+              type: "Point",
+              coordinates: [lng, lat],
+            },
             created: new Date(created),
             end: end ? new Date(end) : null,
             trafficIncidentCategoryId: trafficIncidentCategory.id,

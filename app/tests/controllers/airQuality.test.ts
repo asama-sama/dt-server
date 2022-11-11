@@ -6,7 +6,7 @@ import {
 import { AirQualitySite } from "../../src/db/models/AirQualitySite";
 import { DataSource } from "../../src/db/models/DataSource";
 import {
-  getDailyObservations,
+  getObservations,
   AirQualityData,
   getSites,
   Site,
@@ -32,7 +32,7 @@ import { Op } from "sequelize";
 jest.mock("../../src/clients/nswAirQuality", () => {
   return {
     __esModule: true,
-    getDailyObservations: jest.fn(),
+    getObservations: jest.fn(),
     getSites: jest.fn(),
   };
 });
@@ -44,10 +44,10 @@ jest.mock("../../src/util/suburbUtils", () => {
   };
 });
 
-const getDailyObservationsMock = getDailyObservations as jest.MockedFunction<
-  typeof getDailyObservations
+const getObservationsMock = getObservations as jest.MockedFunction<
+  typeof getObservations
 >;
-getDailyObservationsMock.mockResolvedValue([]);
+getObservationsMock.mockResolvedValue([]);
 
 const getSitesMock = getSites as jest.MockedFunction<typeof getSites>;
 
@@ -157,7 +157,7 @@ describe("airQuality Controller", () => {
         };
       });
 
-      getDailyObservationsMock.mockResolvedValue(airQualityReadingsApi);
+      getObservationsMock.mockResolvedValue(airQualityReadingsApi);
       sitesMap[site.siteId] = site;
       await updateAirQualityReadings(
         (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[0],
@@ -215,15 +215,15 @@ describe("airQuality Controller", () => {
           value: 0.5,
           siteId: 5,
           frequency: Frequency.DAILY,
-          type: AirQualityType.WDR,
+          type: AirQualityType.NO,
           quality: null,
           hour: 0,
         },
       ];
-      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
+      getObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
       const wdrParams = (<AirQualityUpdateParams[]>(
         DATASOURCES.nswAirQualityReadings.params
-      )).find((params) => params.parameters[0] === "WDR");
+      )).find((params) => params.parameters[0] === "NO");
       await updateAirQualityReadings(
         <AirQualityUpdateParams>wdrParams,
         sitesMap,
@@ -247,7 +247,7 @@ describe("airQuality Controller", () => {
         },
       ];
       const oldReadings = await AirQualityReading.findAll();
-      getDailyObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
+      getObservationsMock.mockResolvedValueOnce(airQualityReadingsNew);
       const no2Params = (<AirQualityUpdateParams[]>(
         DATASOURCES.nswAirQualityReadings.params
       )).find((params) => params.parameters[0] === "NO2");
@@ -262,7 +262,7 @@ describe("airQuality Controller", () => {
     });
 
     test("it should call getDailyObservations with the correct values", () => {
-      expect(getDailyObservationsMock).toHaveBeenCalledWith(
+      expect(getObservationsMock).toHaveBeenCalledWith(
         (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[0],
         [5],
         "2022-09-30",

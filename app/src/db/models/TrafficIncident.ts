@@ -9,6 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from "sequelize-typescript";
+import { Point } from "../../customTypes/geometry";
 import { DataSource } from "./DataSource";
 import { Suburb } from "./Suburb";
 import { TrafficIncidentCategory } from "./TrafficIncidentCategory";
@@ -27,15 +28,9 @@ export class TrafficIncident extends Model {
 
   @AllowNull(false)
   @Column({
-    type: DataType.FLOAT,
+    type: DataType.GEOMETRY,
   })
-  lat: number;
-
-  @AllowNull(false)
-  @Column({
-    type: DataType.FLOAT,
-  })
-  lng: number;
+  position: Point;
 
   @AllowNull(false)
   @Column({

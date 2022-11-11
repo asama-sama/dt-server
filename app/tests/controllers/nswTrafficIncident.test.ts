@@ -101,8 +101,10 @@ describe("nswTrafficIncident", () => {
     expect(incidents.length).toBe(1);
     expect(incidents[0]).toMatchObject({
       id: 112,
-      lat: 23.3,
-      lng: -123.54,
+      position: {
+        type: "Point",
+        coordinates: [-123.54, 23.3],
+      },
       created: new Date("2022-03-01"),
       trafficIncidentCategoryId: category.id,
       dataSourceId: dataSource?.id,

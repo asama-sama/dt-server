@@ -31,6 +31,12 @@ export const DATASOURCES: DataSource = {
         frequency: ["Hourly average"],
       },
       {
+        parameters: ["NO"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+      {
         parameters: ["NEPH"],
         categories: ["Averages"],
         subcategories: ["Hourly"],
@@ -56,6 +62,18 @@ export const DATASOURCES: DataSource = {
       },
       {
         parameters: ["PM2.5"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+      {
+        parameters: ["OZONE"],
+        categories: ["Averages"],
+        subcategories: ["Hourly"],
+        frequency: ["Hourly average"],
+      },
+      {
+        parameters: ["SOLAR"],
         categories: ["Averages"],
         subcategories: ["Hourly"],
         frequency: ["Hourly average"],
