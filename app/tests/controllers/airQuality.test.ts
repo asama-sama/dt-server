@@ -101,6 +101,18 @@ describe("airQuality Controller", () => {
         ]);
       });
     });
+
+    test("it should throw an error if the fetch errors", async () => {
+      getObservationsMock.mockRejectedValue(new Error("fetch readings error"));
+      const errorMessages = (<AirQualityUpdateParams[]>(
+        DATASOURCES.nswAirQualityReadings.params
+      ))
+        .map((p) => `Error fetching ${p.parameters[0]}: fetch readings error`)
+        .join(", ");
+      expect(callUpdateAirQualityReadings(new Date())).rejects.toThrowError(
+        errorMessages
+      );
+    });
   });
 
   describe("updateAirQualityReadings", () => {

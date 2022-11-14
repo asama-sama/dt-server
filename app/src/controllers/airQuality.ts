@@ -241,11 +241,12 @@ export const callUpdateAirQualityReadings = async (endDate: Date) => {
         endDate
       );
     } catch (e) {
-      let message = `Error ${params.categories[0]}`;
+      let message = `Error fetching ${params.parameters[0]}`;
       if (e instanceof Error) {
         message = `${message}: ${e.message}`;
       }
       logger(message, LogLevels.ERROR);
+      errorMessages.push(message);
     }
   }
 
