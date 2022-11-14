@@ -35,7 +35,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
       for (const trafficIncident of incidentResponseBatch) {
         loader.tick();
         const id = trafficIncident.Hazards.features.id;
-        const [lat, lng] =
+        const [lng, lat] =
           trafficIncident.Hazards.features.geometry.coordinates;
 
         const suburbs: Suburb[] = [];
