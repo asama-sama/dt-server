@@ -19,8 +19,8 @@ export const apisToLoad: JobInitialisor[] = [
     params: DATASOURCES.nswAirQualitySites,
   },
   {
-    async update() {
-      await callUpdateAirQualityReadings(new Date());
+    async update(options) {
+      await callUpdateAirQualityReadings(options, new Date());
     },
     params: DATASOURCES.nswAirQualityReadings,
   },

@@ -57,7 +57,7 @@ const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
 
 describe("airQuality Controller", () => {
   describe("callUpdateAirQualityReadings", () => {
-    const callUpdateAirQualityReadingsSpy = jest.spyOn(
+    const updateAirQualityReadingsSpy = jest.spyOn(
       airQualityController,
       "updateAirQualityReadings"
     );
@@ -76,21 +76,27 @@ describe("airQuality Controller", () => {
       });
     });
 
-    test("it should call getDailyObservations the correct number of times", async () => {
-      await callUpdateAirQualityReadings(new Date("2022-07-07"));
+    test("it should call updateAirQualityReadings the correct number of times", async () => {
+      await callUpdateAirQualityReadings(
+        { initialise: false },
+        new Date("2022-07-07")
+      );
 
-      expect(callUpdateAirQualityReadingsSpy).toBeCalledTimes(
+      expect(updateAirQualityReadingsSpy).toBeCalledTimes(
         (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)
           .length
       );
     });
 
-    test("it should call getDailyObservations with the correct values", async () => {
-      await callUpdateAirQualityReadings(new Date("2022-07-07"));
+    test("it should call updateAirQualityReadings with the correct values", async () => {
+      await callUpdateAirQualityReadings(
+        { initialise: false },
+        new Date("2022-07-07")
+      );
       const sitesMap: { [key: number]: AirQualitySite } = {};
       const sites = await AirQualitySite.findAll();
       sites.map((site) => (sitesMap[site.siteId] = site));
-      callUpdateAirQualityReadingsSpy.mock.calls.forEach((call, i) => {
+      updateAirQualityReadingsSpy.mock.calls.forEach((call, i) => {
         expect(call).toEqual([
           (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[
             i
@@ -102,6 +108,27 @@ describe("airQuality Controller", () => {
       });
     });
 
+    test("it should call updateAirQualityReadings with the correct values on initialisation", async () => {
+      const endDate = new Date("2022-07-07");
+      const startDate = new Date(endDate.getTime());
+      startDate.setMonth(endDate.getMonth() - 6);
+
+      await callUpdateAirQualityReadings({ initialise: true }, endDate);
+      const sitesMap: { [key: number]: AirQualitySite } = {};
+      const sites = await AirQualitySite.findAll();
+      sites.map((site) => (sitesMap[site.siteId] = site));
+      updateAirQualityReadingsSpy.mock.calls.forEach((call, i) => {
+        expect(call).toEqual([
+          (<AirQualityUpdateParams[]>DATASOURCES.nswAirQualityReadings.params)[
+            i
+          ],
+          sitesMap,
+          startDate,
+          endDate,
+        ]);
+      });
+    });
+
     test("it should throw an error if the fetch errors", async () => {
       getObservationsMock.mockRejectedValue(new Error("fetch readings error"));
       const errorMessages = (<AirQualityUpdateParams[]>(
@@ -109,9 +136,9 @@ describe("airQuality Controller", () => {
       ))
         .map((p) => `Error fetching ${p.parameters[0]}: fetch readings error`)
         .join(", ");
-      expect(callUpdateAirQualityReadings(new Date())).rejects.toThrowError(
-        errorMessages
-      );
+      expect(
+        callUpdateAirQualityReadings({ initialise: false }, new Date())
+      ).rejects.toThrowError(errorMessages);
     });
   });
 

@@ -16,8 +16,10 @@ import { updateSuburbGeoJson } from "../util/suburbUtils";
 import { getConnection } from "../db/connect";
 import { logger, LogLevels } from "../util/logger";
 import { Loader } from "../util/loader";
+import { JobInitialisorOptions } from "../initialise/jobs";
 
 const DAYS_TO_SEARCH = 7;
+const MONTHS_TO_SEARCH = 6;
 
 type AirQualityApiFrequenciesToUpdateFrequencyMap = {
   [key: string]: Frequency;
@@ -217,7 +219,10 @@ export const updateAirQualityReadings = async (
   });
 };
 
-export const callUpdateAirQualityReadings = async (endDate: Date) => {
+export const callUpdateAirQualityReadings = async (
+  options: JobInitialisorOptions,
+  endDate: Date
+) => {
   const airQualitySites = await AirQualitySite.findAll({});
   const airQualitySitesMap: { [key: string]: AirQualitySite } = {};
   airQualitySites.forEach((airQualitySite) => {
@@ -225,7 +230,11 @@ export const callUpdateAirQualityReadings = async (endDate: Date) => {
   });
 
   const startDate = new Date(endDate.getTime());
-  startDate.setDate(endDate.getDate() - DAYS_TO_SEARCH);
+  if (options.initialise) {
+    startDate.setMonth(endDate.getMonth() - MONTHS_TO_SEARCH);
+  } else {
+    startDate.setDate(endDate.getDate() - DAYS_TO_SEARCH);
+  }
 
   const updateParameters = <AirQualityUpdateParams[]>(
     DATASOURCES.nswAirQualityReadings.params

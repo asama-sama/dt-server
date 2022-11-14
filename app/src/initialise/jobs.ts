@@ -1,6 +1,6 @@
 import { AirQualityUpdateParams } from "../const/datasource";
 
-type JobInitialisorOptions = {
+export type JobInitialisorOptions = {
   initialise: boolean;
 };
 
@@ -11,6 +11,6 @@ export type JobParams = {
 };
 
 export interface JobInitialisor {
-  update(options?: JobInitialisorOptions): Promise<void>;
+  update(options: JobInitialisorOptions): Promise<void>;
   params: JobParams;
 }
