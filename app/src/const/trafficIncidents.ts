@@ -28,6 +28,6 @@ export const categorySubcategoryMap: { [key: string]: string[] } = {
     "adverse weather",
   ],
   breakdown: ["breakdown", "ferry out of service"],
-  "traffic lights": ["traffic lights"],
+  "traffic lights": ["traffic lights", "traffic signals"],
   roadworks: ["roadwork"],
 };
