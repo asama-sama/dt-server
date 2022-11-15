@@ -43,7 +43,7 @@ describe("nswTrafficIncident", () => {
             id: 112,
             geometry: {
               type: "POINT",
-              coordinates: [23.3, -123.54],
+              coordinates: [-123.54, 23.3],
             },
             properties: {
               created: new Date("2022-03-01").getTime(),
@@ -103,7 +103,7 @@ describe("nswTrafficIncident", () => {
       id: 112,
       position: {
         type: "Point",
-        coordinates: [23.3, -123.54],
+        coordinates: [-123.54, 23.3],
       },
       created: new Date("2022-03-01"),
       trafficIncidentCategoryId: category.id,

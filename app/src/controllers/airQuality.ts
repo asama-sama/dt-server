@@ -240,24 +240,29 @@ export const callUpdateAirQualityReadings = async (
     DATASOURCES.nswAirQualityReadings.params
   );
 
-  const errorMessages: string[] = [];
-  for (const params of updateParameters) {
-    try {
-      await updateAirQualityReadings(
-        params,
-        airQualitySitesMap,
-        startDate,
-        endDate
-      );
-    } catch (e) {
-      let message = `Error fetching ${params.parameters[0]}`;
-      if (e instanceof Error) {
-        message = `${message}: ${e.message}`;
-      }
-      logger(message, LogLevels.ERROR);
-      errorMessages.push(message);
-    }
-  }
+  let errorMessages = await Promise.all(
+    updateParameters.map((updateParameter) => {
+      return new Promise<string>((resolve) => {
+        updateAirQualityReadings(
+          updateParameter,
+          airQualitySitesMap,
+          startDate,
+          endDate
+        ).then(
+          () => resolve(""),
+          (e) => {
+            let message = `Error fetching ${updateParameter.parameters[0]}`;
+            if (e instanceof Error) {
+              message = `${message}: ${e.message}`;
+            }
+            logger(message, LogLevels.ERROR);
+            resolve(message);
+          }
+        );
+      });
+    })
+  );
+  errorMessages = errorMessages.filter((msg) => msg !== "");
 
   if (errorMessages.length) {
     const errorMessage = errorMessages.join(", ");
