@@ -1,11 +1,47 @@
-import express from "express";
-import { get } from "../controllers/suburbs";
+import express, { NextFunction, Request, Response } from "express";
+import { get, getSuburbsById } from "../controllers/suburbs";
+import { ResponseError } from "../customTypes/ResponseError";
+import { Suburb } from "../db/models/Suburb";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  const results = await get();
-  res.status(200).send(results);
-});
+type SuburbQueryParams = {
+  suburbIds?: string[];
+};
+
+router.get(
+  "/",
+  async (
+    request: Request<null, null, SuburbQueryParams>,
+    response: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const { suburbIds: suburbIdsParams } = request.query;
+      let suburbIds: number[] | undefined = undefined;
+      if (suburbIdsParams) {
+        if (!Array.isArray(suburbIdsParams)) {
+          throw new ResponseError("suburbIds must be an array", 400);
+        }
+        suburbIds = suburbIdsParams.map((id) => {
+          const num = Number(id);
+          if (isNaN(num))
+            throw new ResponseError("suburbIds must be numbers", 400);
+          return num;
+        });
+      }
+      let suburbs: Suburb[];
+      if (suburbIds) {
+        suburbs = await getSuburbsById(suburbIds);
+      } else {
+        suburbs = await get();
+      }
+
+      response.status(200).send(suburbs);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 export { router as suburbs };

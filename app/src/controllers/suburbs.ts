@@ -12,3 +12,14 @@ export const get = async () => {
 
   return suburbs;
 };
+
+export const getSuburbsById = async (ids: number[]) => {
+  const suburbs = await Suburb.findAll({
+    where: {
+      id: {
+        [Op.or]: ids,
+      },
+    },
+  });
+  return suburbs;
+};
