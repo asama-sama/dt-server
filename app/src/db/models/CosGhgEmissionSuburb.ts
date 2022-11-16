@@ -1,4 +1,10 @@
-import { Column, ForeignKey, Model, Table } from "sequelize-typescript";
+import {
+  BelongsTo,
+  Column,
+  ForeignKey,
+  Model,
+  Table,
+} from "sequelize-typescript";
 import { CosGhgEmission } from "./CosGhgEmission";
 import { Suburb } from "./Suburb";
 
@@ -8,7 +14,13 @@ export class CosGhgEmissionSuburb extends Model {
   @Column
   suburbId: number;
 
+  @BelongsTo(() => Suburb, "suburbId")
+  suburb: Suburb;
+
   @ForeignKey(() => CosGhgEmission)
   @Column
   cosGhgEmissionId: number;
+
+  @BelongsTo(() => CosGhgEmission, "cosGhgEmissionId")
+  cosGhgEmission: CosGhgEmission;
 }
