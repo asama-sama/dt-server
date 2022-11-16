@@ -29,7 +29,7 @@ type WhereOptsGhgEmission = {
 };
 
 type WhereOptionsGhgCategories = {
-  name: {
+  id: {
     [Op.or]: string[];
   };
 };
@@ -48,7 +48,7 @@ export const getEmissionsBySuburb: GetEmissionsBySuburbSig = async ({
 
   const whereOptsGhgCategories: Partial<WhereOptionsGhgCategories> = {};
   if (categories) {
-    whereOptsGhgCategories.name = { [Op.or]: categories };
+    whereOptsGhgCategories.id = { [Op.or]: categories };
   }
 
   const emissions = (await CosGhgEmissionSuburb.findAll({

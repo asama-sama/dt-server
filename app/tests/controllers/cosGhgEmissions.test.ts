@@ -9,6 +9,9 @@ import { DataSource } from "../../src/db/models/DataSource";
 import { Suburb } from "../../src/db/models/Suburb";
 
 describe("cosGhgEmissions", () => {
+  let category1: CosGhgCategory;
+  let category2: CosGhgCategory;
+  let category3: CosGhgCategory;
   beforeEach(async () => {
     const suburb = await Suburb.create({
       name: "s1",
@@ -16,13 +19,13 @@ describe("cosGhgEmissions", () => {
     const suburb2 = await Suburb.create({
       name: "s2",
     });
-    const category1 = await CosGhgCategory.create({
+    category1 = await CosGhgCategory.create({
       name: "cat1",
     });
-    const category2 = await CosGhgCategory.create({
+    category2 = await CosGhgCategory.create({
       name: "cat2",
     });
-    const category3 = await CosGhgCategory.create({
+    category3 = await CosGhgCategory.create({
       name: "cat3",
     });
     const datasource = await DataSource.findOne({
@@ -129,7 +132,7 @@ describe("cosGhgEmissions", () => {
     });
     test("it returns the emissions for given categories", async () => {
       const res = await getEmissionsBySuburb({
-        categories: ["cat1"],
+        categories: [category1.id],
       });
       expect(res).toMatchObject([
         {
@@ -139,7 +142,7 @@ describe("cosGhgEmissions", () => {
       ]);
 
       const res2 = await getEmissionsBySuburb({
-        categories: ["cat1", "cat3"],
+        categories: [category1.id, category3.id],
       });
       expect(res2).toMatchObject([
         {
@@ -155,7 +158,7 @@ describe("cosGhgEmissions", () => {
 
     test("it returns the emissions for year and category together", async () => {
       const res = await getEmissionsBySuburb({
-        categories: ["cat2"],
+        categories: [category2.id],
         year: 2000,
       });
       expect(res).toMatchObject([
