@@ -140,6 +140,9 @@ def input_params_spatial():
 
     return dataset_type, d_column
 
+@app.route('/hello')
+def hello():
+    return "Hello"
 #########################################################################
 
 
