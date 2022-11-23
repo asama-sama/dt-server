@@ -10,11 +10,16 @@ type EmissionsBySuburbQueryParams = {
   sort: "ASC" | "DESC";
 };
 
+type SuburbResponseValue = {
+  value: number;
+  suburbId: number;
+};
+
 router.get(
   "/suburb",
   async (
     request: Request<null, null, EmissionsBySuburbQueryParams>,
-    response: Response,
+    response: Response<SuburbResponseValue[]>,
     next: NextFunction
   ) => {
     try {
@@ -50,7 +55,12 @@ router.get(
         year,
       });
 
-      response.status(200).send(emissionsBySuburb);
+      const responses = emissionsBySuburb.map((emissionBySuburb) => ({
+        suburbId: emissionBySuburb.suburbId,
+        value: emissionBySuburb.emissionsSum,
+      }));
+
+      response.status(200).send(responses);
     } catch (e) {
       next(e);
     }
