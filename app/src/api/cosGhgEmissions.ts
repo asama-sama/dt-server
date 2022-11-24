@@ -1,5 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import {
+  getCosGhgEmissionCategories,
   getEmissionsBySuburb,
   getValidYears,
 } from "../controllers/cosGhgEmissions";
@@ -34,7 +35,7 @@ router.get(
       if (categoriesParam && !Array.isArray(categoriesParam)) {
         throw new ResponseError("categories must be an array", 400);
       }
-      const categories = <string[]>categoriesParam;
+      const categories = <string[]>categoriesParam || [];
 
       if (yearParam && isNaN(Number(yearParam))) {
         throw new ResponseError("year must be a number", 400);
@@ -73,8 +74,24 @@ router.get(
 router.get(
   "/years",
   async (request: Request, response: Response, next: NextFunction) => {
-    const years = await getValidYears();
-    response.status(200).send(years);
+    try {
+      const years = await getValidYears();
+      response.status(200).send(years);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/categories",
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const categories = await getCosGhgEmissionCategories();
+      response.status(200).send(categories);
+    } catch (e) {
+      next(e);
+    }
   }
 );
 

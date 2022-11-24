@@ -12,6 +12,7 @@ describe("cosGhgEmissions", () => {
   let category1: CosGhgCategory;
   let category2: CosGhgCategory;
   let category3: CosGhgCategory;
+  let categories: string[] = [];
   beforeEach(async () => {
     const suburb = await Suburb.create({
       name: "s1",
@@ -28,6 +29,11 @@ describe("cosGhgEmissions", () => {
     category3 = await CosGhgCategory.create({
       name: "cat3",
     });
+    categories = [
+      category1.id.toString(),
+      category2.id.toString(),
+      category3.id.toString(),
+    ];
     const datasource = await DataSource.findOne({
       where: { name: DATASOURCES.nswAirQualityReadings.name },
     });
@@ -78,7 +84,7 @@ describe("cosGhgEmissions", () => {
 
   describe("getEmissionsBySuburb", () => {
     test("it should return emissions by suburb in descending order", async () => {
-      const res = await getEmissionsBySuburb({});
+      const res = await getEmissionsBySuburb({ categories });
       expect(res).toMatchObject([
         {
           emissionsSum: 6.5,
@@ -93,6 +99,7 @@ describe("cosGhgEmissions", () => {
     test("it should return emissions by suburb in ascending order", async () => {
       const res = await getEmissionsBySuburb({
         order: "ASC",
+        categories,
       });
       expect(res).toMatchObject([
         {
@@ -108,6 +115,7 @@ describe("cosGhgEmissions", () => {
     test("it return the emissions for only a given year", async () => {
       const res = await getEmissionsBySuburb({
         year: 2000,
+        categories,
       });
       expect(res).toMatchObject([
         {
@@ -118,6 +126,7 @@ describe("cosGhgEmissions", () => {
 
       const res2 = await getEmissionsBySuburb({
         year: 2002,
+        categories,
       });
       expect(res2).toMatchObject([
         {
@@ -154,6 +163,13 @@ describe("cosGhgEmissions", () => {
           suburbId: 2,
         },
       ]);
+    });
+
+    test("it returns nothing if no categories are selected", async () => {
+      const res3 = await getEmissionsBySuburb({
+        categories: [],
+      });
+      expect(res3).toEqual([]);
     });
 
     test("it returns the emissions for year and category together", async () => {
