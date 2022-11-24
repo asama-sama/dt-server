@@ -1,5 +1,8 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getEmissionsBySuburb } from "../controllers/cosGhgEmissions";
+import {
+  getEmissionsBySuburb,
+  getValidYears,
+} from "../controllers/cosGhgEmissions";
 import { ResponseError } from "../customTypes/ResponseError";
 
 const router = express.Router();
@@ -64,6 +67,14 @@ router.get(
     } catch (e) {
       next(e);
     }
+  }
+);
+
+router.get(
+  "/years",
+  async (request: Request, response: Response, next: NextFunction) => {
+    const years = await getValidYears();
+    response.status(200).send(years);
   }
 );
 

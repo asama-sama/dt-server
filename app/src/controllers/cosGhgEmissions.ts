@@ -85,3 +85,15 @@ export const getEmissionsBySuburb: GetEmissionsBySuburbSig = async ({
 
   return response;
 };
+
+export const getValidYears = async () => {
+  const sequelize = getConnection();
+  const years = (
+    await CosGhgEmission.findAll({
+      attributes: [[sequelize.fn("DISTINCT", sequelize.col("year")), "year"]],
+      order: [["year", "ASC"]],
+    })
+  ).map((row) => row.year) as number[];
+  //
+  return years;
+};
