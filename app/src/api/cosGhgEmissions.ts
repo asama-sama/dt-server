@@ -1,5 +1,9 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getEmissionsBySuburb } from "../controllers/cosGhgEmissions";
+import {
+  getCosGhgEmissionCategories,
+  getEmissionsBySuburb,
+  getValidYears,
+} from "../controllers/cosGhgEmissions";
 import { ResponseError } from "../customTypes/ResponseError";
 
 const router = express.Router();
@@ -10,11 +14,16 @@ type EmissionsBySuburbQueryParams = {
   sort: "ASC" | "DESC";
 };
 
+type SuburbResponseValue = {
+  value: number;
+  suburbId: number;
+};
+
 router.get(
   "/suburb",
   async (
     request: Request<null, null, EmissionsBySuburbQueryParams>,
-    response: Response,
+    response: Response<SuburbResponseValue[]>,
     next: NextFunction
   ) => {
     try {
@@ -26,7 +35,7 @@ router.get(
       if (categoriesParam && !Array.isArray(categoriesParam)) {
         throw new ResponseError("categories must be an array", 400);
       }
-      const categories = <string[]>categoriesParam;
+      const categories = <string[]>categoriesParam || [];
 
       if (yearParam && isNaN(Number(yearParam))) {
         throw new ResponseError("year must be a number", 400);
@@ -50,7 +59,36 @@ router.get(
         year,
       });
 
-      response.status(200).send(emissionsBySuburb);
+      const responses = emissionsBySuburb.map((emissionBySuburb) => ({
+        suburbId: emissionBySuburb.suburbId,
+        value: emissionBySuburb.emissionsSum,
+      }));
+
+      response.status(200).send(responses);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/years",
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const years = await getValidYears();
+      response.status(200).send(years);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/categories",
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const categories = await getCosGhgEmissionCategories();
+      response.status(200).send(categories);
     } catch (e) {
       next(e);
     }

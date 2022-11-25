@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { get, getSuburbsById } from "../controllers/suburbs";
+import { getSuburbsById } from "../controllers/suburbs";
 import { ResponseError } from "../customTypes/ResponseError";
 import { Suburb } from "../db/models/Suburb";
 
@@ -29,13 +29,10 @@ router.get(
             throw new ResponseError("suburbIds must be numbers", 400);
           return num;
         });
-      }
-      let suburbs: Suburb[];
-      if (suburbIds) {
-        suburbs = await getSuburbsById(suburbIds);
       } else {
-        suburbs = await get();
+        throw new ResponseError("suburbIds cannot be empty", 400);
       }
+      const suburbs: Suburb[] = await getSuburbsById(suburbIds);
 
       response.status(200).send(suburbs);
     } catch (e) {

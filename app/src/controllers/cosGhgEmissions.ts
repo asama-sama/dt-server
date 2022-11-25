@@ -7,7 +7,7 @@ import { CosGhgEmissionSuburb } from "../db/models/CosGhgEmissionSuburb";
 
 type GetEmissionsBySuburbParams = {
   year?: number;
-  categories?: string[];
+  categories: string[];
   order?: "ASC" | "DESC";
 };
 
@@ -47,9 +47,9 @@ export const getEmissionsBySuburb: GetEmissionsBySuburbSig = async ({
   }
 
   const whereOptsGhgCategories: Partial<WhereOptionsGhgCategories> = {};
-  if (categories) {
-    whereOptsGhgCategories.id = { [Op.or]: categories };
-  }
+  whereOptsGhgCategories.id = {
+    [Op.or]: categories.length > 0 ? categories : ["-1"],
+  };
 
   const emissions = (await CosGhgEmissionSuburb.findAll({
     attributes: [
@@ -84,4 +84,24 @@ export const getEmissionsBySuburb: GetEmissionsBySuburbSig = async ({
   });
 
   return response;
+};
+
+export const getValidYears = async () => {
+  const sequelize = getConnection();
+  const years = (
+    await CosGhgEmission.findAll({
+      attributes: [[sequelize.fn("DISTINCT", sequelize.col("year")), "year"]],
+      order: [["year", "ASC"]],
+    })
+  ).map((row) => row.year) as number[];
+  //
+  return years;
+};
+
+export const getCosGhgEmissionCategories = async () => {
+  const categories = (await CosGhgCategory.findAll()).map(({ id, name }) => ({
+    id,
+    name,
+  }));
+  return categories;
 };

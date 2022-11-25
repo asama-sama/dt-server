@@ -46,6 +46,9 @@ type NominatimResponse = {
     type: string;
     coordinates: number[];
   };
+  extratags: {
+    place: string;
+  };
 };
 
 export const bulkSearch = async (
@@ -69,11 +72,14 @@ export const bulkSearch = async (
     loader.tick();
     logger(`fetch ${name} from nomatim`);
     const res = await axios.get<NominatimResponse[]>(
-      `https://nominatim.openstreetmap.org/search?q=${name}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&viewbox=${lon1},${lat1},${lon2},${lat2}`
+      `https://nominatim.openstreetmap.org/search?q=${name}&format=json&polygon_geojson=1&addressdetails=1&countrycodes=au&viewbox=${lon1},${lat1},${lon2},${lat2}&extratags=1`
     );
     for (let i = 0; i < res.data.length; i++) {
       const result = res.data[i];
-      if (result?.geojson?.type === "Polygon") {
+      if (
+        result?.geojson?.type === "Polygon" &&
+        result.extratags.place === "suburb"
+      ) {
         await callback(result, name);
         break;
       }
