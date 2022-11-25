@@ -273,6 +273,10 @@ export const callUpdateAirQualityReadings = async (
 // fetch airquality readings by site and type from DB
 export const getDailyReadings = async () => {
   const sequelize = getConnection();
+
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 6);
+
   const dailyReadings = await AirQualityReading.findAll({
     attributes: [
       [sequelize.literal(`DATE("date")`), "date"],
@@ -280,6 +284,11 @@ export const getDailyReadings = async () => {
       "type",
       [sequelize.fn("SUM", sequelize.col("value")), "value"],
     ],
+    where: {
+      date: {
+        [Op.gte]: startDate,
+      },
+    },
     group: ["date", "airQualitySiteId", "type"],
     order: [
       ["date", "ASC"],

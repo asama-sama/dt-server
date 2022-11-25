@@ -428,7 +428,7 @@ describe("airQuality Controller", () => {
   describe("getDailyReadings", () => {
     const createReadings = async (
       numReadings: number,
-      date: string,
+      date: Date,
       datasource: DataSource,
       site: AirQualitySite,
       frequency: UpdateFrequency,
@@ -436,7 +436,7 @@ describe("airQuality Controller", () => {
     ) => {
       await AirQualityReading.bulkCreate(
         Array.from({ length: numReadings }).map((i, idx) => ({
-          date: new Date(date),
+          date,
           value: 1,
           type,
           hour: idx,
@@ -446,9 +446,14 @@ describe("airQuality Controller", () => {
         }))
       );
     };
+    const dateToString = (date: Date): string => {
+      const paddedDate = String(date.getDate()).padStart(2, "0");
+      return `${date.getFullYear()}-${date.getMonth() + 1}-${paddedDate}`;
+    };
 
     let sites: AirQualitySite[];
     let datasource: DataSource;
+    let date1: Date, date2: Date, date3: Date;
 
     beforeEach(async () => {
       datasource = await DataSource.create({
@@ -478,9 +483,17 @@ describe("airQuality Controller", () => {
         where: { frequency: Frequency.DAILY },
       });
       if (!frequency) throw new Error("UpdateFrequency not found");
+
+      date1 = new Date();
+      date1.setDate(1);
+      date2 = new Date();
+      date2.setDate(2);
+      date3 = new Date();
+      date3.setDate(3);
+
       await createReadings(
         20,
-        "2022-10-03",
+        date1,
         datasource,
         site1,
         frequency,
@@ -488,7 +501,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         10,
-        "2022-10-04",
+        date2,
         datasource,
         site1,
         frequency,
@@ -496,7 +509,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         15,
-        "2022-10-05",
+        date3,
         datasource,
         site1,
         frequency,
@@ -504,7 +517,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         5,
-        "2022-10-05",
+        date3,
         datasource,
         site2,
         frequency,
@@ -516,25 +529,25 @@ describe("airQuality Controller", () => {
       expect(dailyReadings).toMatchObject([
         {
           airQualitySiteId: 1,
-          date: "2022-10-03",
+          date: dateToString(date1),
           value: 20,
           type: AirQualityType.NO2,
         },
         {
           airQualitySiteId: 1,
-          date: "2022-10-04",
+          date: dateToString(date2),
           value: 10,
           type: AirQualityType.NO2,
         },
         {
           airQualitySiteId: 1,
-          date: "2022-10-05",
+          date: dateToString(date3),
           value: 15,
           type: AirQualityType.NO2,
         },
         {
           airQualitySiteId: 2,
-          date: "2022-10-05",
+          date: dateToString(date3),
           value: 5,
           type: AirQualityType.NEPH,
         },
@@ -554,6 +567,49 @@ describe("airQuality Controller", () => {
       expect(airQualitySites.map(({ id }) => id)).toMatchObject(
         sites.map(({ id }) => id)
       );
+    });
+
+    test("it should not include readings from over 6 months ago", async () => {
+      const date = new Date("2021-06-06");
+      const frequency = await UpdateFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
+      });
+      if (!frequency) throw new Error("No frequency");
+      await createReadings(
+        20,
+        date,
+        datasource,
+        sites[0],
+        frequency,
+        AirQualityType.NO2
+      );
+      const { dailyReadings } = await getDailyReadings();
+      expect(dailyReadings).toMatchObject([
+        {
+          airQualitySiteId: 1,
+          date: dateToString(date1),
+          value: 20,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 1,
+          date: dateToString(date2),
+          value: 10,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 1,
+          date: dateToString(date3),
+          value: 15,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 2,
+          date: dateToString(date3),
+          value: 5,
+          type: AirQualityType.NEPH,
+        },
+      ]);
     });
   });
 });
