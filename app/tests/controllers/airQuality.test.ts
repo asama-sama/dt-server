@@ -15,6 +15,7 @@ import {
   callUpdateAirQualityReadings,
   updateAirQualityReadings,
   updateSites,
+  getDailyReadings,
 } from "../../src/controllers/airQuality";
 import * as airQualityController from "../../src/controllers/airQuality";
 import {
@@ -421,6 +422,138 @@ describe("airQuality Controller", () => {
 
     test("it should call updateSuburbGeoJson", () => {
       expect(updateSuburbGeoJsonMock).toHaveBeenCalled();
+    });
+  });
+
+  describe("getDailyReadings", () => {
+    const createReadings = async (
+      numReadings: number,
+      date: string,
+      datasource: DataSource,
+      site: AirQualitySite,
+      frequency: UpdateFrequency,
+      type: AirQualityType
+    ) => {
+      await AirQualityReading.bulkCreate(
+        Array.from({ length: numReadings }).map((i, idx) => ({
+          date: new Date(date),
+          value: 1,
+          type,
+          hour: idx,
+          dataSourceId: datasource.id,
+          airQualitySiteId: site.id,
+          updateFrequencyId: frequency?.id,
+        }))
+      );
+    };
+
+    let sites: AirQualitySite[];
+    let datasource: DataSource;
+
+    beforeEach(async () => {
+      datasource = await DataSource.create({
+        name: "ds",
+        uri: "http::/test2",
+      });
+      const site1 = await AirQualitySite.create({
+        siteId: 5,
+        dataSourceId: datasource.id,
+        position: {
+          type: "Point",
+          coordinates: [2.235, 5.2],
+        },
+      });
+      const site2 = await AirQualitySite.create({
+        siteId: 2,
+        dataSourceId: datasource.id,
+        position: {
+          type: "Point",
+          coordinates: [2.235, 5.2],
+        },
+      });
+      sites = [];
+      sites.push(site1);
+      sites.push(site2);
+      const frequency = await UpdateFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
+      });
+      if (!frequency) throw new Error("UpdateFrequency not found");
+      await createReadings(
+        20,
+        "2022-10-03",
+        datasource,
+        site1,
+        frequency,
+        AirQualityType.NO2
+      );
+      await createReadings(
+        10,
+        "2022-10-04",
+        datasource,
+        site1,
+        frequency,
+        AirQualityType.NO2
+      );
+      await createReadings(
+        15,
+        "2022-10-05",
+        datasource,
+        site1,
+        frequency,
+        AirQualityType.NO2
+      );
+      await createReadings(
+        5,
+        "2022-10-05",
+        datasource,
+        site2,
+        frequency,
+        AirQualityType.NEPH
+      );
+    });
+    test("it should return the daily readings", async () => {
+      const { dailyReadings } = await getDailyReadings();
+      expect(dailyReadings).toMatchObject([
+        {
+          airQualitySiteId: 1,
+          date: "2022-10-03",
+          value: 20,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 1,
+          date: "2022-10-04",
+          value: 10,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 1,
+          date: "2022-10-05",
+          value: 15,
+          type: AirQualityType.NO2,
+        },
+        {
+          airQualitySiteId: 2,
+          date: "2022-10-05",
+          value: 5,
+          type: AirQualityType.NEPH,
+        },
+      ]);
+    });
+
+    test("it should return airQualitySites for the readings", async () => {
+      await AirQualitySite.create({
+        siteId: 3,
+        dataSourceId: datasource.id,
+        position: {
+          type: "Point",
+          coordinates: [2.235, 5.2],
+        },
+      });
+      const { airQualitySites } = await getDailyReadings();
+      expect(airQualitySites.map(({ id }) => id)).toMatchObject(
+        sites.map(({ id }) => id)
+      );
     });
   });
 });

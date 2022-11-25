@@ -269,3 +269,33 @@ export const callUpdateAirQualityReadings = async (
     throw new Error(errorMessage);
   }
 };
+
+// fetch airquality readings by site and type from DB
+export const getDailyReadings = async () => {
+  const sequelize = getConnection();
+  const dailyReadings = await AirQualityReading.findAll({
+    attributes: [
+      [sequelize.literal(`DATE("date")`), "date"],
+      "airQualitySiteId",
+      "type",
+      [sequelize.fn("SUM", sequelize.col("value")), "value"],
+    ],
+    group: ["date", "airQualitySiteId", "type"],
+    order: [
+      ["date", "ASC"],
+      ["airQualitySiteId", "ASC"],
+    ],
+  });
+  const siteIdSet = new Set();
+  dailyReadings.map(({ airQualitySiteId }) => {
+    siteIdSet.add(airQualitySiteId);
+  });
+  const siteIds = [...siteIdSet];
+  const airQualitySites = await AirQualitySite.findAll({
+    where: {
+      id: { [Op.or]: siteIds },
+    },
+    order: [["id", "asc"]],
+  });
+  return { dailyReadings, airQualitySites };
+};
