@@ -1,9 +1,9 @@
 /// <reference types="@types/jest" />;
 import {
   getStations,
-  getStationCountsByMonth,
+  getDailyStationCounts,
+  DailyStationCount,
   Station,
-  MonthlyStationCount,
 } from "../../src/clients/nswTrafficVolume";
 import { DATASOURCES } from "../../src/const/datasource";
 import {
@@ -14,13 +14,14 @@ import { DataSource } from "../../src/db/models/DataSource";
 import { Suburb } from "../../src/db/models/Suburb";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
+import { dateToString } from "../../src/util/date";
 import { updateSuburbGeoJson } from "../../src/util/suburbUtils";
 
 jest.mock("../../src/clients/nswTrafficVolume", () => {
   return {
     __esModule: true,
     getStations: jest.fn(),
-    getStationCountsByMonth: jest.fn(),
+    getDailyStationCounts: jest.fn(),
   };
 });
 
@@ -32,10 +33,9 @@ jest.mock("../../src/util/suburbUtils", () => {
 });
 
 const getStationsMock = getStations as jest.MockedFunction<typeof getStations>;
-const getStationsCountByMonthMock =
-  getStationCountsByMonth as jest.MockedFunction<
-    typeof getStationCountsByMonth
-  >;
+const getDailyStationCountsMock = getDailyStationCounts as jest.MockedFunction<
+  typeof getDailyStationCounts
+>;
 const updateSuburbGeoJsonMock = updateSuburbGeoJson as jest.MockedFunction<
   typeof updateSuburbGeoJson
 >;
@@ -135,14 +135,20 @@ describe("trafficVolume controller", () => {
   });
 
   describe("updateReadings", () => {
-    const readingsToAdd: MonthlyStationCount[] = Array.from({
-      length: 10,
-    }).map((_, idx) => ({
-      year: 2022,
-      month: idx,
-      stationKey: "100",
-      count: idx * 100,
-    }));
+    const insertReadings = async (stationKey: string) => {
+      const readingsToAdd: DailyStationCount[] = Array.from({
+        length: 3,
+      }).map((_, idx) => ({
+        date: new Date(`2022-08-${idx + 1}`),
+        stationKey,
+        count: idx * 100,
+      }));
+
+      getDailyStationCountsMock.mockResolvedValueOnce(readingsToAdd);
+      await updateReadings();
+    };
+
+    let stations: TrafficVolumeStation[];
 
     beforeEach(async () => {
       const api = await DataSource.findOne({
@@ -154,19 +160,76 @@ describe("trafficVolume controller", () => {
         position: { type: "Point", coordinates: [i * 100, i * 100] },
         dataSourceId: api?.id,
       }));
-      await TrafficVolumeStation.bulkCreate(stationsToAdd);
+      stations = await TrafficVolumeStation.bulkCreate(stationsToAdd);
+      await insertReadings(stations[0].stationKey);
     });
 
     test("it should update with new readings", async () => {
-      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
-      await updateReadings();
       const readings = await TrafficVolumeReading.findAll({});
-      expect(readings.length).toBe(10);
+      expect(readings).toMatchObject([
+        {
+          date: "2022-08-01",
+          value: 0,
+          trafficVolumeStationId: 1,
+        },
+        {
+          date: "2022-08-02",
+          value: 100,
+          trafficVolumeStationId: 1,
+        },
+        {
+          date: "2022-08-03",
+          value: 200,
+          trafficVolumeStationId: 1,
+        },
+      ]);
     });
 
-    test("it should not update a reading if it has already been inserted", async () => {
-      getStationsCountByMonthMock.mockResolvedValueOnce(readingsToAdd);
-      expect(async () => await updateReadings()).rejects.toThrowError();
+    test("it should not reinsert already fetched readings", async () => {
+      await insertReadings(stations[0].stationKey);
+      const readings = await TrafficVolumeReading.findAll({});
+      expect(readings.length).toBe(3);
+    });
+
+    test("it should not insert readings for which there is no TrafficVolumeStation", async () => {
+      await insertReadings("333");
+      const readings = await TrafficVolumeReading.findAll({});
+      expect(readings.length).toBe(3);
+    });
+
+    test("it should call getDailyStationCounts with the correct fromDate and toDate on update", async () => {
+      const [fromDate, toDate] = getDailyStationCountsMock.mock.lastCall;
+
+      const fromDateString = dateToString(fromDate);
+      const toDateString = dateToString(toDate);
+
+      const date = new Date();
+      const todayString = dateToString(date);
+
+      expect(toDateString).toBe(todayString);
+
+      date.setMonth(date.getMonth() - 1);
+      const lastMonthString = dateToString(date);
+      expect(fromDateString).toBe(lastMonthString);
+    });
+
+    test("it should call getDailyStationCounts with the correct fromDate and toDate on initialise", async () => {
+      getDailyStationCountsMock.mockResolvedValueOnce([]);
+      await updateReadings({ initialise: true });
+
+      const [fromDate, toDate] = getDailyStationCountsMock.mock.lastCall;
+
+      const fromDateString = dateToString(fromDate);
+      const toDateString = dateToString(toDate);
+
+      const date = new Date();
+      const todayString = dateToString(date);
+
+      expect(toDateString).toBe(todayString);
+
+      date.setFullYear(date.getFullYear() - 3);
+      const lastYearString = dateToString(date);
+      expect(fromDateString).toBe(lastYearString);
     });
   });
 });

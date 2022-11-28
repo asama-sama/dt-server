@@ -5,7 +5,6 @@ import { DataSource } from "../../../src/db/models/DataSource";
 import {
   loadCsvFiles,
   loadDataFile,
-  splitUpCsvFile,
 } from "../../../src/util/loadCsvFile/loadCsvFile";
 import { handleCosEmissionData } from "../../../src/util/loadCsvFile/handleCosEmissionData";
 import { handleCrimeData } from "../../../src/util/loadCsvFile/handleCrimeData";
@@ -134,14 +133,6 @@ describe("loadCsvFile", () => {
       const spy = jest.spyOn(loadCsvFileModule, "loadDataFile");
       await loadCsvFiles();
       expect(spy).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe("splitUpCsvFile", () => {
-    test("it should return the correct number of chunks", () => {
-      const records = Array.from({ length: 20 }).map(() => ({}));
-      const chunks = splitUpCsvFile(records, 5);
-      expect(chunks.length).toBe(4);
     });
   });
 });

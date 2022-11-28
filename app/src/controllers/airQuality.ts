@@ -13,13 +13,13 @@ import { UpdateFrequency, Frequency } from "../db/models/UpdateFrequency";
 import { AirQualityUpdateParams, DATASOURCES } from "../const/datasource";
 import { Suburb } from "../db/models/Suburb";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
-import { getConnection } from "../db/connect";
 import { logger, LogLevels } from "../util/logger";
 import { Loader } from "../util/loader";
 import { JobInitialisorOptions } from "../initialise/jobs";
+import { dateToString } from "../util/date";
 
 const DAYS_TO_SEARCH = 7;
-const MONTHS_TO_SEARCH = 6;
+const MONTHS_TO_SEARCH = 36;
 
 type AirQualityApiFrequenciesToUpdateFrequencyMap = {
   [key: string]: Frequency;
@@ -134,13 +134,9 @@ export const updateAirQualityReadings = async (
   endDate: Date
 ) => {
   logger(`get airquality readings for ${params.parameters[0]}`);
-  const endDateParsed = `${endDate.getFullYear()}-${String(
-    endDate.getMonth() + 1
-  ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+  const endDateParsed = dateToString(endDate);
+  const startDateParsed = dateToString(startDate);
 
-  const startDateParsed = `${startDate.getFullYear()}-${String(
-    startDate.getMonth() + 1
-  ).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
   const observations = await getObservations(
     params,
     Object.keys(airQualitySitesMap).map(Number),
@@ -186,37 +182,34 @@ export const updateAirQualityReadings = async (
 
   if (!updateFrequency || !updateFrequency.id)
     throw new Error(`updateFrequency not found: ${Frequency.DAILY}`);
-  const connection = getConnection();
-  const loader = new Loader(observations.length);
-  await connection.transaction(async (trx) => {
-    for (const observation of observations) {
-      const airQualitySiteId = airQualitySitesMap[observation.siteId].id;
-      const lookupDate = `${observation.date} ${observation.hour}`;
-      const existingReading =
-        readingsMapped[lookupDate] &&
-        readingsMapped[lookupDate][airQualitySiteId];
-      if (!existingReading) {
-        const date = new Date(observation.date);
-        date.setHours(observation.hour);
-        await AirQualityReading.create(
-          {
-            date,
-            value: observation.value,
-            type: observation.type,
-            dataSourceId: dataSource?.id,
-            airQualitySiteId: airQualitySiteId,
-            updateFrequencyId: updateFrequency.id,
-            hour: observation.hour,
-          },
-          { transaction: trx }
-        );
-      }
-      if (existingReading && existingReading.value === null) {
-        await existingReading.update({ value: observation.value });
-      }
-      loader.tick();
+  const loader = new Loader(
+    observations.length,
+    `Air Quality - ${params.parameters[0]}`
+  );
+  for (const observation of observations) {
+    const airQualitySiteId = airQualitySitesMap[observation.siteId].id;
+    const lookupDate = `${observation.date} ${observation.hour}`;
+    const existingReading =
+      readingsMapped[lookupDate] &&
+      readingsMapped[lookupDate][airQualitySiteId];
+    if (!existingReading) {
+      const date = new Date(observation.date);
+      date.setHours(observation.hour);
+      await AirQualityReading.create({
+        date,
+        value: observation.value,
+        type: observation.type,
+        dataSourceId: dataSource?.id,
+        airQualitySiteId: airQualitySiteId,
+        updateFrequencyId: updateFrequency.id,
+        hour: observation.hour,
+      });
     }
-  });
+    if (existingReading && existingReading.value === null) {
+      await existingReading.update({ value: observation.value });
+    }
+    loader.tick();
+  }
 };
 
 export const callUpdateAirQualityReadings = async (

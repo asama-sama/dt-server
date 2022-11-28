@@ -26,6 +26,9 @@ describe("updateSuburbGeoJson", () => {
               ],
             ],
           },
+          extratags: {
+            place: "suburb",
+          },
         },
       ],
     });
@@ -128,6 +131,9 @@ describe("updateSuburbGeoJson", () => {
               ],
             ],
           },
+          extratags: {
+            place: "suburb",
+          },
         },
       ],
     });
@@ -157,6 +163,9 @@ describe("updateSuburbGeoJson", () => {
                 [2, 2],
               ],
             ],
+          },
+          extratags: {
+            place: "suburb",
           },
           lat: 1,
           lon: 10,

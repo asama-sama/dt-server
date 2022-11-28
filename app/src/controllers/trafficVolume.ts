@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import {
-  getStationCountsByMonth,
+  getDailyStationCounts,
   getStations,
 } from "../clients/nswTrafficVolume";
 import { DATASOURCES } from "../const/datasource";
@@ -9,7 +9,12 @@ import { Suburb } from "../db/models/Suburb";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
+import { JobInitialisorOptions } from "../initialise/jobs";
+import { Loader } from "../util/loader";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
+
+const YEARS_TO_SEARCH_INITIALISE = 3;
+const MONTHS_TO_SEARCH_INITIALISE = 1;
 
 export const updateStations = async () => {
   const stations = await getStations();
@@ -53,24 +58,46 @@ export const updateStations = async () => {
   await updateSuburbGeoJson();
 };
 
-export const updateReadings = async () => {
-  const trafficVolumeStationsKeys = (
+export const updateReadings = async (options?: JobInitialisorOptions) => {
+  const trafficVolumeStationsKeys: { [key: string]: boolean } = {};
+
+  (
     await TrafficVolumeStation.findAll({
       attributes: ["stationKey"],
     })
-  ).map((trafficVolumeStation) => trafficVolumeStation.stationKey);
+  ).map((trafficVolumeStation: TrafficVolumeStation) => {
+    trafficVolumeStationsKeys[trafficVolumeStation.stationKey] = true;
+  });
 
   const api = await DataSource.findOne({
     where: { name: DATASOURCES.nswTrafficVolumeReadings.name },
   });
 
-  const counts = await getStationCountsByMonth(trafficVolumeStationsKeys);
+  let fromDate: Date;
+  const toDate: Date = new Date();
+  if (options?.initialise) {
+    fromDate = new Date();
+    fromDate.setFullYear(fromDate.getFullYear() - YEARS_TO_SEARCH_INITIALISE);
+  } else {
+    fromDate = new Date();
+    fromDate.setMonth(fromDate.getMonth() - MONTHS_TO_SEARCH_INITIALISE);
+  }
+
+  let counts = await getDailyStationCounts(fromDate, toDate);
+
+  // we are filtering after the api response rather than in the request itself
+  // because for some reason when combining year and "filter by range" in the
+  // "where" clause, the request hangs
+  counts = counts.filter(
+    (count) => trafficVolumeStationsKeys[count.stationKey]
+  );
+
   const updateFrequency = await UpdateFrequency.findOne({
-    where: { frequency: Frequency.MONTHLY },
+    where: { frequency: Frequency.DAILY },
   });
 
   const trafficVolumeStationsMap: { [key: string]: TrafficVolumeStation } = {};
-
+  const loader = new Loader(counts.length, "Traffic Volume");
   for (let i = 0; i < counts.length; i++) {
     const count = counts[i];
     let station: TrafficVolumeStation | null =
@@ -87,17 +114,16 @@ export const updateReadings = async () => {
     await TrafficVolumeReading.findOrCreate({
       where: {
         trafficVolumeStationId: station.id,
-        year: count.year,
-        month: count.month,
+        date: count.date,
       },
       defaults: {
         trafficVolumeStationId: station.id,
-        year: count.year,
-        month: count.month,
+        date: count.date,
         value: count.count,
         dataSourceId: api?.id,
         updateFrequencyId: updateFrequency?.id,
       },
     });
+    loader.tick();
   }
 };
