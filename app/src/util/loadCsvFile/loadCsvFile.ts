@@ -12,6 +12,7 @@ import {
 import { logger } from "../logger";
 import { handleCrimeData } from "./handleCrimeData";
 import { handleCosEmissionData } from "./handleCosEmissionData";
+import { createBatches } from "../createBatches";
 
 export type LoadDataFileResult = {
   totalReads: number;
@@ -27,27 +28,6 @@ export type HandleProcessCsvFile = (
 const dataFileHandlerMap: { [key: string]: HandleProcessCsvFile } = {
   [DATASOURCES.nswCrimeBySuburb.name]: handleCrimeData,
   [DATASOURCES.cosGhgEmissions.name]: handleCosEmissionData,
-};
-
-type SplitUpCsvFile = (
-  results: Record<string, string>[],
-  chunkSize: number
-) => Record<string, string>[][];
-
-export const splitUpCsvFile: SplitUpCsvFile = (results, chunkSize) => {
-  const csvChunks: Record<string, string>[][] = [];
-  let startIdx = 0;
-  let elementsRemaining = true;
-  while (elementsRemaining) {
-    const chunk = results.slice(startIdx, startIdx + chunkSize);
-    if (chunk.length === 0) {
-      elementsRemaining = false;
-      break;
-    }
-    csvChunks.push(chunk);
-    startIdx = startIdx + chunkSize;
-  }
-  return csvChunks;
 };
 
 export const loadDataFile = async (dataFile: DataFile) => {
@@ -70,7 +50,7 @@ export const loadDataFile = async (dataFile: DataFile) => {
         const handler = dataFileHandlerMap[dataFile.dataSource.name];
 
         const CHUNK_SIZE = 25;
-        const chunks = splitUpCsvFile(results, CHUNK_SIZE);
+        const chunks = createBatches(results, CHUNK_SIZE);
         try {
           for (let i = 0; i < chunks.length; i++) {
             await sequelize.transaction(async (t: Transaction) => {
