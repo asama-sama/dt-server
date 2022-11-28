@@ -134,7 +134,7 @@ describe("trafficVolume controller", () => {
     });
   });
 
-  describe.only("updateReadings", () => {
+  describe("updateReadings", () => {
     const insertReadings = async (stationKey: string) => {
       const readingsToAdd: DailyStationCount[] = Array.from({
         length: 3,
@@ -227,7 +227,7 @@ describe("trafficVolume controller", () => {
 
       expect(toDateString).toBe(todayString);
 
-      date.setFullYear(date.getFullYear() - 1);
+      date.setFullYear(date.getFullYear() - 3);
       const lastYearString = dateToString(date);
       expect(fromDateString).toBe(lastYearString);
     });

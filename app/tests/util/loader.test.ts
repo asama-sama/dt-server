@@ -6,7 +6,7 @@ describe("loader", () => {
   describe("createLoadIndicator", () => {
     let loader: Loader;
     beforeEach(() => {
-      loader = new Loader(100);
+      loader = new Loader(100, "loader");
       for (let i = 0; i < 19; i++) {
         loader.tick();
       }
@@ -55,7 +55,7 @@ describe("loader", () => {
     });
 
     test("it should call logger the correct number of times", () => {
-      expect(logger).toHaveBeenCalledTimes(4);
+      expect(logger).toHaveBeenCalledTimes(5);
     });
   });
 });
