@@ -78,7 +78,7 @@ export const bulkSearch = async (
       const result = res.data[i];
       if (
         result?.geojson?.type === "Polygon" &&
-        result.extratags.place === "suburb"
+        result?.extratags?.place === "suburb"
       ) {
         await callback(result, name);
         break;

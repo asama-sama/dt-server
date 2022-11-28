@@ -111,7 +111,7 @@ describe("airQuality Controller", () => {
     test("it should call updateAirQualityReadings with the correct values on initialisation", async () => {
       const endDate = new Date("2022-07-07");
       const startDate = new Date(endDate.getTime());
-      startDate.setMonth(endDate.getMonth() - 6);
+      startDate.setFullYear(endDate.getFullYear() - 3);
 
       await callUpdateAirQualityReadings({ initialise: true }, endDate);
       const sitesMap: { [key: number]: AirQualitySite } = {};

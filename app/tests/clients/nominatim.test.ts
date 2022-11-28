@@ -41,11 +41,29 @@ describe("nominatim", () => {
   test("it should call the callback function if the return type is correct", async () => {
     const callbackMock = jest.fn();
     mockedAxios.get.mockResolvedValue({
-      data: [{ geojson: { type: "point" } }, { geojson: { type: "Polygon" } }],
+      data: [
+        {
+          geojson: { type: "point" },
+          extratags: {
+            place: "suburb",
+          },
+        },
+        {
+          geojson: { type: "Polygon" },
+          extratags: {
+            place: "suburb",
+          },
+        },
+      ],
     });
     await bulkSearch([{ name: "q1", viewbox }], callbackMock, jest.fn());
     expect(callbackMock).toHaveBeenCalledWith(
-      { geojson: { type: "Polygon" } },
+      {
+        geojson: { type: "Polygon" },
+        extratags: {
+          place: "suburb",
+        },
+      },
       "q1"
     );
   });
