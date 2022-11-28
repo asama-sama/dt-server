@@ -53,9 +53,9 @@ export const updateReadings = async () => {
   const loader = new Loader(stations.length, "BOM Readings");
   const connection = getConnection();
   for (const station of stations) {
-    await connection.transaction(async (trx) => {
-      await getStationWeather(station)
-        .then(async (observations) => {
+    await getStationWeather(station)
+      .then(async (observations) => {
+        await connection.transaction(async (trx) => {
           for (const observation of observations) {
             const { lat, lon } = observation;
             if (station.position === null && (lat || lon)) {
@@ -103,19 +103,19 @@ export const updateReadings = async () => {
               transaction: trx,
             });
           }
-        })
-        .catch(async (e) => {
-          let message = `error loading weather station ${station.name}`;
-          if (e instanceof Error) {
-            message += `: ${e.message}`;
-          }
-          await DataSourceUpdateLog.create({
-            dataSourceId: dataSource?.id,
-            status: UpdateStatus.FAIL,
-            message,
-          });
         });
-      loader.tick();
-    });
+      })
+      .catch(async (e) => {
+        let message = `error loading weather station ${station.name}`;
+        if (e instanceof Error) {
+          message += `: ${e.message}`;
+        }
+        await DataSourceUpdateLog.create({
+          dataSourceId: dataSource?.id,
+          status: UpdateStatus.FAIL,
+          message,
+        });
+      });
+    loader.tick();
   }
 };
