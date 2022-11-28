@@ -270,41 +270,72 @@ export const callUpdateAirQualityReadings = async (
   }
 };
 
+type DailyAirQualityReadings = {
+  [date: string]: {
+    // date is yyyy-mm-dd
+    [type: string]: number; // type is pollutant type, number is the reading
+  };
+};
+
+type GetDailyReadingsSignature = ({
+  airQualitySiteId,
+  startDate,
+  endDate,
+}: {
+  airQualitySiteId: number;
+  startDate: Date;
+  endDate?: Date;
+}) => Promise<DailyAirQualityReadings>;
+
 // fetch airquality readings by site and type from DB
-export const getDailyReadings = async () => {
+export const getDailyReadings: GetDailyReadingsSignature = async ({
+  airQualitySiteId,
+  startDate,
+  endDate,
+}) => {
   const sequelize = getConnection();
 
-  const startDate = new Date();
-  startDate.setMonth(startDate.getMonth() - 6);
+  type WhereOpts = {
+    date: {
+      [Op.gte]: Date;
+      [Op.lte]?: Date;
+    };
+    airQualitySiteId: number;
+  };
 
-  const dailyReadings = await AirQualityReading.findAll({
+  const whereOpts: WhereOpts = {
+    date: {
+      [Op.gte]: startDate,
+    },
+    airQualitySiteId,
+  };
+
+  if (endDate) {
+    whereOpts.date = {
+      ...whereOpts.date,
+      [Op.lte]: endDate,
+    };
+  }
+
+  const readings = await AirQualityReading.findAll({
     attributes: [
       [sequelize.literal(`DATE("date")`), "date"],
-      "airQualitySiteId",
       "type",
-      [sequelize.fn("SUM", sequelize.col("value")), "value"],
+      [sequelize.fn("AVG", sequelize.col("value")), "value"],
     ],
-    where: {
-      date: {
-        [Op.gte]: startDate,
-      },
-    },
-    group: ["date", "airQualitySiteId", "type"],
-    order: [
-      ["date", "ASC"],
-      ["airQualitySiteId", "ASC"],
-    ],
+    where: whereOpts,
+    group: ["date", "type"],
+    order: [["date", "ASC"]],
   });
-  const siteIdSet = new Set();
-  dailyReadings.map(({ airQualitySiteId }) => {
-    siteIdSet.add(airQualitySiteId);
+  const dailyAirQualityReadings: DailyAirQualityReadings = {};
+  readings.forEach(({ date, type, value }) => {
+    const dateString = String(date);
+    if (!value) return;
+    if (!dailyAirQualityReadings[dateString]) {
+      dailyAirQualityReadings[dateString] = {};
+    }
+    dailyAirQualityReadings[dateString][type] = value;
   });
-  const siteIds = [...siteIdSet];
-  const airQualitySites = await AirQualitySite.findAll({
-    where: {
-      id: { [Op.or]: siteIds },
-    },
-    order: [["id", "asc"]],
-  });
-  return { dailyReadings, airQualitySites };
+
+  return dailyAirQualityReadings;
 };

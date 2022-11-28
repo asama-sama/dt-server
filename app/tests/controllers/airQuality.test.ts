@@ -428,6 +428,7 @@ describe("airQuality Controller", () => {
   describe("getDailyReadings", () => {
     const createReadings = async (
       numReadings: number,
+      value: number,
       date: Date,
       datasource: DataSource,
       site: AirQualitySite,
@@ -437,7 +438,7 @@ describe("airQuality Controller", () => {
       await AirQualityReading.bulkCreate(
         Array.from({ length: numReadings }).map((i, idx) => ({
           date,
-          value: 1,
+          value,
           type,
           hour: idx,
           dataSourceId: datasource.id,
@@ -447,8 +448,8 @@ describe("airQuality Controller", () => {
       );
     };
     const dateToString = (date: Date): string => {
-      const paddedDate = String(date.getDate()).padStart(2, "0");
-      return `${date.getFullYear()}-${date.getMonth() + 1}-${paddedDate}`;
+      const paddedDate = String(date.getUTCDate()).padStart(2, "0");
+      return `${date.getUTCFullYear()}-${date.getUTCMonth() + 1}-${paddedDate}`;
     };
 
     let sites: AirQualitySite[];
@@ -493,6 +494,7 @@ describe("airQuality Controller", () => {
 
       await createReadings(
         20,
+        2,
         date1,
         datasource,
         site1,
@@ -501,6 +503,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         10,
+        3,
         date2,
         datasource,
         site1,
@@ -509,6 +512,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         15,
+        4,
         date3,
         datasource,
         site1,
@@ -517,6 +521,7 @@ describe("airQuality Controller", () => {
       );
       await createReadings(
         5,
+        1,
         date3,
         datasource,
         site2,
@@ -525,51 +530,24 @@ describe("airQuality Controller", () => {
       );
     });
     test("it should return the daily readings", async () => {
-      const { dailyReadings } = await getDailyReadings();
-      expect(dailyReadings).toMatchObject([
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date1),
-          value: 20,
-          type: AirQualityType.NO2,
+      const dailyReadings = await getDailyReadings({
+        airQualitySiteId: sites[0].id,
+        startDate: date1,
+      });
+      expect(dailyReadings).toMatchObject({
+        [dateToString(date1)]: {
+          [AirQualityType.NO2]: 2,
         },
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date2),
-          value: 10,
-          type: AirQualityType.NO2,
+        [dateToString(date2)]: {
+          [AirQualityType.NO2]: 3,
         },
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date3),
-          value: 15,
-          type: AirQualityType.NO2,
-        },
-        {
-          airQualitySiteId: 2,
-          date: dateToString(date3),
-          value: 5,
-          type: AirQualityType.NEPH,
-        },
-      ]);
-    });
-
-    test("it should return airQualitySites for the readings", async () => {
-      await AirQualitySite.create({
-        siteId: 3,
-        dataSourceId: datasource.id,
-        position: {
-          type: "Point",
-          coordinates: [2.235, 5.2],
+        [dateToString(date3)]: {
+          [AirQualityType.NO2]: 4,
         },
       });
-      const { airQualitySites } = await getDailyReadings();
-      expect(airQualitySites.map(({ id }) => id)).toMatchObject(
-        sites.map(({ id }) => id)
-      );
     });
 
-    test("it should not include readings from over 6 months ago", async () => {
+    test("it should not include readings from  before the start date", async () => {
       const date = new Date("2021-06-06");
       const frequency = await UpdateFrequency.findOne({
         where: { frequency: Frequency.DAILY },
@@ -577,39 +555,77 @@ describe("airQuality Controller", () => {
       if (!frequency) throw new Error("No frequency");
       await createReadings(
         20,
+        100,
         date,
         datasource,
         sites[0],
         frequency,
         AirQualityType.NO2
       );
-      const { dailyReadings } = await getDailyReadings();
-      expect(dailyReadings).toMatchObject([
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date1),
-          value: 20,
-          type: AirQualityType.NO2,
+      const dailyReadings = await getDailyReadings({
+        airQualitySiteId: sites[0].id,
+        startDate: date,
+      });
+      expect(dailyReadings).toMatchObject({
+        [dateToString(date1)]: {
+          [AirQualityType.NO2]: 2,
         },
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date2),
-          value: 10,
-          type: AirQualityType.NO2,
+        [dateToString(date2)]: {
+          [AirQualityType.NO2]: 3,
         },
-        {
-          airQualitySiteId: 1,
-          date: dateToString(date3),
-          value: 15,
-          type: AirQualityType.NO2,
+        [dateToString(date3)]: {
+          [AirQualityType.NO2]: 4,
         },
-        {
-          airQualitySiteId: 2,
-          date: dateToString(date3),
-          value: 5,
-          type: AirQualityType.NEPH,
+      });
+    });
+
+    test("it should not include readings from  after the end date", async () => {
+      const dailyReadings = await getDailyReadings({
+        airQualitySiteId: sites[0].id,
+        startDate: date1,
+        endDate: date2,
+      });
+      expect(dailyReadings).toMatchObject({
+        [dateToString(date1)]: {
+          [AirQualityType.NO2]: 2,
         },
-      ]);
+        [dateToString(date2)]: {
+          [AirQualityType.NO2]: 3,
+        },
+      });
+    });
+
+    test("it should display multiple types of readings for a site", async () => {
+      const frequency = await UpdateFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
+      });
+      if (!frequency) throw new Error("UpdateFrequency not found");
+
+      await createReadings(
+        10,
+        20,
+        date1,
+        datasource,
+        sites[0],
+        frequency,
+        AirQualityType.CO
+      );
+      const dailyReadings = await getDailyReadings({
+        airQualitySiteId: sites[0].id,
+        startDate: date1,
+      });
+      expect(dailyReadings).toMatchObject({
+        [dateToString(date1)]: {
+          [AirQualityType.NO2]: 2,
+          [AirQualityType.CO]: 20,
+        },
+        [dateToString(date2)]: {
+          [AirQualityType.NO2]: 3,
+        },
+        [dateToString(date3)]: {
+          [AirQualityType.NO2]: 4,
+        },
+      });
     });
   });
 });
