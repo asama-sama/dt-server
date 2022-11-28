@@ -50,7 +50,7 @@ export const updateReadings = async () => {
       name: DATASOURCES.bomReadings.name,
     },
   });
-  const loader = new Loader(stations.length);
+  const loader = new Loader(stations.length, "BOM Readings");
   const connection = getConnection();
   for (const station of stations) {
     await connection.transaction(async (trx) => {

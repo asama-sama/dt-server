@@ -5,6 +5,7 @@ import {
   AllowNull,
   ForeignKey,
   BelongsTo,
+  DataType,
 } from "sequelize-typescript";
 import { TrafficVolumeStation } from "./TrafficVolumeStation";
 import { DataSource } from "./DataSource";
@@ -13,15 +14,10 @@ import { UpdateFrequency } from "./UpdateFrequency";
 @Table
 export class TrafficVolumeReading extends Model {
   @AllowNull(false)
-  @Column
-  year: number;
-
-  @AllowNull(false)
-  @Column
-  month: number;
-
-  @Column
-  day: number;
+  @Column({
+    type: DataType.DATEONLY,
+  })
+  date: Date;
 
   @Column
   value: number;

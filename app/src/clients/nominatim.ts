@@ -64,7 +64,7 @@ export const bulkSearch = async (
   if (FETCH_SUBURBS !== "yes") {
     return [];
   }
-  const loader = new Loader(suburbSearchParameters.length);
+  const loader = new Loader(suburbSearchParameters.length, "Nominatim");
   for (const {
     name,
     viewbox: { lon1, lat1, lon2, lat2 },

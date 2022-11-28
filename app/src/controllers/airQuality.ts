@@ -187,7 +187,7 @@ export const updateAirQualityReadings = async (
   if (!updateFrequency || !updateFrequency.id)
     throw new Error(`updateFrequency not found: ${Frequency.DAILY}`);
   const connection = getConnection();
-  const loader = new Loader(observations.length);
+  const loader = new Loader(observations.length, "Air Quality");
   await connection.transaction(async (trx) => {
     for (const observation of observations) {
       const airQualitySiteId = airQualitySitesMap[observation.siteId].id;

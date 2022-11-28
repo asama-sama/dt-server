@@ -1,6 +1,5 @@
 import axios from "axios";
 import { BomStation } from "../db/models/BomStation";
-import { logger } from "../util/logger";
 import { WithNull } from "../util/typeUtils";
 
 const BOM_NSW_STATIONS_URL =
@@ -80,7 +79,6 @@ type GetStationWeatherResponse = {
 
 export const getStationWeather = async (station: BomStation) => {
   const stationWeatherURI = `${BOM_STATION_WEATHER_URL}${station.stationId}.json`;
-  logger(`${stationWeatherURI}`);
   const res = await axios.get<GetStationWeatherResponse>(stationWeatherURI);
   return res.data.observations.data;
 };

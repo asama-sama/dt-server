@@ -29,7 +29,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   const connection = getConnection();
   const suburbsCache: { [key: string]: Suburb } = {};
   const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
-  const loader = new Loader(results.result.length);
+  const loader = new Loader(results.result.length, "Traffic Incidents");
   const incidentResponseBatches = createBatches(results.result, 200);
   for (const incidentResponseBatch of incidentResponseBatches) {
     await connection.transaction(async (trx) => {
