@@ -31,8 +31,8 @@ export const apisToLoad: JobInitialisor[] = [
     params: DATASOURCES.nswTrafficVolumeStations,
   },
   {
-    async update() {
-      await updateReadings();
+    async update(options) {
+      await updateReadings(options);
     },
     params: DATASOURCES.nswTrafficVolumeReadings,
   },

@@ -1,75 +1,57 @@
 import axios from "axios";
-import { getValidMonthsYears } from "../util/getValidMonthsYears";
-import { listToSqlStringList } from "../util/sql";
+import { dateToString } from "../util/date";
 
 const BASE_URL = `https://rms-uat.carto.com/api/v2/sql`;
 const RANGE_IN_METERS = 200000;
 const MAP_CENTER = [-33.861901, 151.211863];
-const MONTHS_TO_SEARCH = 6;
 
 type NswApiGetStationCountsByMonth = {
   rows: {
     station_key: string;
-    count: number;
-    month: number;
-    year: number;
+    daily_total: number;
+    date: string;
   }[];
 };
-const getStationCountsByMonthQuery = (
-  yearsToSearch: string,
-  monthsToSearch: string
+const getDailyStationCountQuery = (
+  fromDate: string, // format yyyy-mm-dd
+  toDate: string // format yyyy-mm-dd
 ) => {
-  return `SELECT 
-    station_key, 
-    sum(cast(daily_total as int)) as count, 
-    cast(year as int),
-    cast(month as int)
+  return `SELECT station_key,date,daily_total 
   FROM  ds_aadt_permanent_hourly_data
-  WHERE
-    year in ${yearsToSearch} 
-    and month in ${monthsToSearch}
-  group by station_key, year, month
-  order by year desc, month desc
+  WHERE date > '${fromDate}' and date < '${toDate}'
+  order by date asc
   `;
 };
 
-export interface MonthlyStationCount {
-  year: number;
-  month: number;
+export type DailyStationCount = {
+  date: Date;
   stationKey: string;
   count: number;
-}
-export const getStationCountsByMonth = async (stationIds: string[]) => {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+};
 
-  const { monthsToSearch, yearsToSearch } = getValidMonthsYears(
-    currentYear,
-    currentMonth,
-    MONTHS_TO_SEARCH
+type GetDailyStationCountsSignature = (
+  fromDate: Date,
+  toDate: Date
+) => Promise<DailyStationCount[]>;
+
+export const getDailyStationCounts: GetDailyStationCountsSignature = async (
+  fromDate,
+  toDate
+) => {
+  const query = getDailyStationCountQuery(
+    dateToString(fromDate),
+    dateToString(toDate)
   );
-
-  const yearsStrList = listToSqlStringList(yearsToSearch);
-  const monthsStrList = listToSqlStringList(monthsToSearch);
-
   const { data } = await axios.get<NswApiGetStationCountsByMonth>(
-    `${BASE_URL}?q=${getStationCountsByMonthQuery(yearsStrList, monthsStrList)}`
+    `${BASE_URL}?q=${query}`
   );
-
-  // we are filtering after the api response rather than in the request itself
-  // because for some reason when combining year and "filter by range" in the
-  // "where" clause, the request hangs
-  const stationsToInclude: { [key: string]: boolean } = {};
-  stationIds.map((stationId) => (stationsToInclude[stationId] = true));
-  const res: MonthlyStationCount[] = data.rows
-    .filter((stationCount) => stationsToInclude[stationCount.station_key])
-    .map((d) => ({
-      stationKey: d.station_key,
-      count: d.count,
-      month: d.month - 1,
-      year: d.year,
-    }));
-
+  const res: DailyStationCount[] = data.rows.map(
+    ({ station_key, date, daily_total }) => ({
+      stationKey: station_key,
+      count: daily_total,
+      date: new Date(date),
+    })
+  );
   return res;
 };
 

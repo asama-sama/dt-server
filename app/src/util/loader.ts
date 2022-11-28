@@ -4,22 +4,23 @@ export type LoadIndicators = { [key: number]: boolean };
 
 export class Loader {
   size: number;
+  name: string;
   numLoaded = 0;
   loadIndicators: { [key: number]: boolean } = {};
 
-  constructor(size: number) {
+  constructor(size: number, name: string) {
     this.size = size;
-
+    this.name = name;
     this.createLoadIndicator();
+
+    logger(`Initialise ${name} loader. ${size} items to process`);
   }
 
   createLoadIndicator = () => {
     let loadMark = 0;
     const loadIndicators: LoadIndicators = {};
-    // const loadedMarks = []
     while (loadMark <= 100) {
       loadIndicators[loadMark] = false;
-      // loadedMarks.push(loadMark)
       loadMark += 5;
     }
     this.loadIndicators = loadIndicators;
@@ -46,7 +47,7 @@ export class Loader {
       for (const indicator of indicatorsToToggle) {
         const indicatorToToggleNum = parseInt(indicator);
         this.loadIndicators[indicatorToToggleNum] = true;
-        logger(`${indicator}% complete`);
+        logger(`${this.name}: ${indicator}% complete`);
       }
     }
   };

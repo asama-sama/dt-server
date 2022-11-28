@@ -22,7 +22,7 @@ export const handleCrimeData: HandleProcessCsvFile = async (
     "suburb" | "dataFile" | "crimeCategory"
   >[] = [];
 
-  const loader = new Loader(results.length);
+  const loader = new Loader(results.length, "Crime");
 
   for (let i = 0; i < results.length; i++) {
     loader.tick();

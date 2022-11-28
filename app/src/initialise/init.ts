@@ -34,8 +34,12 @@ export const loadAndSyncApi = async (apiInitialisor: JobInitialisor) => {
       await apiInitialisor.update({ initialise: initialise ? true : false });
     } catch (e) {
       status = UpdateStatus.FAIL;
-      if (e instanceof Error) errorMessage = e.message;
-      logger(errorMessage, LogLevels.ERROR);
+      if (e instanceof Error) {
+        errorMessage = e.message;
+        logger(e.toString(), LogLevels.ERROR);
+      } else {
+        logger(errorMessage, LogLevels.ERROR);
+      }
     }
     try {
       await DataSourceUpdateLog.create({
