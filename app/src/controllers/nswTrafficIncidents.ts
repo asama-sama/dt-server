@@ -10,6 +10,7 @@ import { updateSuburbGeoJson, parseSuburbNames } from "../util/suburbUtils";
 import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
 import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
+import { AirQualitySite } from "../db/models/AirQualitySite";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -112,3 +113,26 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   }
   await updateSuburbGeoJson();
 };
+
+type TrafficIncidentsByCategory = {
+  [category: string]: number;
+};
+
+type GetTrafficIncidentsForAirQualityReadingSiteSignature = (
+  airQualitySiteId: number,
+  radius: number
+) => Promise<TrafficIncidentsByCategory>;
+
+/* Returns the number of traffic incidents X meters from an air
+ * quality reading site */
+// TODO: Complete this method
+export const getTrafficIncidentsForAirQualityReadingSite: GetTrafficIncidentsForAirQualityReadingSiteSignature =
+  async (airQualitySiteId, radius) => {
+    const airQualitySite = await AirQualitySite.findOne({
+      where: {
+        id: airQualitySiteId,
+      },
+    });
+    console.log("p", airQualitySite?.position);
+    return {};
+  };
