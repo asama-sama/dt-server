@@ -13,6 +13,9 @@ import { JobInitialisorOptions } from "../initialise/jobs";
 import { Loader } from "../util/loader";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 
+const YEARS_TO_SEARCH_INITIALISE = 3;
+const MONTHS_TO_SEARCH_INITIALISE = 1;
+
 export const updateStations = async () => {
   const stations = await getStations();
   const api = await DataSource.findOne({
@@ -74,10 +77,10 @@ export const updateReadings = async (options?: JobInitialisorOptions) => {
   const toDate: Date = new Date();
   if (options?.initialise) {
     fromDate = new Date();
-    fromDate.setFullYear(fromDate.getFullYear() - 1);
+    fromDate.setFullYear(fromDate.getFullYear() - YEARS_TO_SEARCH_INITIALISE);
   } else {
     fromDate = new Date();
-    fromDate.setMonth(fromDate.getMonth() - 1);
+    fromDate.setMonth(fromDate.getMonth() - MONTHS_TO_SEARCH_INITIALISE);
   }
 
   let counts = await getDailyStationCounts(fromDate, toDate);
