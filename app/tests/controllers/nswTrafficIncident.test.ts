@@ -160,6 +160,7 @@ describe("nswTrafficIncident", () => {
         category: "cat1",
         subcategory: "sub1",
       });
+      const date = new Date();
       await TrafficIncident.create({
         id: 1,
         position: {
@@ -167,24 +168,26 @@ describe("nswTrafficIncident", () => {
           coordinates: coordsFootscray,
         },
         trafficIncidentCategoryId: trafficIncidentCategory.id,
-        created: new Date(),
+        created: date,
         dataSourceId: dataSource.id,
       });
 
       const incidents5km = await getTrafficIncidentsNearPosition(
         coordsMelbourne,
-        5000
+        5000,
+        date
       );
       expect(incidents5km).toMatchObject({});
 
-      const date = dateToString(new Date());
+      const dateString = dateToString(date);
 
       const incidents10km = await getTrafficIncidentsNearPosition(
         coordsMelbourne,
-        10000
+        10000,
+        date
       );
       expect(incidents10km).toMatchObject({
-        [date]: { CAT1: 1 },
+        [dateString]: { CAT1: 1 },
       });
     });
 
@@ -194,6 +197,7 @@ describe("nswTrafficIncident", () => {
         category: "cat1",
         subcategory: "sub1",
       });
+      const date = new Date();
       await TrafficIncident.create({
         id: 1,
         position: {
@@ -201,7 +205,7 @@ describe("nswTrafficIncident", () => {
           coordinates: coordsFootscray,
         },
         trafficIncidentCategoryId: trafficIncidentCategory.id,
-        created: new Date(),
+        created: date,
         dataSourceId: dataSource.id,
       });
 
@@ -216,14 +220,14 @@ describe("nswTrafficIncident", () => {
         dataSourceId: dataSource.id,
       });
 
-      const date = dateToString(new Date());
-
       const incidents15km = await getTrafficIncidentsNearPosition(
         coordsMelbourne,
-        15000
+        15000,
+        date
       );
+      const dateString = dateToString(new Date());
       expect(incidents15km).toMatchObject({
-        [date]: { CAT1: 2 },
+        [dateString]: { CAT1: 2 },
       });
     });
 
@@ -265,7 +269,8 @@ describe("nswTrafficIncident", () => {
 
       const incidents10km = await getTrafficIncidentsNearPosition(
         coordsMelbourne,
-        10000
+        10000,
+        date2
       );
 
       expect(incidents10km).toMatchObject({
@@ -315,13 +320,109 @@ describe("nswTrafficIncident", () => {
 
       const incidents10km = await getTrafficIncidentsNearPosition(
         coordsMelbourne,
-        10000
+        10000,
+        date
       );
 
       const dateString = dateToString(date);
       expect(incidents10km).toMatchObject({
         [dateString]: {
           CAT1: 1,
+          CAT2: 1,
+        },
+      });
+    });
+
+    test("it should only retrieve incidents after the start date", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      const dataSource = await DataSource.create({ name: "ds1" });
+
+      const date1 = new Date();
+      const date2 = new Date();
+      date2.setDate(date2.getDate() - 5);
+
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: date1,
+        dataSourceId: dataSource.id,
+      });
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: date2,
+        dataSourceId: dataSource.id,
+      });
+      const incidents10km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
+        10000,
+        date1
+      );
+      const dateString = dateToString(date1);
+      expect(incidents10km).toMatchObject({
+        [dateString]: {
+          CAT1: 1,
+        },
+      });
+    });
+
+    test("it should only retrieve incidents before the end date", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      const trafficIncidentCategory2 = await TrafficIncidentCategory.create({
+        category: "cat2",
+        subcategory: "sub2",
+      });
+      const dataSource = await DataSource.create({ name: "ds1" });
+
+      const date1 = new Date();
+      const date2 = new Date();
+      date2.setDate(date2.getDate() - 5);
+
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: date1,
+        dataSourceId: dataSource.id,
+      });
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory2.id,
+        created: date2,
+        dataSourceId: dataSource.id,
+      });
+      const endDateToSearch = new Date();
+      endDateToSearch.setDate(date1.getDate() - 2);
+      const incidents10km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
+        10000,
+        date2,
+        endDateToSearch
+      );
+      const dateString = dateToString(date2);
+      expect(incidents10km).toMatchObject({
+        [dateString]: {
           CAT2: 1,
         },
       });

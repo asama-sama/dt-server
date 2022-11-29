@@ -118,13 +118,31 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
 
 type GetTrafficIncidentsNearPositionSignature = (
   coordinates: LatLng,
-  radius: number
+  radius: number,
+  startDate: Date,
+  endDate?: Date
 ) => Promise<DatewiseCategorySums>;
 
 /* Returns the number of traffic incidents X meters from a coordinate */
 export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSignature =
-  async ({ lat, lng }, radius) => {
+  async ({ lat, lng }, radius, startDate, endDate) => {
     const sequelize = getConnection();
+
+    type WhereOpts = {
+      created: { [Op.gte]: Date; [Op.lte]?: Date };
+    };
+
+    const whereOpts: WhereOpts = {
+      created: {
+        [Op.gte]: startDate,
+      },
+    };
+    if (endDate) {
+      whereOpts.created = {
+        ...whereOpts.created,
+        [Op.lte]: endDate,
+      };
+    }
 
     type IncidentsInRange = {
       date: string;
@@ -155,6 +173,7 @@ export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSig
             [Op.lte]: radius,
           }
         ),
+        ...whereOpts,
       },
       include: [
         {
