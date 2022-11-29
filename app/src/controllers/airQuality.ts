@@ -17,6 +17,8 @@ import { logger, LogLevels } from "../util/logger";
 import { Loader } from "../util/loader";
 import { JobInitialisorOptions } from "../initialise/jobs";
 import { dateToString } from "../util/date";
+import { getConnection } from "../db/connect";
+import { DatewiseCategorySums } from "../customTypes/calculated";
 
 const DAYS_TO_SEARCH = 7;
 const MONTHS_TO_SEARCH = 36;
@@ -263,13 +265,6 @@ export const callUpdateAirQualityReadings = async (
   }
 };
 
-type DailyAirQualityReadings = {
-  [date: string]: {
-    // date is yyyy-mm-dd
-    [type: string]: number; // type is pollutant type, number is the reading
-  };
-};
-
 type GetDailyReadingsSignature = ({
   airQualitySiteId,
   startDate,
@@ -278,7 +273,7 @@ type GetDailyReadingsSignature = ({
   airQualitySiteId: number;
   startDate: Date;
   endDate?: Date;
-}) => Promise<DailyAirQualityReadings>;
+}) => Promise<DatewiseCategorySums>;
 
 // fetch airquality readings by site and type from DB
 export const getDailyReadings: GetDailyReadingsSignature = async ({
@@ -320,7 +315,7 @@ export const getDailyReadings: GetDailyReadingsSignature = async ({
     group: ["date", "type"],
     order: [["date", "ASC"]],
   });
-  const dailyAirQualityReadings: DailyAirQualityReadings = {};
+  const dailyAirQualityReadings: DatewiseCategorySums = {};
   readings.forEach(({ date, type, value }) => {
     const dateString = String(date);
     if (!value) return;

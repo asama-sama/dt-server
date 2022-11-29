@@ -11,6 +11,9 @@ import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
 import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
 import { AirQualitySite } from "../db/models/AirQualitySite";
+import { ResponseError } from "../customTypes/ResponseError";
+import { Op } from "sequelize";
+import { DatewiseCategorySums } from "../customTypes/calculated";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -114,18 +117,13 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   await updateSuburbGeoJson();
 };
 
-type TrafficIncidentsByCategory = {
-  [category: string]: number;
-};
-
 type GetTrafficIncidentsForAirQualityReadingSiteSignature = (
   airQualitySiteId: number,
   radius: number
-) => Promise<TrafficIncidentsByCategory>;
+) => Promise<DatewiseCategorySums>;
 
 /* Returns the number of traffic incidents X meters from an air
- * quality reading site */
-// TODO: Complete this method
+ * quality reading site per day */
 export const getTrafficIncidentsForAirQualityReadingSite: GetTrafficIncidentsForAirQualityReadingSiteSignature =
   async (airQualitySiteId, radius) => {
     const airQualitySite = await AirQualitySite.findOne({
@@ -133,6 +131,61 @@ export const getTrafficIncidentsForAirQualityReadingSite: GetTrafficIncidentsFor
         id: airQualitySiteId,
       },
     });
-    console.log("p", airQualitySite?.position);
-    return {};
+    if (!airQualitySite)
+      throw new ResponseError(`Site ${airQualitySiteId} not found`, 400);
+    const { position } = airQualitySite;
+    const sequelize = getConnection();
+
+    type IncidentsInRange = {
+      date: string;
+      category: string;
+      count: number;
+    };
+
+    const incidentsInRange = (await TrafficIncident.findAll({
+      attributes: [
+        [sequelize.literal(`DATE("created")`), "date"],
+        [sequelize.col("category"), "category"],
+        [
+          sequelize.cast(
+            sequelize.fn("count", sequelize.col("category")),
+            "int"
+          ),
+          "count",
+        ],
+      ],
+      where: {
+        position: sequelize.where(
+          sequelize.fn(
+            "st_distance",
+            sequelize.fn("Geography", sequelize.col("position")),
+            sequelize.fn(
+              "Geography",
+              sequelize.fn("ST_GeomFromGeoJSON", JSON.stringify(position))
+            )
+          ),
+          {
+            [Op.lte]: radius,
+          }
+        ),
+      },
+      include: [
+        {
+          attributes: [],
+          model: TrafficIncidentCategory,
+        },
+      ],
+      group: ["date", "category"],
+      raw: true,
+    })) as unknown as IncidentsInRange[];
+    const trafficIncidentsSums: DatewiseCategorySums = {};
+    for (const incidentInRange of incidentsInRange) {
+      if (!trafficIncidentsSums[incidentInRange.date]) {
+        trafficIncidentsSums[incidentInRange.date] = {};
+      }
+      trafficIncidentsSums[incidentInRange.date][incidentInRange.category] =
+        incidentInRange.count;
+    }
+
+    return trafficIncidentsSums;
   };

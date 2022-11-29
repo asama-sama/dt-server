@@ -15,6 +15,7 @@ import * as suburbUtilsModule from "../../src/util/suburbUtils";
 import { DATASOURCES } from "../../src/const/datasource";
 import { TrafficIncidentSuburb } from "../../src/db/models/TrafficIncidentSuburb";
 import { AirQualitySite } from "../../src/db/models/AirQualitySite";
+import { dateToString } from "../../src/util/date";
 
 jest.mock("../../src/clients/nswTrafficIncidents", () => {
   return {
@@ -149,21 +150,194 @@ describe("nswTrafficIncident", () => {
     });
   });
 
-  // TODO: finish this test
-  describe.only("getTrafficIncidentsForAirQualityReadingSite", () => {
+  describe("getTrafficIncidentsForAirQualityReadingSite", () => {
     let site: AirQualitySite;
+
+    const coordsMelbourne = [144.961294, -37.817433]; // melbourne cbd
+    const coordsFootscray = [144.891208, -37.79981]; // footscray (about 6km)
+    const coordsSunshine = [144.833064, -37.788224]; // sunshine (about 11km)
+
     beforeEach(async () => {
       site = await AirQualitySite.create({
         position: {
           type: "Point",
-          coordinates: [2.5, 87.4],
+          coordinates: coordsMelbourne,
         },
         siteId: 5,
       });
     });
 
-    test("complete test", async () => {
-      const incidents = getTrafficIncidentsForAirQualityReadingSite(site.id, 0);
+    test("it should get the correct number of incidents within a radius of a site", async () => {
+      const dataSource = await DataSource.create({ name: "ds" });
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: new Date(),
+        dataSourceId: dataSource.id,
+      });
+
+      const incidents5km = await getTrafficIncidentsForAirQualityReadingSite(
+        site.id,
+        5000
+      );
+      expect(incidents5km).toMatchObject({});
+
+      const date = dateToString(new Date());
+
+      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
+        site.id,
+        10000
+      );
+      expect(incidents10km).toMatchObject({
+        [date]: { CAT1: 1 },
+      });
+    });
+
+    test("it should sum incidents in the same category", async () => {
+      const dataSource = await DataSource.create({ name: "ds" });
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: new Date(),
+        dataSourceId: dataSource.id,
+      });
+
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: coordsSunshine,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: new Date(),
+        dataSourceId: dataSource.id,
+      });
+
+      const date = dateToString(new Date());
+
+      const incidents15km = await getTrafficIncidentsForAirQualityReadingSite(
+        site.id,
+        15000
+      );
+      expect(incidents15km).toMatchObject({
+        [date]: { CAT1: 2 },
+      });
+    });
+
+    test("it should separate incidents into different dates", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      const date1 = new Date();
+      const date2 = new Date();
+      date2.setDate(date2.getDate() - 1);
+
+      const dataSource = await DataSource.create({ name: "ds" });
+
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: date1,
+        dataSourceId: dataSource.id,
+      });
+
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        created: date2,
+        dataSourceId: dataSource.id,
+      });
+
+      const date1String = dateToString(date1);
+      const date2String = dateToString(date2);
+
+      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
+        site.id,
+        10000
+      );
+
+      expect(incidents10km).toMatchObject({
+        [date1String]: {
+          CAT1: 1,
+        },
+        [date2String]: {
+          CAT1: 1,
+        },
+      });
+    });
+
+    test("it should separate incidents by category", async () => {
+      const trafficIncidentCategory1 = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      const trafficIncidentCategory2 = await TrafficIncidentCategory.create({
+        category: "cat2",
+        subcategory: "sub2",
+      });
+      const dataSource = await DataSource.create({ name: "ds1" });
+
+      const date = new Date();
+
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory1.id,
+        created: date,
+        dataSourceId: dataSource.id,
+      });
+
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: coordsFootscray,
+        },
+        trafficIncidentCategoryId: trafficIncidentCategory2.id,
+        created: date,
+        dataSourceId: dataSource.id,
+      });
+
+      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
+        site.id,
+        10000
+      );
+
+      const dateString = dateToString(date);
+      expect(incidents10km).toMatchObject({
+        [dateString]: {
+          CAT1: 1,
+          CAT2: 1,
+        },
+      });
     });
   });
 });
