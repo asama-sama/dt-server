@@ -15,7 +15,7 @@ import {
   callUpdateAirQualityReadings,
   updateAirQualityReadings,
   updateSites,
-  getDailyReadings,
+  getAirQualitySiteReadings,
 } from "../../src/controllers/airQuality";
 import * as airQualityController from "../../src/controllers/airQuality";
 import {
@@ -425,7 +425,7 @@ describe("airQuality Controller", () => {
     });
   });
 
-  describe("getDailyReadings", () => {
+  describe("getAirQualitySiteReadings", () => {
     const createReadings = async (
       numReadings: number,
       value: number,
@@ -530,10 +530,7 @@ describe("airQuality Controller", () => {
       );
     });
     test("it should return the daily readings", async () => {
-      const dailyReadings = await getDailyReadings({
-        airQualitySiteId: sites[0].id,
-        startDate: date1,
-      });
+      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date1);
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -562,10 +559,7 @@ describe("airQuality Controller", () => {
         frequency,
         AirQualityType.NO2
       );
-      const dailyReadings = await getDailyReadings({
-        airQualitySiteId: sites[0].id,
-        startDate: date,
-      });
+      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date);
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -580,11 +574,11 @@ describe("airQuality Controller", () => {
     });
 
     test("it should not include readings from  after the end date", async () => {
-      const dailyReadings = await getDailyReadings({
-        airQualitySiteId: sites[0].id,
-        startDate: date1,
-        endDate: date2,
-      });
+      const dailyReadings = await getAirQualitySiteReadings(
+        sites[0].id,
+        date1,
+        date2
+      );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -610,10 +604,7 @@ describe("airQuality Controller", () => {
         frequency,
         AirQualityType.CO
       );
-      const dailyReadings = await getDailyReadings({
-        airQualitySiteId: sites[0].id,
-        startDate: date1,
-      });
+      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date1);
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,

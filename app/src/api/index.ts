@@ -13,6 +13,6 @@ router.use("/apis", apis);
 router.use("/airquality", airQualityRoutes);
 router.use("/trafficvolume", trafficVolumeRoutes);
 router.use("/cosghgemissions", cosGhgEmissions);
-router.use("/trafficIncidents", trafficIncidentRoutes);
+router.use("/trafficincidents", trafficIncidentRoutes);
 
 export { router as routes };

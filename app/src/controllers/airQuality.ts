@@ -265,22 +265,18 @@ export const callUpdateAirQualityReadings = async (
   }
 };
 
-type GetDailyReadingsSignature = ({
-  airQualitySiteId,
-  startDate,
-  endDate,
-}: {
-  airQualitySiteId: number;
-  startDate: Date;
-  endDate?: Date;
-}) => Promise<DatewiseCategorySums>;
+type GetDailyReadingsSignature = (
+  airQualitySiteId: number,
+  startDate: Date,
+  endDate?: Date
+) => Promise<DatewiseCategorySums>;
 
 // fetch airquality readings by site and type from DB
-export const getDailyReadings: GetDailyReadingsSignature = async ({
+export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
   airQualitySiteId,
   startDate,
-  endDate,
-}) => {
+  endDate
+) => {
   const sequelize = getConnection();
 
   type WhereOpts = {
