@@ -14,6 +14,7 @@ import { AirQualitySite } from "../db/models/AirQualitySite";
 import { ResponseError } from "../customTypes/ResponseError";
 import { Op } from "sequelize";
 import { DatewiseCategorySums } from "../customTypes/calculated";
+import { LatLng } from "../customTypes/geometry";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -117,23 +118,14 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   await updateSuburbGeoJson();
 };
 
-type GetTrafficIncidentsForAirQualityReadingSiteSignature = (
-  airQualitySiteId: number,
+type GetTrafficIncidentsNearPositionSignature = (
+  coordinates: LatLng,
   radius: number
 ) => Promise<DatewiseCategorySums>;
 
-/* Returns the number of traffic incidents X meters from an air
- * quality reading site per day */
-export const getTrafficIncidentsForAirQualityReadingSite: GetTrafficIncidentsForAirQualityReadingSiteSignature =
-  async (airQualitySiteId, radius) => {
-    const airQualitySite = await AirQualitySite.findOne({
-      where: {
-        id: airQualitySiteId,
-      },
-    });
-    if (!airQualitySite)
-      throw new ResponseError(`Site ${airQualitySiteId} not found`, 400);
-    const { position } = airQualitySite;
+/* Returns the number of traffic incidents X meters from a coordinate */
+export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSignature =
+  async ({ lat, lng }, radius) => {
     const sequelize = getConnection();
 
     type IncidentsInRange = {
@@ -159,10 +151,7 @@ export const getTrafficIncidentsForAirQualityReadingSite: GetTrafficIncidentsFor
           sequelize.fn(
             "st_distance",
             sequelize.fn("Geography", sequelize.col("position")),
-            sequelize.fn(
-              "Geography",
-              sequelize.fn("ST_GeomFromGeoJSON", JSON.stringify(position))
-            )
+            sequelize.fn("Geography", sequelize.fn("ST_MakePoint", lng, lat))
           ),
           {
             [Op.lte]: radius,

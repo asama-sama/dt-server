@@ -1,6 +1,6 @@
 /// <reference types="@types/jest" />;
 import {
-  getTrafficIncidentsForAirQualityReadingSite,
+  getTrafficIncidentsNearPosition,
   updateIncidents,
 } from "../../src/controllers/nswTrafficIncidents";
 import {
@@ -150,22 +150,10 @@ describe("nswTrafficIncident", () => {
     });
   });
 
-  describe("getTrafficIncidentsForAirQualityReadingSite", () => {
-    let site: AirQualitySite;
-
-    const coordsMelbourne = [144.961294, -37.817433]; // melbourne cbd
+  describe("getTrafficIncidentsNearPosition", () => {
+    const coordsMelbourne = { lng: 144.961294, lat: -37.817433 }; // melbourne cbd
     const coordsFootscray = [144.891208, -37.79981]; // footscray (about 6km)
     const coordsSunshine = [144.833064, -37.788224]; // sunshine (about 11km)
-
-    beforeEach(async () => {
-      site = await AirQualitySite.create({
-        position: {
-          type: "Point",
-          coordinates: coordsMelbourne,
-        },
-        siteId: 5,
-      });
-    });
 
     test("it should get the correct number of incidents within a radius of a site", async () => {
       const dataSource = await DataSource.create({ name: "ds" });
@@ -184,16 +172,16 @@ describe("nswTrafficIncident", () => {
         dataSourceId: dataSource.id,
       });
 
-      const incidents5km = await getTrafficIncidentsForAirQualityReadingSite(
-        site.id,
+      const incidents5km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
         5000
       );
       expect(incidents5km).toMatchObject({});
 
       const date = dateToString(new Date());
 
-      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
-        site.id,
+      const incidents10km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
         10000
       );
       expect(incidents10km).toMatchObject({
@@ -231,8 +219,8 @@ describe("nswTrafficIncident", () => {
 
       const date = dateToString(new Date());
 
-      const incidents15km = await getTrafficIncidentsForAirQualityReadingSite(
-        site.id,
+      const incidents15km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
         15000
       );
       expect(incidents15km).toMatchObject({
@@ -276,8 +264,8 @@ describe("nswTrafficIncident", () => {
       const date1String = dateToString(date1);
       const date2String = dateToString(date2);
 
-      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
-        site.id,
+      const incidents10km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
         10000
       );
 
@@ -326,8 +314,8 @@ describe("nswTrafficIncident", () => {
         dataSourceId: dataSource.id,
       });
 
-      const incidents10km = await getTrafficIncidentsForAirQualityReadingSite(
-        site.id,
+      const incidents10km = await getTrafficIncidentsNearPosition(
+        coordsMelbourne,
         10000
       );
 
