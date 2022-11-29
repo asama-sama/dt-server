@@ -10,8 +10,6 @@ import { updateSuburbGeoJson, parseSuburbNames } from "../util/suburbUtils";
 import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
 import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
-import { AirQualitySite } from "../db/models/AirQualitySite";
-import { ResponseError } from "../customTypes/ResponseError";
 import { Op } from "sequelize";
 import { DatewiseCategorySums } from "../customTypes/calculated";
 import { LatLng } from "../customTypes/geometry";

@@ -14,7 +14,6 @@ import { DataSource } from "../../src/db/models/DataSource";
 import * as suburbUtilsModule from "../../src/util/suburbUtils";
 import { DATASOURCES } from "../../src/const/datasource";
 import { TrafficIncidentSuburb } from "../../src/db/models/TrafficIncidentSuburb";
-import { AirQualitySite } from "../../src/db/models/AirQualitySite";
 import { dateToString } from "../../src/util/date";
 
 jest.mock("../../src/clients/nswTrafficIncidents", () => {
