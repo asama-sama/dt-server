@@ -1,8 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
-import { AIR_QUALITY_SITE_SEARCH_RADIUS } from "../const/trafficIncidents";
 import { getTrafficIncidentsNearPosition } from "../controllers/nswTrafficIncidents";
-import { ResponseError } from "../customTypes/ResponseError";
-import { isValidDate } from "../util/expressValidators";
+import { isValidDate, isValidNumber } from "../util/expressValidators";
 
 const router = express.Router();
 
@@ -11,6 +9,7 @@ type GetTrafficIncidentParams = {
   lng: string;
   startDate: string;
   endDate: string;
+  radius: string;
 };
 
 router.get(
@@ -26,12 +25,12 @@ router.get(
         lng: _lng,
         startDate: _startDate,
         endDate: _endDate,
+        radius: _radius,
       } = request.query;
 
-      const lat = Number(_lat);
-      const lng = Number(_lng);
-      if (isNaN(lat) || isNaN(lng))
-        throw new ResponseError("Invalid position value given", 400);
+      const lat = isValidNumber(_lat);
+      const lng = isValidNumber(_lng);
+      const radius = isValidNumber(_radius);
 
       const startDate = isValidDate(_startDate);
       let endDate: Date | undefined;
@@ -41,7 +40,7 @@ router.get(
 
       const incidentCounts = await getTrafficIncidentsNearPosition(
         { lat, lng },
-        AIR_QUALITY_SITE_SEARCH_RADIUS,
+        radius,
         startDate,
         endDate
       );

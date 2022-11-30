@@ -323,3 +323,13 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
 
   return dailyAirQualityReadings;
 };
+
+export const getAirQualitySites = async () => {
+  const sites = await AirQualitySite.findAll();
+  return sites.map(({ id, suburb, position, region }) => ({
+    id,
+    suburb,
+    position,
+    region,
+  }));
+};

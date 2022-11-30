@@ -10,3 +10,11 @@ export const isValidDate = (date: unknown): Date => {
   }
   return newDate;
 };
+
+export const isValidNumber = (number: unknown): number => {
+  const parsedNumber = Number(number);
+  if (isNaN(parsedNumber)) {
+    throw new ResponseError("must be a number", 400);
+  }
+  return parsedNumber;
+};

@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import {
   getAirQualitySiteReadings,
+  getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
 import { ResponseError } from "../customTypes/ResponseError";
@@ -61,6 +62,18 @@ router.get(
         endDate
       );
       res.status(200).send(readings);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/sites",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sites = await getAirQualitySites();
+      return res.status(200).send(sites);
     } catch (e) {
       next(e);
     }
