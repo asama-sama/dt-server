@@ -20,6 +20,7 @@ import { dateToString } from "../util/date";
 import { getConnection } from "../db/connect";
 import { DatewiseCategorySums } from "../customTypes/calculated";
 
+
 const DAYS_TO_SEARCH = 7;
 const MONTHS_TO_SEARCH = 36;
 
