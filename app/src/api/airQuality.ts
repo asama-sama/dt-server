@@ -1,8 +1,11 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import {
-  getCurrentObservations,
+  getAirQualitySiteReadings,
+  getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
+import { ResponseError } from "../customTypes/ResponseError";
+import { isValidDate } from "../util/expressValidators";
 
 const router = express.Router();
 
@@ -27,17 +30,50 @@ router.get(
   }
 );
 
+type GetAirQualitySiteReadingParams = {
+  airQualitySiteId: string;
+  startDate: string;
+  endDate?: string;
+};
+
 router.get(
-  "/live",
+  "/",
   async (
-    req: Request<undefined, undefined, undefined, AirQualityRequestQPs>,
+    req: Request<null, null, GetAirQualitySiteReadingParams>,
     res: Response,
-    next
+    next: NextFunction
   ) => {
     try {
-      const sites: number[] = JSON.parse(req.query.sites);
-      const observations = await getCurrentObservations(sites);
-      res.status(200).send(observations);
+      const {
+        airQualitySiteId: _airQualitySiteId,
+        startDate: _startDate,
+        endDate: _endDate,
+      } = req.query;
+      const airQualitySiteId = Number(_airQualitySiteId);
+      if (isNaN(airQualitySiteId))
+        throw new ResponseError("airQualitySiteId must be a number", 400);
+
+      const startDate = isValidDate(_startDate);
+      let endDate: Date | undefined;
+      if (_endDate) endDate = isValidDate(_endDate);
+      const readings = await getAirQualitySiteReadings(
+        airQualitySiteId,
+        startDate,
+        endDate
+      );
+      res.status(200).send(readings);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/sites",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sites = await getAirQualitySites();
+      return res.status(200).send(sites);
     } catch (e) {
       next(e);
     }

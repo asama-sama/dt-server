@@ -63,7 +63,7 @@ beforeAll(async () => {
       match: [/Deadlock/i],
       max: 3,
     },
-    logging: false,
+    logging: false, // toggle this to get query output
   });
   getConnectionMock.mockImplementation(() => testdbConnection);
 });

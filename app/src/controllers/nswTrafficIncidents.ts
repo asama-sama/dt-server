@@ -10,6 +10,9 @@ import { updateSuburbGeoJson, parseSuburbNames } from "../util/suburbUtils";
 import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
 import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
+import { Op } from "sequelize";
+import { DatewiseCategorySums } from "../customTypes/calculated";
+import { LatLng } from "../customTypes/geometry";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -112,3 +115,83 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   }
   await updateSuburbGeoJson();
 };
+
+type GetTrafficIncidentsNearPositionSignature = (
+  coordinates: LatLng,
+  radius: number,
+  startDate: Date,
+  endDate?: Date
+) => Promise<DatewiseCategorySums>;
+
+/* Returns the number of traffic incidents X meters from a coordinate */
+export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSignature =
+  async ({ lat, lng }, radius, startDate, endDate) => {
+    const sequelize = getConnection();
+
+    type WhereOpts = {
+      created: { [Op.gte]: Date; [Op.lte]?: Date };
+    };
+
+    const whereOpts: WhereOpts = {
+      created: {
+        [Op.gte]: startDate,
+      },
+    };
+    if (endDate) {
+      whereOpts.created = {
+        ...whereOpts.created,
+        [Op.lte]: endDate,
+      };
+    }
+
+    type IncidentsInRange = {
+      date: string;
+      category: string;
+      count: number;
+    };
+
+    const incidentsInRange = (await TrafficIncident.findAll({
+      attributes: [
+        [sequelize.literal(`DATE("created")`), "date"],
+        [sequelize.col("category"), "category"],
+        [
+          sequelize.cast(
+            sequelize.fn("count", sequelize.col("category")),
+            "int"
+          ),
+          "count",
+        ],
+      ],
+      where: {
+        position: sequelize.where(
+          sequelize.fn(
+            "st_distance",
+            sequelize.fn("Geography", sequelize.col("position")),
+            sequelize.fn("Geography", sequelize.fn("ST_MakePoint", lng, lat))
+          ),
+          {
+            [Op.lte]: radius,
+          }
+        ),
+        ...whereOpts,
+      },
+      include: [
+        {
+          attributes: [],
+          model: TrafficIncidentCategory,
+        },
+      ],
+      group: ["date", "category"],
+      raw: true,
+    })) as unknown as IncidentsInRange[];
+    const trafficIncidentsSums: DatewiseCategorySums = {};
+    for (const incidentInRange of incidentsInRange) {
+      if (!trafficIncidentsSums[incidentInRange.date]) {
+        trafficIncidentsSums[incidentInRange.date] = {};
+      }
+      trafficIncidentsSums[incidentInRange.date][incidentInRange.category] =
+        incidentInRange.count;
+    }
+
+    return trafficIncidentsSums;
+  };

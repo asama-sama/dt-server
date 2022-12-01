@@ -17,6 +17,9 @@ import { logger, LogLevels } from "../util/logger";
 import { Loader } from "../util/loader";
 import { JobInitialisorOptions } from "../initialise/jobs";
 import { dateToString } from "../util/date";
+import { getConnection } from "../db/connect";
+import { DatewiseCategorySums } from "../customTypes/calculated";
+
 
 const DAYS_TO_SEARCH = 7;
 const MONTHS_TO_SEARCH = 36;
@@ -261,4 +264,73 @@ export const callUpdateAirQualityReadings = async (
     const errorMessage = errorMessages.join(", ");
     throw new Error(errorMessage);
   }
+};
+
+type GetDailyReadingsSignature = (
+  airQualitySiteId: number,
+  startDate: Date,
+  endDate?: Date
+) => Promise<DatewiseCategorySums>;
+
+// fetch airquality readings by site and type from DB
+export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
+  airQualitySiteId,
+  startDate,
+  endDate
+) => {
+  const sequelize = getConnection();
+
+  type WhereOpts = {
+    date: {
+      [Op.gte]: Date;
+      [Op.lte]?: Date;
+    };
+    airQualitySiteId: number;
+  };
+
+  const whereOpts: WhereOpts = {
+    date: {
+      [Op.gte]: startDate,
+    },
+    airQualitySiteId,
+  };
+
+  if (endDate) {
+    whereOpts.date = {
+      ...whereOpts.date,
+      [Op.lte]: endDate,
+    };
+  }
+
+  const readings = await AirQualityReading.findAll({
+    attributes: [
+      [sequelize.literal(`DATE("date")`), "date"],
+      "type",
+      [sequelize.fn("AVG", sequelize.col("value")), "value"],
+    ],
+    where: whereOpts,
+    group: ["date", "type"],
+    order: [["date", "ASC"]],
+  });
+  const dailyAirQualityReadings: DatewiseCategorySums = {};
+  readings.forEach(({ date, type, value }) => {
+    const dateString = String(date);
+    if (!value) return;
+    if (!dailyAirQualityReadings[dateString]) {
+      dailyAirQualityReadings[dateString] = {};
+    }
+    dailyAirQualityReadings[dateString][type] = value;
+  });
+
+  return dailyAirQualityReadings;
+};
+
+export const getAirQualitySites = async () => {
+  const sites = await AirQualitySite.findAll();
+  return sites.map(({ id, suburb, position, region }) => ({
+    id,
+    suburb,
+    position,
+    region,
+  }));
 };

@@ -31,3 +31,5 @@ export const categorySubcategoryMap: { [key: string]: string[] } = {
   "traffic lights": ["traffic lights", "traffic signals"],
   roadworks: ["roadwork"],
 };
+
+export const AIR_QUALITY_SITE_SEARCH_RADIUS = 50000; // 50m

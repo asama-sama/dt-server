@@ -4,6 +4,7 @@ import { apis } from "./apis";
 import { airQualityRoutes } from "./airQuality";
 import { trafficVolumeRoutes } from "./trafficVolume";
 import { cosGhgEmissions } from "./cosGhgEmissions";
+import { trafficIncidentRoutes } from "./trafficIncidents";
 
 const router = express.Router();
 
@@ -12,5 +13,6 @@ router.use("/apis", apis);
 router.use("/airquality", airQualityRoutes);
 router.use("/trafficvolume", trafficVolumeRoutes);
 router.use("/cosghgemissions", cosGhgEmissions);
+router.use("/trafficincidents", trafficIncidentRoutes);
 
 export { router as routes };
