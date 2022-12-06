@@ -138,11 +138,17 @@ describe("trafficVolume controller", () => {
     const insertReadings = async (stationKey: string) => {
       const readingsToAdd: DailyStationCount[] = Array.from({
         length: 3,
-      }).map((_, idx) => ({
-        date: new Date(`2022-08-${idx + 1}`),
-        stationKey,
-        count: idx * 100,
-      }));
+      }).map((_, idx) => {
+        const d = new Date();
+        d.setUTCFullYear(2022);
+        d.setUTCMonth(7);
+        d.setUTCDate(idx + 1);
+        return {
+          date: d,
+          stationKey,
+          count: idx * 100,
+        };
+      });
 
       getDailyStationCountsMock.mockResolvedValueOnce(readingsToAdd);
       await updateReadings();

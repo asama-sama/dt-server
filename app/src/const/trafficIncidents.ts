@@ -33,3 +33,19 @@ export const categorySubcategoryMap: { [key: string]: string[] } = {
 };
 
 export const AIR_QUALITY_SITE_SEARCH_RADIUS = 50000; // 50m
+
+type TrafficSearchLocation = {
+  latitude: number;
+  longitude: number;
+  radius: number; // in km
+};
+
+export const TRAFFIC_SEARCH_LOCATIONS: TrafficSearchLocation =
+  // centered near wetherill park, sydney
+  {
+    latitude: -33.83633,
+    longitude: 150.90387,
+    radius: 50,
+  };
+
+export const MONTHS_TO_SEARCH = 36;

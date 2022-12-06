@@ -105,12 +105,6 @@ export const DATASOURCES: DataSource = {
   trafficIncidents: {
     name: "NSW_TRAFFIC_INCIDENTS",
     updateFrequency: millisecondsInDay,
-    params: {
-      radius: 50,
-      latitude: -33.86734,
-      longitude: 151.20823,
-      showHistory: false,
-    },
   },
   bomSites: {
     name: "BOM_SITES",

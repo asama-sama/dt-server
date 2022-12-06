@@ -1,7 +1,7 @@
 /// <reference types="@types/jest" />;
 import axios from "axios";
 import { fetchIncidents } from "../../src/clients/nswTrafficIncidents";
-import { DATASOURCES } from "../../src/const/datasource";
+import { TRAFFIC_SEARCH_LOCATIONS } from "../../src/const/trafficIncidents";
 
 describe("nswTrafficIncidents", () => {
   beforeEach(() => {
@@ -10,14 +10,14 @@ describe("nswTrafficIncidents", () => {
   test("it should throw an error if NSW_OPEN_DATA_API_KEY is not defined", async () => {
     process.env.NSW_OPEN_DATA_API_KEY = "";
     const endDate = new Date();
-    expect(() => fetchIncidents(endDate)).rejects.toThrow(
+    expect(() => fetchIncidents(new Date(), endDate)).rejects.toThrow(
       new Error("NSW_OPEN_DATA_API_KEY must be defined")
     );
   });
 
   test("it should call the post method on axios", async () => {
     const endDate = new Date();
-    await fetchIncidents(endDate);
+    await fetchIncidents(new Date(), endDate);
     expect(axios.post).toHaveBeenCalled();
   });
 
@@ -25,13 +25,14 @@ describe("nswTrafficIncidents", () => {
     const endDate = new Date();
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - 2);
-    await fetchIncidents(endDate);
+    await fetchIncidents(startDate, endDate);
     expect(axios.post).toHaveBeenCalledWith(
       "https://api.transport.nsw.gov.au/v1/traffic/historicaldata",
       {
-        ...DATASOURCES.trafficIncidents.params,
+        ...TRAFFIC_SEARCH_LOCATIONS,
         created: startDate,
         end: endDate,
+        showHistory: false,
       },
       {
         headers: {
@@ -45,13 +46,14 @@ describe("nswTrafficIncidents", () => {
     const endDate = new Date();
     const startDate = new Date(endDate);
     startDate.setMonth(startDate.getMonth() - 2);
-    await fetchIncidents(endDate, true);
+    await fetchIncidents(startDate, endDate);
     expect(axios.post).toHaveBeenCalledWith(
       "https://api.transport.nsw.gov.au/v1/traffic/historicaldata",
       {
-        ...DATASOURCES.trafficIncidents.params,
+        ...TRAFFIC_SEARCH_LOCATIONS,
         created: startDate,
         end: endDate,
+        showHistory: false,
       },
       {
         headers: {

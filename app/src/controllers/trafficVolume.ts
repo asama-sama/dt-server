@@ -10,6 +10,7 @@ import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../db/models/TrafficVolumeStation";
 import { Frequency, UpdateFrequency } from "../db/models/UpdateFrequency";
 import { JobInitialisorOptions } from "../initialise/jobs";
+import { dateToString } from "../util/date";
 import { Loader } from "../util/loader";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
 
@@ -83,20 +84,42 @@ export const updateReadings = async (options?: JobInitialisorOptions) => {
     fromDate.setMonth(fromDate.getMonth() - MONTHS_TO_SEARCH_INITIALISE);
   }
 
-  let counts = await getDailyStationCounts(fromDate, toDate);
+  const updateFrequency = await UpdateFrequency.findOne({
+    where: { frequency: Frequency.DAILY },
+  });
 
+  const trafficVolumeStationsMap: { [key: string]: TrafficVolumeStation } = {};
+
+  type CurrentReading = {
+    trafficVolumeStationId: number;
+    date: string;
+  };
+  const currentReadings = (await TrafficVolumeReading.findAll({
+    attributes: ["trafficVolumeStationId", "date"],
+    group: ["trafficVolumeStationId", "date"],
+  })) as unknown as CurrentReading[];
+  type CurrentReadingsMap = {
+    [key: number]: {
+      [key: string]: boolean;
+    };
+  };
+  const currentReadingsMap: CurrentReadingsMap = {};
+  currentReadings.forEach(({ trafficVolumeStationId, date }) => {
+    let stationReads = currentReadingsMap[trafficVolumeStationId];
+    if (!stationReads) {
+      stationReads = {};
+      currentReadingsMap[trafficVolumeStationId] = stationReads;
+    }
+    stationReads[date] = true;
+  });
+
+  let counts = await getDailyStationCounts(fromDate, toDate);
   // we are filtering after the api response rather than in the request itself
   // because for some reason when combining year and "filter by range" in the
   // "where" clause, the request hangs
   counts = counts.filter(
     (count) => trafficVolumeStationsKeys[count.stationKey]
   );
-
-  const updateFrequency = await UpdateFrequency.findOne({
-    where: { frequency: Frequency.DAILY },
-  });
-
-  const trafficVolumeStationsMap: { [key: string]: TrafficVolumeStation } = {};
   const loader = new Loader(counts.length, "Traffic Volume");
   for (let i = 0; i < counts.length; i++) {
     const count = counts[i];
@@ -111,18 +134,16 @@ export const updateReadings = async (options?: JobInitialisorOptions) => {
       if (!station) throw new Error(`Station ${count.stationKey} not found`);
       trafficVolumeStationsMap[station.stationKey] = station;
     }
-    await TrafficVolumeReading.findOrCreate({
-      where: {
-        trafficVolumeStationId: station.id,
-        date: count.date,
-      },
-      defaults: {
-        trafficVolumeStationId: station.id,
-        date: count.date,
-        value: count.count,
-        dataSourceId: api?.id,
-        updateFrequencyId: updateFrequency?.id,
-      },
+    const inserted =
+      currentReadingsMap[station.id] &&
+      currentReadingsMap[station.id][dateToString(count.date)];
+    if (inserted) continue;
+    await TrafficVolumeReading.create({
+      trafficVolumeStationId: station.id,
+      date: count.date,
+      value: count.count,
+      dataSourceId: api?.id,
+      updateFrequencyId: updateFrequency?.id,
     });
     loader.tick();
   }
