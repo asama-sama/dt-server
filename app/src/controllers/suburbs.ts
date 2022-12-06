@@ -23,3 +23,11 @@ export const getSuburbsById = async (ids: number[]) => {
   });
   return suburbs;
 };
+
+export const getAll = async () => {
+  const suburbs = await Suburb.findAll({
+    attributes: ["id", "name", "boundary"],
+    raw: true,
+  });
+  return suburbs;
+};
