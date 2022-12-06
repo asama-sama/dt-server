@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getSuburbsById } from "../controllers/suburbs";
+import { getAll, getSuburbsById } from "../controllers/suburbs";
 import { ResponseError } from "../customTypes/ResponseError";
 import { Suburb } from "../db/models/Suburb";
 
@@ -34,6 +34,18 @@ router.get(
       }
       const suburbs: Suburb[] = await getSuburbsById(suburbIds);
 
+      response.status(200).send(suburbs);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/all",
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const suburbs = await getAll();
       response.status(200).send(suburbs);
     } catch (e) {
       next(e);
