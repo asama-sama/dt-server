@@ -1,12 +1,12 @@
 import axios from "axios";
-import { DATASOURCES } from "../const/datasource";
+import { TRAFFIC_SEARCH_LOCATIONS } from "../const/trafficIncidents";
 
 type RoadInfo = {
   region: string;
   suburb: string;
 };
 
-type IncidentResponse = {
+export type IncidentResponse = {
   Hazards: {
     id: string;
     features: {
@@ -34,36 +34,27 @@ export type FetchIncidentsApiResponse = {
 };
 
 type FetchIncidentsFunction = (
-  endDate: Date,
-  initialise?: boolean
-) => Promise<FetchIncidentsApiResponse>;
+  startDate: Date,
+  endDate: Date
+) => Promise<IncidentResponse[]>;
 
 const URI = "https://api.transport.nsw.gov.au/v1/traffic/historicaldata";
 
 export const fetchIncidents: FetchIncidentsFunction = async (
-  endDate,
-  initialise = false
+  startDate,
+  endDate
 ) => {
   const { NSW_OPEN_DATA_API_KEY } = process.env;
   if (!NSW_OPEN_DATA_API_KEY)
     throw new Error("NSW_OPEN_DATA_API_KEY must be defined");
 
-  const { params } = DATASOURCES.trafficIncidents;
-
-  const startdate = new Date(endDate);
-
-  if (initialise) {
-    startdate.setMonth(startdate.getMonth() - 2);
-  } else {
-    startdate.setDate(startdate.getDate() - 2);
-  }
-
   const res = await axios.post<FetchIncidentsApiResponse>(
     URI,
     {
-      ...params,
-      created: startdate,
+      ...TRAFFIC_SEARCH_LOCATIONS,
+      created: startDate,
       end: endDate,
+      showHistory: false,
     },
     {
       headers: {
@@ -72,5 +63,5 @@ export const fetchIncidents: FetchIncidentsFunction = async (
     }
   );
 
-  return res.data;
+  return res.data.result;
 };

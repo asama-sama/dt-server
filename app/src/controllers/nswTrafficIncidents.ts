@@ -1,4 +1,7 @@
-import { fetchIncidents } from "../clients/nswTrafficIncidents";
+import {
+  fetchIncidents,
+  IncidentResponse,
+} from "../clients/nswTrafficIncidents";
 import { createBatches } from "../util/createBatches";
 import { DataSource } from "../db/models/DataSource";
 import { DATASOURCES } from "../const/datasource";
@@ -13,26 +16,20 @@ import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
 import { Op } from "sequelize";
 import { DatewiseCategorySums } from "../customTypes/calculated";
 import { LatLng } from "../customTypes/geometry";
+import { MONTHS_TO_SEARCH } from "../const/trafficIncidents";
+import { logger } from "../util/logger";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
-export const updateIncidents: GetIncidents = async (initialise = false) => {
-  const dataSource = await DataSource.findOne({
-    where: {
-      name: DATASOURCES.trafficIncidents.name,
-    },
-  });
-  if (!dataSource)
-    throw new Error(
-      `No datasource for ${DATASOURCES.trafficIncidents.name} found`
-    );
-  const now = new Date();
-  const results = await fetchIncidents(now, initialise);
+const insertIncidents = async (
+  results: IncidentResponse[],
+  dataSource: DataSource
+) => {
   const connection = getConnection();
   const suburbsCache: { [key: string]: Suburb } = {};
   const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
-  const loader = new Loader(results.result.length, "Traffic Incidents");
-  const incidentResponseBatches = createBatches(results.result, 200);
+  const loader = new Loader(results.length, "Traffic Incidents");
+  const incidentResponseBatches = createBatches(results, 200);
   for (const incidentResponseBatch of incidentResponseBatches) {
     await connection.transaction(async (trx) => {
       for (const trafficIncident of incidentResponseBatch) {
@@ -112,6 +109,38 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
         }
       }
     });
+  }
+};
+
+export const updateIncidents: GetIncidents = async (initialise = false) => {
+  const dataSource = await DataSource.findOne({
+    where: {
+      name: DATASOURCES.trafficIncidents.name,
+    },
+  });
+  if (!dataSource)
+    throw new Error(
+      `No datasource for ${DATASOURCES.trafficIncidents.name} found`
+    );
+  const endDate = new Date();
+  const startDate = new Date();
+  if (initialise) {
+    endDate.setDate(0);
+    endDate.setMonth(endDate.getMonth() + 1);
+    startDate.setDate(0);
+
+    for (let i = 0; i < MONTHS_TO_SEARCH; i++) {
+      const results = await fetchIncidents(startDate, endDate);
+      logger(`incident batch ${i + 1}/${MONTHS_TO_SEARCH}`);
+      await insertIncidents(results, dataSource);
+
+      endDate.setMonth(endDate.getMonth() - 1);
+      startDate.setMonth(startDate.getMonth() - 1);
+    }
+  } else {
+    startDate.setDate(startDate.getDate() - 2);
+    const results = await fetchIncidents(startDate, endDate);
+    await insertIncidents(results, dataSource);
   }
   await updateSuburbGeoJson();
 };

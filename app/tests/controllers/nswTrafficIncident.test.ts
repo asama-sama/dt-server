@@ -68,7 +68,7 @@ describe("nswTrafficIncident", () => {
     };
 
     beforeEach(async () => {
-      fetchIncidentsMock.mockResolvedValueOnce(response);
+      fetchIncidentsMock.mockResolvedValueOnce(response.result);
       await updateIncidents();
     });
 
@@ -138,7 +138,7 @@ describe("nswTrafficIncident", () => {
       const newResponse = { ...response };
       newResponse.result[0].Hazards.features.properties.end =
         new Date().getTime();
-      fetchIncidentsMock.mockResolvedValue(newResponse);
+      fetchIncidentsMock.mockResolvedValue(newResponse.result);
       await updateIncidents();
       const incident = await TrafficIncident.findOne({
         where: {
