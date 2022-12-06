@@ -23,21 +23,54 @@ type GetIncidents = (initialise?: boolean) => Promise<void>;
 
 const insertIncidents = async (
   results: IncidentResponse[],
-  dataSource: DataSource
+  dataSource: DataSource,
+  startDate: Date,
+  endDate: Date
 ) => {
   const connection = getConnection();
   const suburbsCache: { [key: string]: Suburb } = {};
   const categoryCache: { [key: string]: TrafficIncidentCategory } = {};
   const loader = new Loader(results.length, "Traffic Incidents");
   const incidentResponseBatches = createBatches(results, 200);
+
+  type CurrentIncidents = {
+    id: number;
+    created: Date;
+    end: Date;
+  };
+  const currentIncidents = (await TrafficIncident.findAll({
+    attributes: ["id", "created", "end"],
+    where: {
+      created: {
+        [Op.gte]: startDate,
+        [Op.lte]: endDate,
+      },
+    },
+  })) as unknown as CurrentIncidents[];
+  const currentIncidentMap: { [key: number]: { end: Date } } = {};
+  currentIncidents.forEach((currentIncident) => {
+    currentIncidentMap[currentIncident.id] = {
+      end: currentIncident.end,
+    };
+  });
   for (const incidentResponseBatch of incidentResponseBatches) {
     await connection.transaction(async (trx) => {
       for (const trafficIncident of incidentResponseBatch) {
         loader.tick();
         const id = trafficIncident.Hazards.features.id;
+        if (currentIncidentMap[id]) {
+          if (currentIncidentMap[id].end) {
+            continue;
+          }
+          if (!trafficIncident.Hazards?.features?.properties?.end) {
+            continue;
+          }
+        }
+
         const [lng, lat] =
           trafficIncident.Hazards.features.geometry.coordinates;
 
+        // create suburbs
         const suburbs: Suburb[] = [];
         const suburbNames = parseSuburbNames(
           trafficIncident.Hazards.features.properties.roads[0].suburb
@@ -54,6 +87,7 @@ const insertIncidents = async (
           suburbs.push(suburb);
         }
 
+        // create categories
         const { mainCategory: subcategory } =
           trafficIncident.Hazards.features.properties;
         let trafficIncidentCategory = categoryCache[subcategory];
@@ -132,7 +166,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
     for (let i = 0; i < MONTHS_TO_SEARCH; i++) {
       const results = await fetchIncidents(startDate, endDate);
       logger(`incident batch ${i + 1}/${MONTHS_TO_SEARCH}`);
-      await insertIncidents(results, dataSource);
+      await insertIncidents(results, dataSource, startDate, endDate);
 
       endDate.setMonth(endDate.getMonth() - 1);
       startDate.setMonth(startDate.getMonth() - 1);
@@ -140,7 +174,7 @@ export const updateIncidents: GetIncidents = async (initialise = false) => {
   } else {
     startDate.setDate(startDate.getDate() - 2);
     const results = await fetchIncidents(startDate, endDate);
-    await insertIncidents(results, dataSource);
+    await insertIncidents(results, dataSource, startDate, endDate);
   }
   await updateSuburbGeoJson();
 };
