@@ -1,4 +1,4 @@
-## branch_db_sel_region
+## Branch = simpleCorrNoImpact
 
 # Extracting specific part from timestamp. ## ***** https://modern-sql.com/feature/extract
 ## On date -- https://dataschool.com/learn-sql/dates/
@@ -39,9 +39,9 @@ import shapely.wkt
 import shapely.geometry
 import json
 from itertools import combinations
+import itertools
 import os
 import re # for string formatting
-
 import math
 import sys
 import operator
@@ -49,6 +49,7 @@ import psycopg2
 from psycopg2 import sql ### https://www.psycopg.org/psycopg3/docs/api/sql.html#module-psycopg.sql
 from flask import Flask, request
 from flask import jsonify
+import ast
 
 import warnings
 warnings.filterwarnings('ignore', '.*is deprecated.*', )
@@ -71,7 +72,6 @@ out_corr_list = []
 single_corr = [] # to store single correlation values
 
 columns_lst = [],
-all_Cols_Pairs = []
 
 init_figure = Figure()
 df_Mean_Buckets = pd.DataFrame()
@@ -84,11 +84,10 @@ Inter_Buck_Sorted_corr_lst = []
 #num_Buckets = 10
 bucket_size2Bignored = -1
 
-df_bucks_lst = []
 Dataset_Col_Associ_lst = []
-
-
 init_figure = Figure()
+
+datasets_Dict = {}
 
 
 app = Flask(__name__)
@@ -97,16 +96,15 @@ app = Flask(__name__)
 ######### ************ Simple Correlation ************** ##############
 @app.route('/simple_corr/')
 def simple_corr():
-    region = input_params_simple()
-    df_data = Fetch_N_dFrame_Simple_Corr(region)
-    results = Insights_Score(df_data)
-    print("Results: ",results[0:10], file=sys.stderr)
-    return str(results[0:10])
+    dsName1, dsName2 = input_params_simple()
+    df_Scores = startSimpleCorrelation(dsName1, dsName2)
+    
+    #print("Results: ",results[0:10], file=sys.stderr)
+    return df_Scores.to_json(orient = 'columns')
 
 def input_params_simple():
-    region = request.args.get('region')
-    #d_column = request.args.get('col')
-    return region
+    return request.args.get('ds1'), request.args.get('ds2')
+  
 
 ########################################################################
 
@@ -140,9 +138,6 @@ def input_params_spatial():
 
     return dataset_type, d_column
 
-@app.route('/hello')
-def hello():
-    return "Hello"
 #########################################################################
 
 
@@ -152,476 +147,422 @@ def hello():
 ############ START Simple Correlation #########################
 ## ********************************************************* ##
 
-def Fetch_N_dFrame_Simple_Corr(region):
 
-    global Dataset_Col_Associ_lst
+
+def startSimpleCorrelation(dsName1, dsName2):
+
+    num_Buckets = 10
+    temGranularities = ['daily', 'monthly', 'yearly']
+    #temGranularities = ['monthly']
+
+    datasets_Dict = {'pollution': ['daily', 'monthly', 'yearly'], 'weather': ['daily', 'monthly', 'yearly'], 'trafficIncidents': ['daily', 'monthly', 'yearly'], 'crimes': ['monthly', 'yearly'] , 'trafficVolume': ['daily', 'monthly', 'yearly'], 'emission': ['yearly']}
+    Score_DF = pd.DataFrame(columns = ['COLUMN1', 'COLUMN2', 'CORRELATION', 'Pvalue', '1-Pvalue', 'Score', 'numRows1', 'numRows2', 'uniqVals1', 'uniqVal12', 'num_Buckets', 'tGranularity' , 'DatasetPair', 'comparisonType']) 
+    
+    for tGranularity in temGranularities:
+        #print(tGranularity)               
+        ScoreList = mainCompDBPair(dsName1, dsName2, tGranularity, num_Buckets, datasets_Dict) # Cross DBs correlation computation
+        if len(ScoreList) != 0:
+            for item in ScoreList:
+                #print(item)             
+                Score_DF.loc[len(Score_DF)] = item # appending type at the end of the list and then add the row
+    
+    #print(Score_DF)
+    Score_DF.sort_values(by=['Score'], ascending=False, inplace=True) # sorting on Score
+    #Score_DF.to_csv("Scorelist_DF.csv")
+        #print_Output(ScoreList, tGranularity, DbPair[0], DbPair[1], 2)
+    #apply_PenaltyNSorting(Score_DF, 0.4) # No need for penalty if only two datasets coming
+   
+    return Score_DF
+
+def mainCompDBPair(dsName1, dsName2, tGranularity, num_Buckets, datasets_Dict):
+
+    dColsDFsList_d01 = []
+    dColsDFsList_d02 = []
+    ScoreList = []
+    
+    if tGranularity == 'daily':
+        on_what = 'date'
+    elif tGranularity == 'monthly':
+        on_what = ['year', 'month']
+    elif tGranularity == 'yearly':
+        on_what = 'year'
+    
+    if tGranularity in datasets_Dict[dsName1] and tGranularity in datasets_Dict[dsName2]:
+        #print("Same temporal granularity Found!...")               
+        dColsDFsList_d01 = FetchData(dsName1, tGranularity)  # [colName, df_, tGranularity, dsName]
+        
+        if dsName1 != dsName2:
+            dColsDFsList_d02 = FetchData(dsName2, tGranularity)            
+            return crossDBCorrelation_Score(dColsDFsList_d01, dColsDFsList_d02, on_what, num_Buckets, 'Pearson', tGranularity, dsName1, dsName2) # will run for db1 and db2 if they are different                    
+        else:
+            return sameDBCorrelation_Score(dColsDFsList_d01, on_what, num_Buckets, 'Pearson', tGranularity, dsName1) # will run for same DB
+       
+    else:
+        print("For the given two datasets, temporal granularity does not match!...")
+
+    return ScoreList
+
+
+
+
+def sameDBCorrelation_Score(dBColsDfs_01, on_what, num_Buckets, corr_Type, tGranularity, dsName1):
+    ## dBColsDfs_01 = [colName, df_, tGranularity, dsName]
+    colNamesList = []
+    for item in dBColsDfs_01:
+        colNamesList.append(item[0])
+
+    colsCombinations = list(combinations(colNamesList, 2))
+    #print("same data columns combinations: ", colsCombinations)
+
+    SameDBScore_lst = []
+    
+    for colPair in colsCombinations:
+        #print(colPair)
+        colInfo_01 = []
+        colInfo_02 = []
+        if colPair[0] != colPair[1]:  #  comparing column names
+            for item in dBColsDfs_01:
+                if item[0] == colPair[0]:
+                    #print("col1FoPair, df: ", colPair[0], item[0])
+                    colInfo_01 = item
+                if item[0] == colPair[1]:
+                    #print("col2FoPair, df: ", colPair[1], item[0])
+                    colInfo_02 = item
+
+            #print("going to join.. ", colInfo_01[0], colInfo_02[0])
+            df_Joined = join_DFs(colInfo_01, colInfo_02, on_what)
+            # --->> Dropping date, year, month columns before computing correlation
+            if on_what == 'date':
+                df_Joined = df_Joined.drop(['date'], axis = 1)
+            elif on_what == ['year', 'month']:
+                df_Joined = df_Joined.drop(['year'], axis = 1)
+                df_Joined = df_Joined.drop(['month'], axis = 1)
+            elif on_what == 'year':
+                df_Joined = df_Joined.drop(['year'], axis = 1)
+
+            df_bucks_lst = col_bucket_df(df_Joined, num_Buckets) # each item is like --> (column, df_col_buck, numBins, len(uniq_val), len(df_num))
+            Avg_corr, Avg_Pvalue, numBins1, numBins2, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2 = comp_Correlation(colInfo_01[0], colInfo_02[0], corr_Type, df_bucks_lst)
+            if Avg_corr != 0:
+                impact_col1 = 1 ## col_Impact(pair[0], corr_Type, columns_name)
+                impact_col2 = 1 ## col_Impact(pair[1], corr_Type, columns_name)
+                Significane = 1 - Avg_Pvalue
+
+                Score = Significane # (0.5 * impact_col1 + 0.5 * impact_col2) * Significane #* abs(corr)
+                #Score = 0.5 * (impact_col1 + impact_col2) + 0.5 * Significane #* abs(corr)    
+                #penalty_list = [()]
+                #print("pair indices from column indices list", columns_name.get_loc(pair[0]), columns_name.get_loc(pair[1]))
+                #print("sig, Score: ", Significane, Score)
+                SameDBScore_lst.append([colInfo_01[0], colInfo_02[0], Avg_corr, Avg_Pvalue, Significane, Score, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2, num_Buckets, tGranularity, dsName1 + '-' + dsName1, 1])
+
+    return SameDBScore_lst
+
+
+def crossDBCorrelation_Score(dBColsDfs_01, dBColsDfs_02, on_what, num_Buckets, corr_Type, tGranularity, dsName1, dsName2):
+
+    Score_lst = []
+    for colInfo_01 in dBColsDfs_01:
+        for colInfo_02 in dBColsDfs_02:
+            if colInfo_01[0] != colInfo_02[0]:  #  comparing column names
+                df_Joined = join_DFs(colInfo_01, colInfo_02, on_what)
+                # --->> Dropping date, year, month columns before computing correlation
+                if on_what == 'date':
+                    df_Joined = df_Joined.drop(['date'], axis = 1)
+                elif on_what == ['year', 'month']:
+                    df_Joined = df_Joined.drop(['year'], axis = 1)
+                    df_Joined = df_Joined.drop(['month'], axis = 1)
+                elif on_what == 'year':
+                    df_Joined = df_Joined.drop(['year'], axis = 1)
+
+                df_bucks_lst = col_bucket_df(df_Joined, num_Buckets) # each item is like --> (column, df_col_buck, numBins, len(uniq_val), len(df_num))
+                Avg_corr, Avg_Pvalue, numBins1, numBins2, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2 = comp_Correlation(colInfo_01[0], colInfo_02[0], corr_Type, df_bucks_lst)
+                if Avg_corr != 0:
+                    impact_col1 = 1 ## col_Impact(pair[0], corr_Type, columns_name)
+                    impact_col2 = 1 ## col_Impact(pair[1], corr_Type, columns_name)
+                    Significane = 1 - Avg_Pvalue
+
+                    Score = Significane #(0.5 * impact_col1 + 0.5 * impact_col2) * Significane #* abs(corr)
+                    #Score = 0.5 * (impact_col1 + impact_col2) + 0.5 * Significane #* abs(corr)    
+                    #penalty_list = [()]
+                    #print("pair indices from column indices list", columns_name.get_loc(pair[0]), columns_name.get_loc(pair[1]))
+                    Score_lst.append([colInfo_01[0], colInfo_02[0], Avg_corr, Avg_Pvalue, Significane, Score, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2, num_Buckets, tGranularity, dsName1 + '-' + dsName2, 2])
+
+    return Score_lst
+
+
+def join_DFs(colInfo_01, colInfo_02, on_what):
+    #print("In Join_DFs...")
+    ## colInfo_01 = [colName, df_, tGranularity, dsName, dbNum]
+    ## on_what should be either 'date', ['year', 'month'], 'year'
+    #print(colInfo_01[1])
+    #print(colInfo_02[1])
+
+    df_Joined = pd.merge(colInfo_01[1], colInfo_02[1], on=on_what, how='inner')
+    
+    #if on_what == ['year', 'month']:
+    #print("joined_DFs")
+    #print(df_Joined)
+    
+    #--->> remeber to handle issue where if sum(rain) e.g., is 0, it puts NaN there. but we want 0 there
+
+    df_Joined = df_Joined.fillna(0) # NaN values in Df are actually 0 in the original database. But it might also replace 'None' which essentially is missing value
+    df_Joined = df_Joined.dropna(how='any',axis=0) # will not drop 'None's now because they have been replaced with 0 now in row above
+    df_Joined = df_Joined.apply(lambda col:pd.to_numeric(col, errors='coerce')) # changing the objects types
+
+    return df_Joined
+
+
+
+def FetchData(dsName, tGranularity):
+
+    dCols_df_lst = []
     np.set_printoptions(threshold=sys.maxsize)
     conn = psycopg2.connect(database="root", user='root', password='root', host='127.0.0.1', port= '5433')
     #Creating a cursor object using the cursor() method
     cursor = conn.cursor()
 
-
-    ##### ----- Pollution ---------- #########
-
-    ## ********** st_geomfromtext()
-
-    print("##### ----- Pollution ---------- #########")
-
-    #dist_pol_q = "select distinct type from \"AirQualityReadings\""
-    #cursor.execute(dist_pol_q)
-
-    lst_poll = ['CO', 'SO2', 'NO2', 'OZONE']
-    df_pollution = pd.DataFrame()
-    for item in lst_poll:
-        query = sql.SQL("""select date, sum(value) as {field} from 
-            (select value, Date(date) as date from "AirQualityReadings" ar inner join "AirQualitySites" bs
-            on ar."airQualitySiteId" = bs.id
-            where ST_Contains(ST_SetSRID(ST_GeometryFromText('POLYGON(( 150.75389134450774 -33.59735137171584, 151.34643938711528 -33.766199181893704, 
-            151.30784907341607 -34.06681311892785, 150.63189615926498 -34.00594964988948, 150.75389134450774 -33.59735137171584 ))'), 4326),
-            position) and type=%s
-            ) as Temps
-            group by date
-            """).format(field=sql.Identifier(item))
-        #query = sql.SQL("select created::date as date, count(1) as {field} from \"TrafficIncidentCategories\" M inner join \"TrafficIncidents\" s on M.id = s.\"trafficIncidentCategoryId\" where M.category=%s group by date, M.category order by date").format(field=sql.Identifier(str(cat)))
-        tuple1 = [item]
-        cursor.execute(query, tuple1)
-        column_names = [desc[0] for desc in cursor.description] # getting a list of column names
-        #print(column_names)
+        
+    if dsName == 'pollution':
+        unique_cat_Q = "select distinct type from \"AirQualityReadings\""
+        cursor.execute(unique_cat_Q)
         result = cursor.fetchall()
-        if len(result) > 0:
+        col_List = []
+        for i,row in enumerate(result):
+            col_List.append(row[0]) # getting unique categories
+        #col_List = ['CO', 'SO2', 'NO2', 'OZONE']
+        for item in col_List:
+            tuple1 = [item]
+            query = ''
+
+            if tGranularity == 'daily':
+                query = sql.SQL("""select date, avg(value) as {field} from 
+                    (select value, Date(date) as date from "AirQualityReadings" ar inner join "AirQualitySites" bs
+                    on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by date""").format(field=sql.Identifier(item))               
+
+            elif tGranularity == 'monthly':
+                query = sql.SQL("""select year, month, avg(value) {field} from 
+                (select value, EXTRACT(year FROM date) AS year,  EXTRACT(month FROM date) AS month from "AirQualityReadings" ar inner join "AirQualitySites" bs
+                on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by year, month order by year, month""").format(field=sql.Identifier(item))
+
+            elif tGranularity == 'yearly':
+                query = sql.SQL("""select year, avg(value) {field} from 
+                (select value, EXTRACT(year FROM date) AS year from "AirQualityReadings" ar inner join "AirQualitySites" bs
+                on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by year order by year""").format(field=sql.Identifier(item))
+
+            cursor.execute(query, tuple1)
+            column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+            #print(column_names)
+            result = cursor.fetchall()
             df_pol_item = pd.DataFrame(result, columns = column_names)
-            #print(df_pol_item.head())
-            if df_pollution.empty:
-                #print('DataFrame is empty!')
-                df_pollution = df_pol_item
-            else:
-                df_pollution = pd.merge(df_pollution, df_pol_item, on='date', how='outer')
+            print(df_pol_item)
+
+            dCols_df_lst.append([item, df_pol_item, tGranularity, dsName])
 
 
-    df_pollution = df_pollution.fillna(0)
-    #print(df_pollution.head(200).to_string())
-
-
-    for col in df_pollution:
-        if col != 'date':
-            Dataset_Col_Associ_lst.append((col, 1))
-
-    print("After pollution: ", Dataset_Col_Associ_lst)
-
-
-
-    ## -------------- Weather ------------------ ##
-
-    query2 = """select  date,  min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, avg(gust) as avg_wind_gust_kmh, 
-    avg(pressure) as avg_pressure, sum(rainfall) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
-    (
-    select "bomStationId", Date(time) as date, "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
-    pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
-    from "BomReadings" br
-    inner join "BomStations" bs
-    on br."bomStationId" = bs.id
-    where ST_Contains(ST_SetSRID(ST_GeometryFromText('POLYGON(( 150.75389134450774 -33.59735137171584, 151.34643938711528 -33.766199181893704, 151.30784907341607 -34.06681311892785, 
-    150.63189615926498 -34.00594964988948, 150.75389134450774 -33.59735137171584 ))'), 4326),
-    position)
-    ) as temps
-    group by date
-    order by date"""
-
-    # ST_astext(position)
-
-    cursor.execute(query2)
-
-    column_names = [desc[0] for desc in cursor.description] # getting a list of column names
-    #print(column_names)
-    result = cursor.fetchall()
-    #print(result)
-    df_weather = pd.DataFrame(result, columns = column_names)
-    #print(df_weather.columns)
-    #print(df_weather.head(100).to_string())
-
-    df_weather = df_weather.fillna(0)
-    #print(df_weather.head(200).to_string())
-
-
-    for col in df_weather:
-        if col != 'date':
-            Dataset_Col_Associ_lst.append((col, 2))
-
-    print("After weather: ", Dataset_Col_Associ_lst)
-
-
-    df_data = pd.merge(df_pollution, df_weather, on='date', how='outer')
-
-
-
-    ##### ------ Traffic ----- ######
-
-    unique_cat_Q = "select distinct category from \"TrafficIncidentCategories\""
-    cursor.execute(unique_cat_Q)
-    column_names = [desc[0] for desc in cursor.description] # getting a list of column names
-    #print(column_names)
-    result = cursor.fetchall()
-    uniq_cat = []
-    for i,row in enumerate(result):
-        uniq_cat.append(row[0]) # getting unique categories
     
-
-    df_traffic = pd.DataFrame()
-    for cat in uniq_cat:
-        if str(cat) == 'None':
-            continue
-        #print(str(cat))
-        #query = sql.SQL("select created::date as createddate, M.category, count(1) as {field} from \"TrafficIncidentCategories\" M inner join \"TrafficIncidents\" s on M.id = s.\"trafficIncidentCategoryId\" where M.category={field} group by createddate, M.category order by createddate").format(field=sql.Identifier(str(cat)))
+    elif dsName == 'weather':
+        query = ''
+        if tGranularity == 'daily':
+            query = """select date, min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
+            avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
+            (select "bomStationId", Date(time) as date, "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
+            pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
+            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by date order by date"""
         
-        query = sql.SQL("""select created::date as date, count(1) as {field} from "TrafficIncidentCategories" M 
-        inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId" where 
-        ST_Contains(ST_SetSRID(ST_GeometryFromText('POLYGON(( 
-        150.75389134450774 -33.59735137171584, 151.34643938711528 -33.766199181893704, 151.30784907341607 -34.06681311892785, 
-        150.63189615926498 -34.00594964988948, 150.75389134450774 -33.59735137171584 ))'), 4326),
-        s.position) and M.category=%s group by date order by date""").format(field=sql.Identifier(str(cat)))
+        elif tGranularity == 'monthly':
+            query = """select  year, month,  min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
+            avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
+            (select "bomStationId", EXTRACT(year FROM time) AS year,  EXTRACT(month FROM time) AS month, "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
+            pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
+            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by year, month order by year, month"""
+
+        elif tGranularity == 'yearly':
+            query = """select  year, min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
+            avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
+            (select "bomStationId", EXTRACT(year FROM time) AS year,  "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
+            pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
+            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by year order by year"""
 
 
-        #query = sql.SQL("""select created::date as date, count(1) as {field} from \"TrafficIncidentCategories\" M inner join \"TrafficIncidents\" s on M.id = s.\"trafficIncidentCategoryId\" where M.category=%s group by date, M.category order by date""").format(field=sql.Identifier(str(cat)))
-        tuple1 = [str(cat)]
-        cursor.execute(query, tuple1)
+
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description]
+        #print("Weather Cols: ", column_names)
+        result = cursor.fetchall()
+        df_weather = pd.DataFrame(result, columns = column_names)
+        #print(df_weather)
+        for col in column_names:
+            if tGranularity == 'daily':
+                if col != 'date':
+                    df_ = df_weather[['date', col]]
+                    dCols_df_lst.append([col, df_, tGranularity, dsName])
+            elif tGranularity == 'monthly':
+                if col not in ['year','month']:
+                    df_ = df_weather[['year', 'month', col]]
+                    dCols_df_lst.append([col, df_, tGranularity, dsName])
+
+            elif tGranularity == 'yearly':
+                if col != 'year':
+                    df_ = df_weather[['year', col]]
+                    dCols_df_lst.append([col, df_, tGranularity, dsName])
+
+
+    
+    elif dsName == 'trafficIncidents':
+        #query = ''
+        unique_cat_Q = "select distinct category from \"TrafficIncidentCategories\""
+        cursor.execute(unique_cat_Q)
+        result = cursor.fetchall()
+        uniq_cat = []
+        for i,row in enumerate(result):
+            uniq_cat.append(row[0]) # getting unique categories
+
+        for cat in uniq_cat:
+            query = ''
+            if str(cat) == 'None':
+                continue
+            #print(str(cat))
+            tuple1 = [str(cat)]
+
+            if tGranularity == 'daily':
+                query = sql.SQL("""select created::date as date, count(1) as {field} from "TrafficIncidentCategories" M 
+                        inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
+                        where M.category=%s group by date order by date""").format(field=sql.Identifier(str(cat)))              
+
+            elif tGranularity == 'monthly':
+                query = sql.SQL("""select EXTRACT(year FROM created) AS year,  EXTRACT(month FROM created) AS month, count(1) as {field} from "TrafficIncidentCategories" M 
+                        inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
+                        where M.category=%s group by year, month order by year, month""").format(field=sql.Identifier(str(cat)))
+
+            elif tGranularity == 'yearly':
+                query = sql.SQL("""select EXTRACT(year FROM created) AS year, count(1) as {field} from "TrafficIncidentCategories" M 
+                        inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
+                        where M.category=%s group by year order by year""").format(field=sql.Identifier(str(cat)))
+
+            cursor.execute(query, tuple1)
+            column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+            #print(column_names)
+            result = cursor.fetchall()
+            df_trafficInc_item = pd.DataFrame(result, columns = column_names)
+            print(df_trafficInc_item)
+            dCols_df_lst.append([str(cat), df_trafficInc_item, tGranularity, dsName]) 
+
+
+        # For aggregate
+        query_agg = ''
+        colName = ''
+        if tGranularity == 'daily':
+            query_agg = """select created::date as date, count(1) as "totalTIncidentsDaily" from "TrafficIncidents" group by date order by date"""             
+            colName = 'totalTIncidentsDaily'
+        
+        elif tGranularity == 'monthly':
+            query_agg = """select EXTRACT(year FROM created) AS year,  EXTRACT(month FROM created) AS month, count(1) as "totalTIncidentsMonthly" 
+                        from "TrafficIncidents" group by year, month order by year, month"""
+            colName = 'totalTIncidentsMonthly'
+        
+        elif tGranularity == 'yearly':
+            query_agg = """select EXTRACT(year FROM created) AS year, count(1) as "totalTIncidentsAnnually" 
+                    from "TrafficIncidents" group by year order by year"""
+            colName = 'totalTIncidentsAnnually'
+
+        cursor.execute(query_agg)
         column_names = [desc[0] for desc in cursor.description] # getting a list of column names
         #print(column_names)
         result = cursor.fetchall()
-        df_category = pd.DataFrame(result, columns = column_names)
-        #print(df_category.head())
-        if df_traffic.empty:
-            #print('DataFrame is empty!')
-            df_traffic = df_category
-        else:
-            df_traffic = pd.merge(df_traffic, df_category, on='date', how='outer')
+        df_trafficInc_total = pd.DataFrame(result, columns = column_names)
+        #print(df_trafficInc_total)
+        dCols_df_lst.append([colName, df_trafficInc_total, tGranularity, dsName]) 
 
-    df_traffic = df_traffic.fillna(0)
-    #print(df_traffic.head(200).to_string())    
-
-    for col in df_traffic:
-        if col != 'date':
-            Dataset_Col_Associ_lst.append((col, 3))
-
-    print("After traffic: ", Dataset_Col_Associ_lst)
-
-    
-    #region_Coord = [[-33.79324442810704, 151.00998539335995], [-33.81436283421616, 151.20906838968926], [-33.95282295807322, 150.98774739908913], [-33.94535624482028, 151.20218520098638]]
-    #polygon_geom = Polygon(region_Coord)
-    #print(polygon_geom)
-    #print(shapely.wkt.loads(str(polygon_geom)))
-    #mut_poly = shapely.geometry.MultiPolygon([polygon_geom]) #converting to multipolygon. Takes iterable object, so converting to list
-    #crs = 'epsg:4326'
-    #gf_region = gpd.GeoDataFrame(index=[0], crs=crs, geometry=[mut_poly])
-    #print(gf_region)
-
-    
-    
-    #Extracting specific part from timestamp. ## ***** https://modern-sql.com/feature/extract
-
-    ### SELECT * FROM "BomReadings" where EXTRACT(HOUR FROM time) = 9 and EXTRACT(MINUTE FROM time) = 30
-    
-    
-    df_data = pd.merge(df_data, df_traffic, on='date', how='outer')
-
-    df_data = df_data.drop(['date'], axis = 1)
-    df_data = df_data.fillna(0)
-    print(df_data.columns)
-    print(len(df_data.columns), len(Dataset_Col_Associ_lst))
-    df_data.to_csv("Merged_DFs.csv")
-    
-
-    return df_data
-
-
-    ########  ------------  Traffic Incidents ---------------  ###########
-
-    '''
-    select   created::date as createddate, M.category, count(1) as BreakDown from "TrafficIncidentCategories" M
-    inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
-    where M.category='BREAKDOWN'
-    group by createddate,M.category
-    order by createddate, M.category
-    '''
-
-
-
-def Insights_Score(df_data):
-
-    global Dataset_Col_Associ_lst
-    '''
-    if os.path.exists("penalty-score.csv"):
-        os.remove("penalty-score.csv")
-        print("The file has been deleted successfully")
-    else:
-        print("The file does not exist!")
-    '''
-    
-    global df_Mean_Buckets, df_bucks_lst, all_Cols_Pairs, columns_lst
-
-   
-    #df = pd.read_csv(file_name,encoding= 'unicode_escape')
-
-    #df_data = df.select_dtypes(include=np.number) # to find outliers in numerical columns. will return numeric columns only
-    df_data = df_data.fillna(0)
-    
-
-    
-    '''
-    for col in df_data: # for this, we need to add a row in the combined dataset file where each colum has a number representing its corresponding dataset. For example, 1 for pollution, 2 for weather and so on
-        Dataset_Col_Associ_lst.append((col, df_data.loc[0, col])) # first row value for each column
-    print(len(Dataset_Col_Associ_lst), Dataset_Col_Associ_lst)
-    df_data.drop(0, inplace = True) # dropping the 1st row after extracting the association numbers
-    '''
-    
-
-    all_num_column = list(df_data) # getting column names for dropdown options
-    #print(df_data["HEAVY TRAFFIC"].to_string())
-
-    #df_selected_cols = df_data[["Rainfall (mm)", "Speed of maximum wind gust (km/h)", "CRASH", "HAZARD", "HEAVY TRAFFIC"]]
-    #df_selected_cols = df_data[['Rainfall (mm)', 'Speed of maximum wind gust (km/h)', 'CRASH', 'HAZARD', 'HEAVY TRAFFIC', 'NO2', '9am Temperature (Ã\x82Â°C)', '9am relative humidity (%)', '9am cloud amount (oktas)', '9am MSL pressure (hPa)', '3pm Temperature (Ã\x82Â°C)', '3pm relative humidity (%)', '3pm cloud amount (oktas)', '3pm MSL pressure (hPa)']]
-
-    df_selected_cols = df_data.copy(deep = True)
-    
-    #print(df_selected_cols.head().to_string())
-    #print(len(df_selected_cols.columns))
-
-    columns_lst = list(df_selected_cols) # getting column names as a list
-
-   
-
-    #print(len(columns_lst), columns_lst)
-
-    all_Cols_Pairs = list(combinations(columns_lst, 2)) # generating pair of columns (combinations). Order of columns in a pair does not matter
-  
-    # printing result 
-    #print("All possible pairs : " , all_Cols_Pairs)
-
-    columns_name = df_selected_cols.columns # returns <class 'pandas.core.indexes.base.Index'>
-    #print("column name indices: ", columns_name)
-
-    R_List = []
-    for num_Buckets in range(10, 11, 5):
-        col_bucket_df(df_selected_cols, num_Buckets) # doing bucketing based on num buckets provided
-    
-        R_List = main_Computation('Pearson', df_selected_cols, columns_name, Dataset_Col_Associ_lst, num_Buckets)
-        #main_Computation('Spearman', df_selected_cols, columns_name, Dataset_Col_Associ_lst, num_Buckets)
-        #main_Computation('Kendall', df_selected_cols, columns_name, Dataset_Col_Associ_lst, num_Buckets)
-    
-    #print(type(columns_name))
-    '''
-    for col in df_selected_cols:
-        print(col, columns_name.get_loc(col))
-    '''
-    return R_List
-
-def main_Computation(corr_Type, df_selected_cols, columns_name, Dataset_Col_Associ_lst, num_Buckets):
-    # with 3 tables. each for one correlation type   
-    
-    Score_Res_lst = []
-    F_Score_Sorted = []
-    num_Cols = len(df_selected_cols.columns)
-    Score_Res_lst = Score_Prep(corr_Type, df_selected_cols, columns_name, Dataset_Col_Associ_lst)  # returns [pair[0], pair[1], Avg_corr, Score, Type, count_High_match, count_Low_match, count_No_match]
-    
-
-    sim_Pen = 0.30
-    polWeath_Pen = 0.20
-    polTraffic_Pen = 0.20
-    weathTraffic_Pen = 0.1
-    F_Score_Sorted = apply_PenaltyNSorting(Score_Res_lst, num_Cols, sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen) #([col_pair, CORR, penalty, F_Score])
-
-    return F_Score_Sorted
-
-    '''
-    for i in range(5):
-        F_Score_Sorted.clear()
-        F_Score_Sorted = apply_PenaltyNSorting(Score_Res_lst, num_Cols, sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen) #([col_pair, CORR, penalty, F_Score])        
-        print_Output(corr_Type, F_Score_Sorted, sim_Pen, polTraffic_Pen, polWeath_Pen, weathTraffic_Pen, num_Buckets)
-        sim_Pen += 0.15
-        polWeath_Pen += 0.1
-        polTraffic_Pen += 0.1
-        weathTraffic_Pen += 0.05
-        print("\n\n\n")
-    
-    sim_Pen = 0.0
-    polWeath_Pen = 0.0
-    polTraffic_Pen = 0
-    weathTraffic_Pen = 0
-    for i in range(3):
-        F_Score_Sorted.clear()
-        F_Score_Sorted = apply_PenaltyNSorting(Score_Res_lst, num_Cols, sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen) #([col_pair, CORR, penalty, F_Score])        
-        print_Output(corr_Type, F_Score_Sorted, sim_Pen, polTraffic_Pen, polWeath_Pen, weathTraffic_Pen, num_Buckets)        
-        sim_Pen += 0.3
-        polWeath_Pen += 0.2
-        polTraffic_Pen += 0.0
-        weathTraffic_Pen += 0.0
-        print("\n\n\n")
-    
-    sim_Pen = 0.0
-    polWeath_Pen = 0.0
-    polTraffic_Pen = 0
-    weathTraffic_Pen = 0
-    for i in range(4):
-        F_Score_Sorted.clear()
-        F_Score_Sorted = apply_PenaltyNSorting(Score_Res_lst, num_Cols, sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen) #([col_pair, CORR, penalty, F_Score])        
-        print_Output(corr_Type, F_Score_Sorted, sim_Pen, polTraffic_Pen, polWeath_Pen, weathTraffic_Pen, num_Buckets)        
-        sim_Pen += 0.2
-        polWeath_Pen += 0.1
-        polTraffic_Pen += 0.05
-        weathTraffic_Pen += 0.0
-        print("\n\n\n")
-    '''
-
-    
-
-    
-def print_Output(corr_Type, F_Score_Sorted, sim_Pen, polTraffic_Pen, polWeath_Pen, weathTraffic_Pen, num_Buckets):
-    
-    n = 10 #len(F_Score_Sorted)
-    penalty_str = 'Similar penalty: %.2f, Pollution_Weather penalty: %.2f, Pollution_Traffic penalty: %.2f, Weather_Traffic penalty: %.2f' %(sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen)
-    heading = 'COLUMN1, COLUMN2, CORRELATION, PENALTY, FINAL SCORE' +',' + corr_Type
-    
-    #print(penalty_str + '      -------      ' + corr_Type)
-    #print('COLUMNS'.center(65), 'CORRELATION'.center(20) , 'SCORE'.center(20), 'PENALTY'.center(20), 'FINAL SCORE'.center(20))
-    for k in range(n):
-        print(F_Score_Sorted[k][0].center(65), str(F_Score_Sorted[k][1]).center(20), str(F_Score_Sorted[k][4]).center(20), str(F_Score_Sorted[k][2]).center(20), str(F_Score_Sorted[k][3]).ljust(25))
-    
-    with open('penalty-score-NEW_CORRECT_Pearson.csv', 'a') as f:
-        f.write("num Buckets: " + str(num_Buckets) + '\n')
-        f.write(penalty_str+'\n')
-        f.write(heading+'\n')
-        for k in range(n):
-            line = str(F_Score_Sorted[k][0])+ ',' + str(F_Score_Sorted[k][1]) + ',' + str(F_Score_Sorted[k][2]) + ',' + str(F_Score_Sorted[k][3])
-            f.write(line+'\n')
-        f.write('\n')
-    
-
-
-def Score_Prep(corr_Type, df_selected_cols, columns_name, Dataset_Col_Associ_lst):
-    
-    global all_Cols_Pairs
-
-
-    num_Cols = len(df_selected_cols.columns)    
-    Score_lst = []  
-    match_Col_lst = []
-
-    #print('In tableDataPrep: **** Similar penalty: %.2f, Pollution_Traffic penalty: %.2f, Pollution_Weather penalty: %.2f, Weather_Traffic penalty: %.2f' %(sim_Pen, polTraffic_Pen, polWeath_Pen, weathTraffic_Pen))
-    
-    for pair in all_Cols_Pairs:
-        count_High_match = 0
-        count_Low_match = 0
-        count_No_match = 0
-        corr_Diff = 0 
-        #print(pair[0], pair[1]) # string type
-        Score = 0    
-        #print(pair)
-        Avg_corr, Avg_Pvalue, numBins1, numBins2 = comp_Correlation(pair[0], pair[1], corr_Type, columns_name) # returns avg corr, avg pvalue and number of bins of the two bucketed dfs
         
-        impact_col1 = col_Impact(pair[0], corr_Type, columns_name)
-        impact_col2 = col_Impact(pair[1], corr_Type, columns_name)
-        Significane = 1 - Avg_Pvalue
 
-        Score = (0.5 * impact_col1 + 0.5 * impact_col2) * Significane #* abs(corr)
-        #Score = 0.5 * (impact_col1 + impact_col2) + 0.5 * Significane #* abs(corr)    
-        #penalty_list = [()]
-        #print("pair indices from column indices list", columns_name.get_loc(pair[0]), columns_name.get_loc(pair[1]))
-        x = Dataset_Col_Associ_lst[columns_name.get_loc(pair[0])][1] # columns_name.get_loc(column1) returns the index from the index list (column_name) of the given column and returns the second value of a tuple
-        y = Dataset_Col_Associ_lst[columns_name.get_loc(pair[1])][1]
-        #print("values of x and y: ", x, y)
-
-        Type = 0
-        if x == y:
-            Type = 1        
-        elif x == 1 and y == 2: # Pollution vs Weather 
-            Type = 2
-        elif x == 1 and y == 3: # Pollution vs Traffic
-            Type = 3
-        elif x == 2 and y == 3: # Weather vs Traffic
-            Type = 4
-   
-
-
-        for col_X in df_selected_cols: # for each column in the dataframe            
-            if col_X != pair[0] and col_X != pair[1]:
-
-                corr_1, _, _, _ = comp_Correlation(pair[0], col_X, corr_Type, columns_name)    
-                corr_2, _, _, _ = comp_Correlation(pair[1], col_X, corr_Type, columns_name) 
-                #print (col_X, corr_1, corr_2)
-               
-                if Avg_corr < 0:
-                    #if corr_1 >= 0 and corr_2 >=0:
-                    corr_1 = corr_1 * -1
-
-                corr_Diff = abs(corr_1 - corr_2)
-                if corr_Diff <= 0.2:
-                    count_High_match += 1
-                elif corr_Diff > 0.2 and corr_Diff <= 0.5:
-                    count_Low_match += 1
-                else:
-                    count_No_match += 1
-
-        Score_lst.append([pair[0], pair[1], Avg_corr, Score, Type, count_High_match, count_Low_match, count_No_match])
-       
-       
-    return Score_lst
-
-def apply_PenaltyNSorting(Score_lst, num_Cols, sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen):
-    #print(sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen)
     
-    F_Score_lst = []
+    elif dsName == 'crimes':
+        query = ''
+        colName = ''
+        if tGranularity == 'monthly':
+            query = """select year, month, sum(value) as "totalCrimesMonthly" from "CrimeIncidents" group by year, month order by year, month"""            
+            colName = 'totalCrimesMonthly'
+        elif tGranularity == 'yearly':  
+            query = """select year, sum(value) as "totalCrimesAnnually" from "CrimeIncidents" group by year order by year""" 
+            colName = 'totalCrimesAnnually'
+
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+        #print(column_names)
+        result = cursor.fetchall()
+        df_total_crimes = pd.DataFrame(result, columns = column_names)
+        #print(df_total_crimes)
+        dCols_df_lst.append([colName, df_total_crimes, tGranularity, dsName]) 
+
+
     
-    for item in Score_lst: #[[pair[0], pair[1], Avg_corr, Score, Type, count_High_match, count_Low_match, count_No_match])]
-        penalty = 0
-        match_penalty = item[3] * (0.9 * (item[5]/num_Cols) + 0.1 * (item[6]/num_Cols) + 0.0 * (item[7]/num_Cols))
+    elif dsName == 'trafficVolume':
+        query = ''
+        colName = ''
+        if tGranularity == 'daily':
+            query = """select date, sum(value) as "trafficVolDaily" from "TrafficVolumeReadings" group by date order by date"""           
+            colName = 'trafficVolDaily'
+        elif tGranularity == 'monthly':
+            query = """select EXTRACT(year FROM date) AS year, EXTRACT(month FROM date) AS month, sum(value) as "trafficVolMonthly" from "TrafficVolumeReadings" group by year, month order by year, month"""           
+            colName = 'trafficVolMonthly'
+        elif tGranularity == 'yearly':  
+            query = """select EXTRACT(year FROM date) AS year, sum(value) as "trafficVolAnnually" from "TrafficVolumeReadings" group by year order by year""" 
+            colName = 'trafficVolAnnually'
+
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+        #print(column_names)
+        result = cursor.fetchall()
+        df_total_tVolume = pd.DataFrame(result, columns = column_names)
+        #print(df_total_tVolume)
+        dCols_df_lst.append([colName, df_total_tVolume, tGranularity, dsName])
+
     
-        #print(item)
-        if item[4] == 1:
-            penalty = sim_Pen
-        elif item[4] == 2:
-            penalty = polWeath_Pen
-        elif item[4] == 3:
-            #penalty =  match_penalty
-            penalty = polTraffic_Pen
-        elif item[4] == 4:
-            #penalty = match_penalty
-            penalty = weathTraffic_Pen
-        #print(item[4], penalty)
+    elif dsName == 'emission':
+        query = ''      
+        types_Q = "select distinct name from \"CosGhgCategories\""
+        cursor.execute(types_Q)
+        column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+        #print(column_names)
+        result = cursor.fetchall()
+        lst_emissions_types = []
+        for i,row in enumerate(result):
+            lst_emissions_types.append(row[0]) # getting all emissions types
 
-        col_pair = re.sub("\(.*?\)|\[.*?\]","",item[0]) + ',' +  re.sub("\(.*?\)|\[.*?\]","",item[1]) # removing extra characters
+        for cat in lst_emissions_types:
+            if str(cat) == 'None':
+                continue
+            tuple1 = [str(cat)]
 
-        F_Score = item[3] - penalty # Score - Penalty
+            if tGranularity == 'yearly':           
+                query = sql.SQL("""select year, sum(reading) as {cat} from "CosGhgEmissions" R 
+                            inner join "CosGhgCategories" C on R."categoryId" = C.id where C.name=%s group by year order by year""").format(cat=sql.Identifier(str(cat)))
+            
+            cursor.execute(query, tuple1)
+            column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+            #print(column_names)
+            result = cursor.fetchall()
+            df_cat_emissions = pd.DataFrame(result, columns = column_names)
+            #print(df_cat_emissions)
+            dCols_df_lst.append([str(cat), df_cat_emissions, tGranularity, dsName])
 
-        #print('penalty: ', item[4], penalty)
-        F_Score_lst.append([col_pair, item[2], penalty, F_Score, item[3]])
+        if tGranularity == 'yearly':
+            # Now annual aggregate
+            query_year = """select year, sum(reading) as "totalEmissionsAnnually" from "CosGhgEmissions" group by year order by year"""
+            cursor.execute(query_year)
+            column_names = [desc[0] for desc in cursor.description] # getting a list of column names
+            #print(column_names)
+            result = cursor.fetchall()
+            df_total_emissions = pd.DataFrame(result, columns = column_names)
+            #print(df_total_emissions)
+            dCols_df_lst.append(["totalEmissionsAnnually", df_total_emissions, tGranularity, dsName])
+            
+    return dCols_df_lst
 
-    return sorted(F_Score_lst, key=itemgetter(3), reverse=True)
 
-
-
-
-
-def col_Impact(column1, corr_Type, columns_name):
-
-    list_of_corr = []
-    corr_sum = 0
-    count_cols = 0
-    #print("Columns list in the col_Impact: ", columns_lst)
-    for column2 in columns_lst: # for each column in the dataframe
-        if column2 != column1:
-            corr, pvalue, _, _ = comp_Correlation(column1, column2, corr_Type, columns_name)            
-            corr_sum += abs(corr) 
-            if abs(corr) >= 0.5:                 
-                count_cols += 1
-                #list_of_corr.append([column1, column2, corr])
-
-    impact_col = corr_sum/len(columns_lst) # dividing with total num of columns
-    #impact_col = count_cols/len(columns_lst) # counting cols, dividing with total num of columns
-
-    return impact_col
-
-def comp_Correlation(column1, column2, corr_Type, columns_name):
+def comp_Correlation(column1, column2, corr_Type, df_bucks_lst):
     # This function computes the requested type correlation
     # Returns average correlation and P-Value
+    #df_bucks_lst.append((column, df_col_buck, numBins, len(uniq_val), len(df_num)))
 
     corr_1 =0
     pvalue_1 = 0       
@@ -633,27 +574,19 @@ def comp_Correlation(column1, column2, corr_Type, columns_name):
     #print("Indeces: ", columns_name.get_loc(column1), columns_name.get_loc(column2))
     #print("Col names from the bucked list: ", df_bucks_lst[columns_name.get_loc(column1)][0], df_bucks_lst[columns_name.get_loc(column2)][0])
 
-    col1_bucketed_df = df_bucks_lst[columns_name.get_loc(column1)][1] # columns_name.get_loc(column1) returns the index from the index list (column_name) of the given column
-    col2_bucketed_df = df_bucks_lst[columns_name.get_loc(column2)][1]
+    col1_bucketed_df = df_bucks_lst[0][1] # df_buck_lst has only two columns now
+    actualNumRow1 = df_bucks_lst[0][4]
+    uniqVals1 = df_bucks_lst[0][3]
+    #print("col1_buck_df: \n", col1_bucketed_df)
+    col2_bucketed_df = df_bucks_lst[1][1]
+    actualNumRow2 = df_bucks_lst[1][4]
+    uniqVals2 = df_bucks_lst[1][3]
+    #print("col2_buck_df: \n", col2_bucketed_df)
 
-    #print(col1_bucketed_df[column1], col1_bucketed_df[column2])
-    #print(col2_bucketed_df[column2], col2_bucketed_df[column1])
+   
+    if len(col1_bucketed_df) < 10 or len(col2_bucketed_df) < 10:        
 
-    #print(col1_bucketed_df.to_string())
-    #print(col2_bucketed_df.to_string())
-
-
-    '''
-    for item in df_bucks_lst: # Fetching col1 and col2 binned df
-        if item[0] == column1: 
-            col1_bucketed_df = item[1] 
-        elif item[0] == column2: 
-            col2_bucketed_df = item[1]
-    '''
-
-    if len(col1_bucketed_df) < 2 or len(col2_bucketed_df) < 2:
-
-        return 0, 0, len(col1_bucketed_df), len(col2_bucketed_df)
+        return 0, 0, len(col1_bucketed_df), len(col2_bucketed_df), actualNumRow1, actualNumRow2, uniqVals1, uniqVals2
 
     else:
         if corr_Type == 'Pearson':
@@ -672,59 +605,104 @@ def comp_Correlation(column1, column2, corr_Type, columns_name):
         Avg_Corr = (corr_1 + corr_2)/2
         Avg_Pvalue = (pvalue_1 + pvalue_2)/2
 
-        return Avg_Corr, Avg_Pvalue, len(col1_bucketed_df), len(col2_bucketed_df)
+        return Avg_Corr, Avg_Pvalue, len(col1_bucketed_df), len(col2_bucketed_df), actualNumRow1, actualNumRow2, uniqVals1, uniqVals2
 
-
-
-
-def col_bucket_df(df_num, num_Buckets): # creating bucket dfs for each column in advance. And later going to use them rather creating over and over agin during the computation of impact
-    print("Number of Buckets: ", num_Buckets)
-    global df_bucks_lst    
-    df_bucks_lst.clear()
-    print("IN Bucketing....", df_num.head().to_string(), file=sys.stderr)
+def col_bucket_df(df_num, num_Buckets): #
+    #print("Number of Buckets: ", num_Buckets)
+    #print(df_num)
+    #print(df_num.dtypes)
+    
+    df_bucks_lst = []
+    #print("IN Bucketing....", df_num.head().to_string(), file=sys.stderr)
     for column in df_num:
-        print(column, len(df_num[column]), file=sys.stderr)
+        #print(column, len(df_num[column]), file=sys.stderr)
         df_col_buck = pd.DataFrame()
         df_sorted = df_num.sort_values(column)
-        print(df_sorted.dtypes)
+        #print(df_sorted.dtypes)
 
         uniq_val = df_sorted[column].unique()
         #print("Unique vals: ", uniq_val)
-        if num_Buckets + 2 < len(uniq_val):
-            chunk_size = len(uniq_val)/num_Buckets
-            #print("chunk size: ", chunk_size)
-            boundaries_lst = []
-            #boundaries_lst.append(uniq_val[0]) # Appending first value as a first boundary
-            for i in range(0, len(uniq_val), int(chunk_size)):
-                #print ("i: ", i)
-                boundaries_lst.append(uniq_val[i])
-
-            if boundaries_lst[-1] < uniq_val[-1]: # if less than number of chunk size remaining values left, take the last unique value and add as one more boundary in the boundary list
-                boundaries_lst.append(uniq_val[-1])
-            #boundaries_lst.append(uniq_val[-1])
-            #print("boundary list: ", boundaries_lst)
-            df_sorted['Col_Cut'] = pd.cut(df_sorted[column].astype('float'), bins = boundaries_lst)
-        #elif num_Buckets > len(df_sorted[column]):
-            #df_sorted['Col_Cut'] = pd.cut(df_sorted[column], bins = len(df_sorted[column]))
+        if len(uniq_val) < 10:
+            df_bucks_lst.append((column, pd.DataFrame(), len(uniq_val), len(uniq_val), len(df_num))) # returning empty dataframe coz we dont want to compute correlation in a such case
         else:
-            print("in else: ", df_sorted[column])
-            df_sorted['Col_Cut'] = pd.cut(df_sorted[column].astype('float'), bins = int(num_Buckets)) 
-            # .astype('float') was used to address the error --> unsupported operand type(s) for +: 'decimal.Decimal' and 'float' --> 
-            # https://stackoverflow.com/questions/50966174/typeerror-unsupported-operand-types-for-decimal-decimal-and-float
+            if len(uniq_val) >= num_Buckets:
+                chunk_size = len(uniq_val)/num_Buckets
+                #print("chunk size: ", chunk_size)
+                boundaries_lst = []
+                #boundaries_lst.append(uniq_val[0]) # Appending first value as a first boundary
+                for i in range(0, len(uniq_val), int(chunk_size)):
+                    #print ("i: ", i)
+                    boundaries_lst.append(uniq_val[i])
 
-       
-        #print(pd.qcut(df_sorted[column], q = int(num_Buckets), duplicates="drop").value_counts())
-        gb = df_sorted.groupby('Col_Cut', as_index=False, observed=True)    # last two parameters to avoid emtpy groups
-        numBins = len(gb) # same as len(df_col_buck)
-        for x in gb.groups: 
-            #print(len(gb.get_group(x)))    
-            if len(gb.get_group(x)) > bucket_size2Bignored:
-                sub_series = gb.get_group(x).mean() # gb.get_group(x) returns each group as a dataframe. Mean() returns mean for each column               
-                df_sub = pd.DataFrame(sub_series).transpose()              
-                df_col_buck = pd.concat([df_col_buck, df_sub], axis=0) # adding a bucket row of means
+                if boundaries_lst[-1] < uniq_val[-1]: # if less than number of chunk size remaining values left, take the last unique value and add as one more boundary in the boundary list
+                    boundaries_lst.append(uniq_val[-1])
+                #boundaries_lst.append(uniq_val[-1])
+                #print("boundary list: ", boundaries_lst)
+                df_sorted['Col_Cut'] = pd.cut(df_sorted[column].astype('float'), bins = boundaries_lst)
+            #elif num_Buckets > len(df_sorted[column]):
+                #df_sorted['Col_Cut'] = pd.cut(df_sorted[column], bins = len(df_sorted[column]))
+            else:
+                #print("in else: ", df_sorted[column])
+                df_sorted['Col_Cut'] = pd.cut(df_sorted[column].astype('float'), bins = len(uniq_val)) 
+                # .astype('float') was used to address the error --> unsupported operand type(s) for +: 'decimal.Decimal' and 'float' --> 
+                # https://stackoverflow.com/questions/50966174/typeerror-unsupported-operand-types-for-decimal-decimal-and-float
 
-        #print("numRowsInDF: ", len(df_col_buck))
-        df_bucks_lst.append((column, df_col_buck, numBins))
+           
+            #print(pd.qcut(df_sorted[column], q = int(num_Buckets), duplicates="drop").value_counts())
+            gb = df_sorted.groupby('Col_Cut', as_index=False, observed=True)    # last two parameters to avoid emtpy groups
+            numBins = len(gb) # same as len(df_col_buck)
+            for x in gb.groups: 
+                #print(len(gb.get_group(x)))    
+                if len(gb.get_group(x)) > bucket_size2Bignored:
+                    sub_series = gb.get_group(x).mean() # gb.get_group(x) returns each group as a dataframe. Mean() returns mean for each column               
+                    df_sub = pd.DataFrame(sub_series).transpose()              
+                    df_col_buck = pd.concat([df_col_buck, df_sub], axis=0) # adding a bucket row of means
+
+            #print("numRowsInDF: ", len(df_col_buck))
+            df_bucks_lst.append((column, df_col_buck, numBins, len(uniq_val), len(df_num)))
+
+    return df_bucks_lst
+
+
+def print_Output(scoreList, Type, dSet1, dSet2, dSetType):
+
+    # scoreList = [pair[0], pair[1], Avg_corr, Avg_Pvalue, Significane, Score, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2, num_Buckets]
+    n = len(scoreList)
+    #penalty_str = 'Similar penalty: %.2f, Pollution_Weather penalty: %.2f, Pollution_Traffic penalty: %.2f, Weather_Traffic penalty: %.2f' %(sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen)
+    #heading = 'COLUMN1, COLUMN2, CORRELATION, SCORE, TYPE'
+    strDatasets = str(dSet1) + '-' + str(dSet2)
+    #print(penalty_str + '      -------      ' + corr_Type)
+    #print('COLUMNS'.center(65), 'CORRELATION'.center(20) , 'SCORE'.center(20), 'PENALTY'.center(20), 'FINAL SCORE'.center(20))
+    #for k in range(n):
+        #print(scoreList[k][0].center(65), str(scoreList[k][1]).center(20), str(scoreList[k][4]).center(20), str(scoreList[k][2]).center(20), str(scoreList[k][3]).ljust(25))
+    
+    with open('Pairwise_Scores_simpleCorr.csv', 'a') as f:
+        #f.write("num Buckets: " + str(num_Buckets) + '\n')
+        #f.write(strDatasets+'\n')
+        #f.write(heading+'\n')
+        for k in range(n):
+
+            line = str(scoreList[k][0]).replace(',', '_')+ ',' + str(scoreList[k][1]).replace(',', '_') + ',' + str(scoreList[k][2]) + ',' + str(scoreList[k][3]) + ',' + str(scoreList[k][4]) + ',' + str(scoreList[k][5]) + ',' + str(scoreList[k][6]) + ',' + str(scoreList[k][7]) + ',' + str(scoreList[k][8]) + ',' + str(scoreList[k][9]) + ',' + str(scoreList[k][10]) + ',' + str(Type) + ',' +str(strDatasets) + ',' + str(dSetType)
+            print(line)
+            f.write(line+'\n')
+        #f.write('\n')
+
+
+def apply_PenaltyNSorting(Score_DF, penalty):
+    #print(sim_Pen, polWeath_Pen, polTraffic_Pen, weathTraffic_Pen)
+
+    for ind, row in Score_DF.iterrows():
+        pairTuple = (row['COLUMN1'], row['COLUMN2'])
+        #print(pairTuple, type(pairTuple))        
+        if row['comparison_Type'] == 1:
+            Score_DF.at[ind, 'Score'] = row['Score'] - penalty
+
+    Score_DF.reset_index(drop=True, inplace=True)
+    Score_DF.sort_values(by=['Score'], ascending=False, inplace=True) # sorting on Score
+
+    return Score_DF
+
+
 
 
 ## ********************************************************* ##
@@ -985,3 +963,11 @@ if __name__ == "__main__":
     #Fetch_N_dFrame()
 
     #fetch_traffic()
+
+    #Fetch_N_dFrame_Simple_Corr('52,23')
+    #apply_PenaltyNSorting("Pairwise_Scores_simpleCorr.csv", 0.4)
+    #penaltyLst = [0.2, 0.4, 0.6, 0.8]
+    #for penalty in penaltyLst:
+
+
+
