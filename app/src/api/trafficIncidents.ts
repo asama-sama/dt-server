@@ -1,15 +1,13 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getTrafficIncidentsNearPosition } from "../controllers/nswTrafficIncidents";
-import { isValidDate, isValidNumber } from "../util/expressValidators";
+import { getTrafficIncidentsForSuburbs } from "../controllers/nswTrafficIncidents";
+import { isArray, isValidDate, isValidNumber } from "../util/expressValidators";
 
 const router = express.Router();
 
 type GetTrafficIncidentParams = {
-  lat: string;
-  lng: string;
+  suburbIds: number[];
   startDate: string;
   endDate: string;
-  radius: string;
 };
 
 router.get(
@@ -21,16 +19,13 @@ router.get(
   ) => {
     try {
       const {
-        lat: _lat,
-        lng: _lng,
         startDate: _startDate,
         endDate: _endDate,
-        radius: _radius,
+        suburbIds: _suburbIds,
       } = request.query;
 
-      const lat = isValidNumber(_lat);
-      const lng = isValidNumber(_lng);
-      const radius = isValidNumber(_radius);
+      const suburbIdArray = isArray(_suburbIds);
+      const suburbIds = suburbIdArray.map((id) => isValidNumber(id));
 
       const startDate = isValidDate(_startDate);
       let endDate: Date | undefined;
@@ -38,9 +33,8 @@ router.get(
         endDate = isValidDate(_endDate);
       }
 
-      const incidentCounts = await getTrafficIncidentsNearPosition(
-        { lat, lng },
-        radius,
+      const incidentCounts = await getTrafficIncidentsForSuburbs(
+        suburbIds,
         startDate,
         endDate
       );

@@ -18,6 +18,7 @@ import { DatewiseCategorySums } from "../customTypes/calculated";
 import { LatLng } from "../customTypes/geometry";
 import { MONTHS_TO_SEARCH } from "../const/trafficIncidents";
 import { logger } from "../util/logger";
+import { listToSqlPrimList } from "../util/sql";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -254,6 +255,77 @@ export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSig
       }
       trafficIncidentsSums[incidentInRange.date][incidentInRange.category] =
         incidentInRange.count;
+    }
+
+    return trafficIncidentsSums;
+  };
+
+type GetTrafficIncidentsForSuburbsSignature = (
+  suburbIds: number[],
+  startDate: Date,
+  endDate?: Date
+) => Promise<DatewiseCategorySums>;
+
+/* Returns all the traffic incidents in selected suburbs */
+export const getTrafficIncidentsForSuburbs: GetTrafficIncidentsForSuburbsSignature =
+  async (suburbIds, startDate, endDate) => {
+    type WhereOpts = {
+      created: { [Op.gte]: Date; [Op.lte]?: Date };
+    };
+
+    const whereOpts: WhereOpts = {
+      created: {
+        [Op.gte]: startDate,
+      },
+    };
+    if (endDate) {
+      whereOpts.created = {
+        ...whereOpts.created,
+        [Op.lte]: endDate,
+      };
+    }
+
+    type IncidentsInRange = {
+      date: string;
+      category: string;
+      count: number;
+    };
+
+    endDate = endDate || new Date();
+    let schema = "public";
+    if (process.env.DB_SCHEMA) {
+      schema = process.env.DB_SCHEMA;
+    }
+    // WARNING: SQL INJECTION HAPPENING BELOW
+    // ONLY OK AS WE ARE CHECKING PARAMETERS IN THE API ROUTE
+    const res = await TrafficIncident.sequelize?.query(
+      `select DATE("created"), category, CAST(count(*) as integer) from 
+    (select ti.id, boundary, "trafficIncidentCategoryId", created 
+    from ${schema}."TrafficIncidents" ti, (
+      select * from ${schema}."Suburbs"
+      where id in ${listToSqlPrimList(suburbIds)} 
+    )  suburbs 
+    where
+      ST_WITHIN(ti.position, boundary)
+      and created > ? and created < ?
+    ) ti
+    inner join ${schema}."TrafficIncidentCategories" tic
+    on ti."trafficIncidentCategoryId" = tic.id
+    group by DATE("created"), category
+    order by date asc, category asc`,
+      {
+        replacements: [startDate, endDate],
+      }
+    );
+
+    const incidents = (res && (res[0] as IncidentsInRange[])) || [];
+
+    const trafficIncidentsSums: DatewiseCategorySums = {};
+    for (const incident of incidents) {
+      if (!trafficIncidentsSums[incident.date]) {
+        trafficIncidentsSums[incident.date] = {};
+      }
+      trafficIncidentsSums[incident.date][incident.category] = incident.count;
     }
 
     return trafficIncidentsSums;
