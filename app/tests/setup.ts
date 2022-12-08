@@ -26,6 +26,7 @@ beforeAll(async () => {
   process.env.DATA_FILES_PATH = "./tests/dataFiles";
   process.env.FETCH_SUBURBS = "yes";
   process.env.NOMINATIM_API_TIMEOUT = "500";
+  process.env.DB_SCHEMA = globalThis.DB_SCHEMA;
   defaultConnection = new Sequelize("root", "root", "root", {
     host: "localhost",
     dialect: "postgres",
@@ -38,12 +39,6 @@ beforeAll(async () => {
     },
   });
   await defaultConnection.dropSchema(globalThis.DB_SCHEMA, { logging: false });
-  await defaultConnection.createSchema(globalThis.DB_SCHEMA, {
-    logging: false,
-  });
-  await defaultConnection.dropSchema(globalThis.DB_SCHEMA, {
-    logging: false,
-  });
   await defaultConnection.createSchema(globalThis.DB_SCHEMA, {
     logging: false,
   });

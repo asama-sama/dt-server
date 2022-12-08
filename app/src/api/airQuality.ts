@@ -4,7 +4,6 @@ import {
   getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
-import { ResponseError } from "../customTypes/ResponseError";
 import { isArray, isValidDate, isValidNumber } from "../util/expressValidators";
 
 const router = express.Router();

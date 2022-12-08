@@ -1,5 +1,6 @@
 /// <reference types="@types/jest" />;
 import {
+  getTrafficIncidentsForSuburbs,
   getTrafficIncidentsNearPosition,
   updateIncidents,
 } from "../../src/controllers/nswTrafficIncidents";
@@ -424,6 +425,213 @@ describe("nswTrafficIncident", () => {
       expect(incidents10km).toMatchObject({
         [dateString]: {
           CAT2: 1,
+        },
+      });
+    });
+  });
+
+  describe("getTrafficIncidentsForSuburbs", () => {
+    const suburbs: Suburb[] = [];
+    let dataSource: DataSource;
+    beforeEach(async () => {
+      dataSource = await DataSource.create({
+        name: "ds1",
+      });
+
+      const s1 = await Suburb.create({
+        name: "melb cbd",
+        boundary: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [144.940559, -37.808542],
+              [144.940803, -37.82378],
+              [144.975475, -37.818765],
+              [144.970938, -37.80684],
+              [144.940559, -37.808542],
+            ],
+          ],
+        },
+      });
+      suburbs.push(s1);
+      const s2 = await Suburb.create({
+        name: "Williamstown",
+        boundary: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [144.9009, -37.845617],
+              [144.872219, -37.86094],
+              [144.903326, -37.872881],
+              [144.9009, -37.845617],
+            ],
+          ],
+        },
+      });
+      suburbs.push(s2);
+    });
+
+    test("it should correctly get an incident for a given suburb", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      const date = new Date();
+      date.setMonth(date.getMonth() - 1);
+      const res = await getTrafficIncidentsForSuburbs([suburbs[0].id], date);
+      expect(res).toMatchObject({
+        [dateToString(new Date())]: {
+          CAT1: 1,
+        },
+      });
+    });
+
+    test("it should not get an incident from outside a suburb", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      const date = new Date();
+      date.setMonth(date.getMonth() - 1);
+      const res = await getTrafficIncidentsForSuburbs([suburbs[1].id], date);
+      expect(Object.keys(res).length).toBe(0);
+    });
+
+    test("it sum incidents across suburbs", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: [144.898263, -37.864103],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      const date = new Date();
+      date.setMonth(date.getMonth() - 1);
+      const res = await getTrafficIncidentsForSuburbs(
+        [suburbs[1].id, suburbs[0].id],
+        date
+      );
+      expect(res).toMatchObject({
+        [dateToString(new Date())]: {
+          CAT1: 2,
+        },
+      });
+    });
+
+    test("it places incidents into separate categories", async () => {
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      const trafficIncidentCategory2 = await TrafficIncidentCategory.create({
+        category: "cat2",
+        subcategory: "sub2",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: new Date(),
+        trafficIncidentCategoryId: trafficIncidentCategory2.id,
+        dataSourceId: dataSource.id,
+      });
+      const date = new Date();
+      date.setMonth(date.getMonth() - 1);
+      const res = await getTrafficIncidentsForSuburbs([suburbs[0].id], date);
+      expect(res).toMatchObject({
+        [dateToString(new Date())]: {
+          CAT1: 1,
+          CAT2: 1,
+        },
+      });
+    });
+
+    test("it separates incidents into their relevant date", async () => {
+      const d1 = new Date();
+      const d2 = new Date();
+      d2.setDate(d2.getDate() - 1);
+      const trafficIncidentCategory = await TrafficIncidentCategory.create({
+        category: "cat1",
+        subcategory: "sub1",
+      });
+      await TrafficIncident.create({
+        id: 1,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: d1,
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      await TrafficIncident.create({
+        id: 2,
+        position: {
+          type: "Point",
+          coordinates: [144.962686, -37.815751],
+        },
+        created: d2,
+        trafficIncidentCategoryId: trafficIncidentCategory.id,
+        dataSourceId: dataSource.id,
+      });
+      const date = new Date();
+      date.setMonth(date.getMonth() - 1);
+      const res = await getTrafficIncidentsForSuburbs([suburbs[0].id], date);
+      expect(res).toMatchObject({
+        [dateToString(d1)]: {
+          CAT1: 1,
+        },
+        [dateToString(d2)]: {
+          CAT1: 1,
         },
       });
     });
