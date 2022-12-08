@@ -5,7 +5,7 @@ import {
   getMonthlyObservations,
 } from "../controllers/airQuality";
 import { ResponseError } from "../customTypes/ResponseError";
-import { isValidDate } from "../util/expressValidators";
+import { isArray, isValidDate, isValidNumber } from "../util/expressValidators";
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.get(
 );
 
 type GetAirQualitySiteReadingParams = {
-  airQualitySiteId: string;
+  airQualitySiteIds: string[];
   startDate: string;
   endDate?: string;
 };
@@ -45,19 +45,21 @@ router.get(
   ) => {
     try {
       const {
-        airQualitySiteId: _airQualitySiteId,
+        airQualitySiteIds: _airQualitySiteIds,
         startDate: _startDate,
         endDate: _endDate,
       } = req.query;
-      const airQualitySiteId = Number(_airQualitySiteId);
-      if (isNaN(airQualitySiteId))
-        throw new ResponseError("airQualitySiteId must be a number", 400);
+
+      const airQualitySiteIdsArray = isArray(_airQualitySiteIds);
+      const airQualitySiteIds = airQualitySiteIdsArray.map((siteId) =>
+        isValidNumber(siteId)
+      );
 
       const startDate = isValidDate(_startDate);
       let endDate: Date | undefined;
       if (_endDate) endDate = isValidDate(_endDate);
       const readings = await getAirQualitySiteReadings(
-        airQualitySiteId,
+        airQualitySiteIds,
         startDate,
         endDate
       );

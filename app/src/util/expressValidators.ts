@@ -18,3 +18,10 @@ export const isValidNumber = (number: unknown): number => {
   }
   return parsedNumber;
 };
+
+export const isArray = (array: unknown): unknown[] => {
+  if (!Array.isArray(array)) {
+    throw new ResponseError("must be an array", 400);
+  }
+  return array;
+};
