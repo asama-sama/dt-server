@@ -530,7 +530,10 @@ describe("airQuality Controller", () => {
       );
     });
     test("it should return the daily readings", async () => {
-      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date1);
+      const dailyReadings = await getAirQualitySiteReadings(
+        [sites[0].id],
+        date1
+      );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -559,7 +562,10 @@ describe("airQuality Controller", () => {
         frequency,
         AirQualityType.NO2
       );
-      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date);
+      const dailyReadings = await getAirQualitySiteReadings(
+        [sites[0].id],
+        date
+      );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -575,7 +581,7 @@ describe("airQuality Controller", () => {
 
     test("it should not include readings from  after the end date", async () => {
       const dailyReadings = await getAirQualitySiteReadings(
-        sites[0].id,
+        [sites[0].id],
         date1,
         date2
       );
@@ -604,7 +610,10 @@ describe("airQuality Controller", () => {
         frequency,
         AirQualityType.CO
       );
-      const dailyReadings = await getAirQualitySiteReadings(sites[0].id, date1);
+      const dailyReadings = await getAirQualitySiteReadings(
+        [sites[0].id],
+        date1
+      );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
           [AirQualityType.NO2]: 2,
@@ -616,6 +625,31 @@ describe("airQuality Controller", () => {
         [dateToString(date3)]: {
           [AirQualityType.NO2]: 4,
         },
+      });
+    });
+
+    test.only("it should average the readings across multiple sites", async () => {
+      const frequency = await UpdateFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
+      });
+      if (!frequency) throw new Error("UpdateFrequency not found");
+      await createReadings(
+        5,
+        2,
+        date3,
+        datasource,
+        sites[0],
+        frequency,
+        AirQualityType.NEPH
+      );
+      const dailyReadings = await getAirQualitySiteReadings(
+        [sites[0].id, sites[1].id],
+        date1
+      );
+      expect(dailyReadings).toMatchObject({
+        "2022-11-30": { NO2: 2 },
+        "2022-12-01": { NO2: 3 },
+        "2022-12-02": { NEPH: 1.5, NO2: 4 },
       });
     });
   });

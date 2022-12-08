@@ -20,7 +20,6 @@ import { dateToString } from "../util/date";
 import { getConnection } from "../db/connect";
 import { DatewiseCategorySums } from "../customTypes/calculated";
 
-
 const DAYS_TO_SEARCH = 7;
 const MONTHS_TO_SEARCH = 36;
 
@@ -267,14 +266,14 @@ export const callUpdateAirQualityReadings = async (
 };
 
 type GetDailyReadingsSignature = (
-  airQualitySiteId: number,
+  airQualitySiteIds: number[],
   startDate: Date,
   endDate?: Date
 ) => Promise<DatewiseCategorySums>;
 
 // fetch airquality readings by site and type from DB
 export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
-  airQualitySiteId,
+  airQualitySiteIds,
   startDate,
   endDate
 ) => {
@@ -285,14 +284,14 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
       [Op.gte]: Date;
       [Op.lte]?: Date;
     };
-    airQualitySiteId: number;
+    airQualitySiteId: number[];
   };
 
   const whereOpts: WhereOpts = {
     date: {
       [Op.gte]: startDate,
     },
-    airQualitySiteId,
+    airQualitySiteId: airQualitySiteIds,
   };
 
   if (endDate) {
@@ -321,7 +320,6 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
     }
     dailyAirQualityReadings[dateString][type] = value;
   });
-
   return dailyAirQualityReadings;
 };
 

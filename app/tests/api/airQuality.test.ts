@@ -19,25 +19,31 @@ describe("airQuality routes", () => {
   describe("get", () => {
     test("it should call getAirQualitySiteReadings", async () => {
       const res = await request(app).get(
-        "/airquality?airQualitySiteId=1&startDate=2022-08-01&endDate=2022-08-02"
+        "/airquality?airQualitySiteIds[]=1&startDate=2022-08-01&endDate=2022-08-02"
       );
       expect(res.status).toBe(200);
       expect(getAirQualitySiteReadingsMock).toHaveBeenCalledWith(
-        1,
+        [1],
         new Date("2022-08-01"),
         new Date("2022-08-02")
       );
     });
 
-    test("it should error if airQualitySiteId is invalid", async () => {
-      const res = await request(app).get("/airquality?airQualitySiteId=aaa");
+    test("it should error if airQualitySiteIds is invalid", async () => {
+      const res = await request(app).get("/airquality?airQualitySiteIds[]=aaa");
       expect(res.status).toBe(400);
-      expect(res.text).toBe("airQualitySiteId must be a number");
+      expect(res.text).toBe("must be a number");
+    });
+
+    test("it should error if airQualitySiteIds is not an array", async () => {
+      const res = await request(app).get("/airquality?airQualitySiteIds=aaa");
+      expect(res.status).toBe(400);
+      expect(res.text).toBe("must be an array");
     });
 
     test("it should error if startDate is invalid", async () => {
       const res = await request(app).get(
-        "/airquality?airQualitySiteId=1&startDate=a"
+        "/airquality?airQualitySiteIds[]=1&startDate=a"
       );
       expect(res.status).toBe(400);
       expect(res.text).toBe("date must be valid");
@@ -45,7 +51,7 @@ describe("airQuality routes", () => {
 
     test("it should error if endDate is invalid", async () => {
       const res = await request(app).get(
-        "/airquality?airQualitySiteId=1&startDate=2022-08-01&endDate=a"
+        "/airquality?airQualitySiteIds[]=1&startDate=2022-08-01&endDate=a"
       );
       expect(res.status).toBe(400);
       expect(res.text).toBe("date must be valid");
