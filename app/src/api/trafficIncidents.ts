@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
+import { TRAFFIC_SEARCH_LOCATIONS } from "../const/trafficIncidents";
 import { getTrafficIncidentsForSuburbs } from "../controllers/nswTrafficIncidents";
 import { isArray, isValidDate, isValidNumber } from "../util/expressValidators";
 
@@ -44,5 +45,9 @@ router.get(
     }
   }
 );
+
+router.get("/searchparams", async (req: Request, res: Response) => {
+  res.status(200).send(TRAFFIC_SEARCH_LOCATIONS);
+});
 
 export { router as trafficIncidentRoutes };
