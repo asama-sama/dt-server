@@ -4,7 +4,7 @@ import {
   getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
-import { isArray, isValidDate, isValidNumber } from "../util/expressValidators";
+import { isArray, isValidDate, isValidNumber } from "../util/validators";
 
 const router = express.Router();
 
@@ -33,6 +33,7 @@ type GetAirQualitySiteReadingParams = {
   airQualitySiteIds: string[];
   startDate: string;
   endDate?: string;
+  aggregate: string;
 };
 
 router.get(
@@ -47,6 +48,7 @@ router.get(
         airQualitySiteIds: _airQualitySiteIds,
         startDate: _startDate,
         endDate: _endDate,
+        aggregate: _aggregate,
       } = req.query;
 
       const airQualitySiteIdsArray = isArray(_airQualitySiteIds);
@@ -56,11 +58,26 @@ router.get(
 
       const startDate = isValidDate(_startDate);
       let endDate: Date | undefined;
-      if (_endDate) endDate = isValidDate(_endDate);
+      if (_endDate) {
+        endDate = isValidDate(_endDate);
+      } else {
+        endDate = new Date();
+      }
+
+      if (
+        _aggregate !== "day" &&
+        _aggregate !== "month" &&
+        _aggregate !== "year"
+      ) {
+        throw new Error("aggregate must be one of day/month/year");
+      }
+      const aggregate = _aggregate;
+
       const readings = await getAirQualitySiteReadings(
         airQualitySiteIds,
         startDate,
-        endDate
+        endDate,
+        aggregate
       );
       res.status(200).send(readings);
     } catch (e) {

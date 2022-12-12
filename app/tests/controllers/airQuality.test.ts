@@ -532,7 +532,9 @@ describe("airQuality Controller", () => {
     test("it should return the daily readings", async () => {
       const dailyReadings = await getAirQualitySiteReadings(
         [sites[0].id],
-        date1
+        date1,
+        new Date(),
+        "day"
       );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
@@ -564,7 +566,9 @@ describe("airQuality Controller", () => {
       );
       const dailyReadings = await getAirQualitySiteReadings(
         [sites[0].id],
-        date
+        date,
+        new Date(),
+        "day"
       );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
@@ -583,7 +587,8 @@ describe("airQuality Controller", () => {
       const dailyReadings = await getAirQualitySiteReadings(
         [sites[0].id],
         date1,
-        date2
+        date2,
+        "day"
       );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
@@ -612,7 +617,9 @@ describe("airQuality Controller", () => {
       );
       const dailyReadings = await getAirQualitySiteReadings(
         [sites[0].id],
-        date1
+        date1,
+        new Date(),
+        "day"
       );
       expect(dailyReadings).toMatchObject({
         [dateToString(date1)]: {
@@ -628,7 +635,7 @@ describe("airQuality Controller", () => {
       });
     });
 
-    test.only("it should average the readings across multiple sites", async () => {
+    test("it should average the readings across multiple sites", async () => {
       const frequency = await UpdateFrequency.findOne({
         where: { frequency: Frequency.DAILY },
       });
@@ -644,12 +651,50 @@ describe("airQuality Controller", () => {
       );
       const dailyReadings = await getAirQualitySiteReadings(
         [sites[0].id, sites[1].id],
-        date1
+        date1,
+        new Date(),
+        "day"
       );
       expect(dailyReadings).toMatchObject({
-        "2022-11-30": { NO2: 2 },
-        "2022-12-01": { NO2: 3 },
-        "2022-12-02": { NEPH: 1.5, NO2: 4 },
+        "2022-12-01": { NO2: 2 },
+        "2022-12-02": { NO2: 3 },
+        "2022-12-03": { NEPH: 1.5, NO2: 4 },
+      });
+    });
+
+    test("it should aggregate monthly", async () => {
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      lastMonth.setDate(1);
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      const frequency = await UpdateFrequency.findOne({
+        where: { frequency: Frequency.DAILY },
+      });
+      if (!frequency) throw new Error("No frequency");
+      await createReadings(
+        20,
+        2,
+        lastMonth,
+        datasource,
+        sites[0],
+        frequency,
+        AirQualityType.CO
+      );
+
+      const dailyReadings = await getAirQualitySiteReadings(
+        [sites[0].id],
+        lastMonth,
+        new Date(),
+        "month"
+      );
+      expect(dailyReadings).toMatchObject({
+        [dateToString(lastMonth)]: {
+          [AirQualityType.CO]: 2,
+        },
+        [dateToString(startOfMonth)]: {
+          [AirQualityType.NO2]: expect.closeTo(2.888),
+        },
       });
     });
   });
