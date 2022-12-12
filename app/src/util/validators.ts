@@ -1,4 +1,5 @@
 import { ResponseError } from "../customTypes/ResponseError";
+import { TemporalAggregate } from "../customTypes/suburb";
 
 export const isValidDate = (date: unknown): Date => {
   if (typeof date !== "string") {
@@ -24,4 +25,16 @@ export const isArray = (array: unknown): unknown[] => {
     throw new ResponseError("must be an array", 400);
   }
   return array;
+};
+
+export const isValidTemporalAggregate = (
+  aggregate: unknown
+): TemporalAggregate => {
+  if (aggregate !== "day" && aggregate !== "month" && aggregate !== "year") {
+    throw new ResponseError(
+      "Aggregate time must be one of day/month/year",
+      400
+    );
+  }
+  return aggregate;
 };

@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from "express";
 import { getAll, getByPosition, getSuburbsById } from "../controllers/suburbs";
 import { ResponseError } from "../customTypes/ResponseError";
 import { Suburb } from "../db/models/Suburb";
-import { isValidNumber } from "../util/expressValidators";
+import { isValidNumber } from "../util/validators";
 
 const router = express.Router();
 

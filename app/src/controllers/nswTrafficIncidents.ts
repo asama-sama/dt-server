@@ -19,6 +19,9 @@ import { LatLng } from "../customTypes/geometry";
 import { MONTHS_TO_SEARCH } from "../const/trafficIncidents";
 import { logger } from "../util/logger";
 import { listToSqlPrimList } from "../util/sql";
+import { TemporalAggregate } from "../customTypes/suburb";
+import { isValidTemporalAggregate } from "../util/validators";
+import { dateToString } from "../util/date";
 
 type GetIncidents = (initialise?: boolean) => Promise<void>;
 
@@ -263,12 +266,13 @@ export const getTrafficIncidentsNearPosition: GetTrafficIncidentsNearPositionSig
 type GetTrafficIncidentsForSuburbsSignature = (
   suburbIds: number[],
   startDate: Date,
-  endDate?: Date
+  endDate: Date,
+  aggregate: TemporalAggregate
 ) => Promise<DatewiseCategorySums>;
 
 /* Returns all the traffic incidents in selected suburbs */
 export const getTrafficIncidentsForSuburbs: GetTrafficIncidentsForSuburbsSignature =
-  async (suburbIds, startDate, endDate) => {
+  async (suburbIds, startDate, endDate, aggregate) => {
     type WhereOpts = {
       created: { [Op.gte]: Date; [Op.lte]?: Date };
     };
@@ -286,7 +290,7 @@ export const getTrafficIncidentsForSuburbs: GetTrafficIncidentsForSuburbsSignatu
     }
 
     type IncidentsInRange = {
-      date: string;
+      dagg: Date;
       category: string;
       count: number;
     };
@@ -296,10 +300,11 @@ export const getTrafficIncidentsForSuburbs: GetTrafficIncidentsForSuburbsSignatu
     if (process.env.DB_SCHEMA) {
       schema = process.env.DB_SCHEMA;
     }
+    isValidTemporalAggregate(aggregate);
     // WARNING: SQL INJECTION HAPPENING BELOW
     // ONLY OK AS WE ARE CHECKING PARAMETERS IN THE API ROUTE
     const res = await TrafficIncident.sequelize?.query(
-      `select DATE("created"), category, CAST(count(*) as integer) from 
+      `select date_trunc('${aggregate}', created) dagg, category, CAST(count(*) as integer) from 
     (select ti.id, boundary, "trafficIncidentCategoryId", created 
     from ${schema}."TrafficIncidents" ti, (
       select * from ${schema}."Suburbs"
@@ -311,14 +316,18 @@ export const getTrafficIncidentsForSuburbs: GetTrafficIncidentsForSuburbsSignatu
     ) ti
     inner join ${schema}."TrafficIncidentCategories" tic
     on ti."trafficIncidentCategoryId" = tic.id
-    group by DATE("created"), category
-    order by date asc, category asc`,
+    group by dagg, category
+    order by dagg asc, category asc`,
       {
         replacements: [startDate, endDate],
       }
     );
 
-    const incidents = (res && (res[0] as IncidentsInRange[])) || [];
+    const _incidents = (res && (res[0] as IncidentsInRange[])) || [];
+    const incidents = _incidents.map((incident) => ({
+      ...incident,
+      date: dateToString(incident.dagg),
+    }));
 
     const trafficIncidentsSums: DatewiseCategorySums = {};
     for (const incident of incidents) {

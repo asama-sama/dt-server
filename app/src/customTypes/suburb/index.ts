@@ -10,3 +10,5 @@ export type SuburbJson = {
     };
   };
 };
+
+export type TemporalAggregate = "day" | "month" | "year";
