@@ -14,7 +14,7 @@ import { getTrafficIncidentCategory } from "../util/trafficIncidents";
 import { Loader } from "../util/loader";
 import { TrafficIncidentSuburb } from "../db/models/TrafficIncidentSuburb";
 import { Op } from "sequelize";
-import { DatewiseCategorySums } from "../customTypes/calculated";
+import { DatewiseCategorySums } from "../customTypes/api";
 import { LatLng } from "../customTypes/geometry";
 import { MONTHS_TO_SEARCH } from "../const/trafficIncidents";
 import { logger } from "../util/logger";
