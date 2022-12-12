@@ -1,7 +1,8 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getSuburbsById } from "../controllers/suburbs";
+import { getAll, getByPosition, getSuburbsById } from "../controllers/suburbs";
 import { ResponseError } from "../customTypes/ResponseError";
 import { Suburb } from "../db/models/Suburb";
+import { isValidNumber } from "../util/validators";
 
 const router = express.Router();
 
@@ -34,6 +35,48 @@ router.get(
       }
       const suburbs: Suburb[] = await getSuburbsById(suburbIds);
 
+      response.status(200).send(suburbs);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
+  "/all",
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const suburbs = await getAll();
+      response.status(200).send(suburbs);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+type SearchParams = {
+  latitude: number;
+  longitude: number;
+  radius: number; // receive in km
+};
+router.get(
+  "/byposition",
+  async (
+    request: Request<null, null, SearchParams>,
+    response: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const {
+        latitude: _latitude,
+        longitude: _longitude,
+        radius: _radius,
+      } = request.query;
+      const latitude = isValidNumber(_latitude);
+      const longitude = isValidNumber(_longitude);
+      const radius = isValidNumber(_radius);
+      const suburbs = await getByPosition(longitude, latitude, radius * 1000);
+      console.log(suburbs.length);
       response.status(200).send(suburbs);
     } catch (e) {
       next(e);

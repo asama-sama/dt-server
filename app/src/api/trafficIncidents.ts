@@ -1,15 +1,21 @@
 import express, { NextFunction, Request, Response } from "express";
-import { getTrafficIncidentsNearPosition } from "../controllers/nswTrafficIncidents";
-import { isValidDate, isValidNumber } from "../util/expressValidators";
+import { TRAFFIC_SEARCH_LOCATIONS } from "../const/trafficIncidents";
+import { getTrafficIncidentsForSuburbs } from "../controllers/nswTrafficIncidents";
+import { TemporalAggregate } from "../customTypes/suburb";
+import {
+  isArray,
+  isValidDate,
+  isValidNumber,
+  isValidTemporalAggregate,
+} from "../util/validators";
 
 const router = express.Router();
 
 type GetTrafficIncidentParams = {
-  lat: string;
-  lng: string;
+  suburbIds: number[];
   startDate: string;
   endDate: string;
-  radius: string;
+  aggregate: TemporalAggregate;
 };
 
 router.get(
@@ -21,28 +27,30 @@ router.get(
   ) => {
     try {
       const {
-        lat: _lat,
-        lng: _lng,
         startDate: _startDate,
         endDate: _endDate,
-        radius: _radius,
+        suburbIds: _suburbIds,
+        aggregate: _aggregate,
       } = request.query;
 
-      const lat = isValidNumber(_lat);
-      const lng = isValidNumber(_lng);
-      const radius = isValidNumber(_radius);
+      const suburbIdArray = isArray(_suburbIds);
+      const suburbIds = suburbIdArray.map((id) => isValidNumber(id));
 
       const startDate = isValidDate(_startDate);
+      const aggregate = isValidTemporalAggregate(_aggregate);
+
       let endDate: Date | undefined;
       if (_endDate) {
         endDate = isValidDate(_endDate);
+      } else {
+        endDate = new Date();
       }
 
-      const incidentCounts = await getTrafficIncidentsNearPosition(
-        { lat, lng },
-        radius,
+      const incidentCounts = await getTrafficIncidentsForSuburbs(
+        suburbIds,
         startDate,
-        endDate
+        endDate,
+        aggregate
       );
       return response.status(200).send(incidentCounts);
     } catch (e) {
@@ -50,5 +58,9 @@ router.get(
     }
   }
 );
+
+router.get("/searchparams", async (req: Request, res: Response) => {
+  res.status(200).send(TRAFFIC_SEARCH_LOCATIONS);
+});
 
 export { router as trafficIncidentRoutes };

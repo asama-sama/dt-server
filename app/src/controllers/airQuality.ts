@@ -19,7 +19,8 @@ import { JobInitialisorOptions } from "../initialise/jobs";
 import { dateToString } from "../util/date";
 import { getConnection } from "../db/connect";
 import { DatewiseCategorySums } from "../customTypes/calculated";
-
+import { TemporalAggregate } from "../customTypes/suburb";
+import { isValidTemporalAggregate } from "../util/validators";
 
 const DAYS_TO_SEARCH = 7;
 const MONTHS_TO_SEARCH = 36;
@@ -267,16 +268,18 @@ export const callUpdateAirQualityReadings = async (
 };
 
 type GetDailyReadingsSignature = (
-  airQualitySiteId: number,
+  airQualitySiteIds: number[],
   startDate: Date,
-  endDate?: Date
+  endDate: Date,
+  aggregateTime: TemporalAggregate
 ) => Promise<DatewiseCategorySums>;
 
 // fetch airquality readings by site and type from DB
 export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
-  airQualitySiteId,
+  airQualitySiteIds,
   startDate,
-  endDate
+  endDate,
+  aggregateTime
 ) => {
   const sequelize = getConnection();
 
@@ -285,35 +288,42 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
       [Op.gte]: Date;
       [Op.lte]?: Date;
     };
-    airQualitySiteId: number;
+    airQualitySiteId: number[];
   };
 
   const whereOpts: WhereOpts = {
     date: {
       [Op.gte]: startDate,
+      [Op.lte]: endDate,
     },
-    airQualitySiteId,
+    airQualitySiteId: airQualitySiteIds,
   };
 
-  if (endDate) {
-    whereOpts.date = {
-      ...whereOpts.date,
-      [Op.lte]: endDate,
-    };
-  }
+  isValidTemporalAggregate(aggregateTime);
 
-  const readings = await AirQualityReading.findAll({
+  type ReadingsGroupedByDate = {
+    dagg: Date;
+    type: string;
+    value: number;
+  };
+
+  const readings = (await AirQualityReading.findAll({
     attributes: [
-      [sequelize.literal(`DATE("date")`), "date"],
+      [sequelize.literal(`date_trunc('${aggregateTime}', date)`), "dagg"],
       "type",
       [sequelize.fn("AVG", sequelize.col("value")), "value"],
     ],
     where: whereOpts,
-    group: ["date", "type"],
-    order: [["date", "ASC"]],
-  });
+    group: ["dagg", "type"],
+    order: [["dagg", "ASC"]],
+    raw: true,
+  })) as unknown as ReadingsGroupedByDate[];
+  const readingsMapped = readings.map((reading) => ({
+    ...reading,
+    date: dateToString(reading.dagg),
+  }));
   const dailyAirQualityReadings: DatewiseCategorySums = {};
-  readings.forEach(({ date, type, value }) => {
+  readingsMapped.forEach(({ date, type, value }) => {
     const dateString = String(date);
     if (!value) return;
     if (!dailyAirQualityReadings[dateString]) {
@@ -321,7 +331,6 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
     }
     dailyAirQualityReadings[dateString][type] = value;
   });
-
   return dailyAirQualityReadings;
 };
 
