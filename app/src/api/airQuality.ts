@@ -4,6 +4,7 @@ import {
   getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
+import { GeoData } from "../customTypes/api";
 import { isArray, isValidDate, isValidNumber } from "../util/validators";
 
 const router = express.Router();
@@ -86,9 +87,10 @@ router.get(
   }
 );
 
+// initial data required for fetching air quality site data
 router.get(
-  "/sites",
-  async (req: Request, res: Response, next: NextFunction) => {
+  "/pre",
+  async (req: Request, res: Response<GeoData[]>, next: NextFunction) => {
     try {
       const sites = await getAirQualitySites();
       return res.status(200).send(sites);
