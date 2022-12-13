@@ -90,20 +90,27 @@ init_figure = Figure()
 datasets_Dict = {}
 
 
+## Sydney CBD small
+## 151.29159091554948 -33.8617044816662, 151.19335629672247 -33.86521168936821, 151.20384737251953 -33.896770074812736, 151.2979945592178 -33.890436711537966, 151.29159091554948 -33.8617044816662
+## 'POLYGON(( 151.29159091554948 -33.8617044816662, 151.19335629672247 -33.86521168936821, 151.20384737251953 -33.896770074812736, 151.2979945592178 -33.890436711537966, 151.29159091554948 -33.8617044816662 ))'
+
+## large polygon
+## 'POLYGON(( 150.75389134450774 -33.59735137171584, 151.34643938711528 -33.766199181893704, 151.30784907341607 -34.06681311892785, 150.63189615926498 -34.00594964988948, 150.75389134450774 -33.59735137171584 ))'
+
 app = Flask(__name__)
 
 
 ######### ************ Simple Correlation ************** ##############
 @app.route('/simple_corr/')
 def simple_corr():
-    dsName1, dsName2 = input_params_simple()
-    df_Scores = startSimpleCorrelation(dsName1, dsName2)
+    dsName1, dsName2, sDate, eDate, spatialRange = input_params_simple()
+    df_Scores = startSimpleCorrelation(dsName1, dsName2, sDate, eDate, spatialRange)
     
-    #print("Results: ",results[0:10], file=sys.stderr)
-    return df_Scores.to_json(orient = 'columns')
+    print(df_Scores[['COLUMN1', 'COLUMN2', 'Score']].to_string(), file=sys.stderr)
+    return df_Scores.to_json(orient = 'records')
 
 def input_params_simple():
-    return request.args.get('ds1'), request.args.get('ds2')
+    return request.args.get('ds1'), request.args.get('ds2'), request.args.get('from'), request.args.get('to'), request.args.get('spatial')
   
 
 ########################################################################
@@ -149,18 +156,18 @@ def input_params_spatial():
 
 
 
-def startSimpleCorrelation(dsName1, dsName2):
+def startSimpleCorrelation(dsName1, dsName2, sDate, eDate, spatialRange):
 
     num_Buckets = 10
     temGranularities = ['daily', 'monthly', 'yearly']
     #temGranularities = ['monthly']
 
-    datasets_Dict = {'pollution': ['daily', 'monthly', 'yearly'], 'weather': ['daily', 'monthly', 'yearly'], 'trafficIncidents': ['daily', 'monthly', 'yearly'], 'crimes': ['monthly', 'yearly'] , 'trafficVolume': ['daily', 'monthly', 'yearly'], 'emission': ['yearly']}
+    datasets_Dict = {'pollution': ['daily', 'monthly', 'yearly'], 'weather': ['daily', 'monthly', 'yearly'], 'trafficIncidents': ['daily', 'monthly', 'yearly'], 'crimes': ['monthly', 'yearly'] , 'trafficVolume': ['daily', 'monthly', 'yearly'], 'emissions': ['yearly']}
     Score_DF = pd.DataFrame(columns = ['COLUMN1', 'COLUMN2', 'CORRELATION', 'Pvalue', '1-Pvalue', 'Score', 'numRows1', 'numRows2', 'uniqVals1', 'uniqVal12', 'num_Buckets', 'tGranularity' , 'DatasetPair', 'comparisonType']) 
     
     for tGranularity in temGranularities:
         #print(tGranularity)               
-        ScoreList = mainCompDBPair(dsName1, dsName2, tGranularity, num_Buckets, datasets_Dict) # Cross DBs correlation computation
+        ScoreList = mainCompDBPair(dsName1, dsName2, sDate, eDate, spatialRange, tGranularity, num_Buckets, datasets_Dict) # Cross DBs correlation computation
         if len(ScoreList) != 0:
             for item in ScoreList:
                 #print(item)             
@@ -174,7 +181,7 @@ def startSimpleCorrelation(dsName1, dsName2):
    
     return Score_DF
 
-def mainCompDBPair(dsName1, dsName2, tGranularity, num_Buckets, datasets_Dict):
+def mainCompDBPair(dsName1, dsName2, sDate, eDate, spatialRange, tGranularity, num_Buckets, datasets_Dict):
 
     dColsDFsList_d01 = []
     dColsDFsList_d02 = []
@@ -189,10 +196,10 @@ def mainCompDBPair(dsName1, dsName2, tGranularity, num_Buckets, datasets_Dict):
     
     if tGranularity in datasets_Dict[dsName1] and tGranularity in datasets_Dict[dsName2]:
         #print("Same temporal granularity Found!...")               
-        dColsDFsList_d01 = FetchData(dsName1, tGranularity)  # [colName, df_, tGranularity, dsName]
+        dColsDFsList_d01 = FetchData(dsName1, sDate, eDate, spatialRange, tGranularity)  # [colName, df_, tGranularity, dsName]
         
         if dsName1 != dsName2:
-            dColsDFsList_d02 = FetchData(dsName2, tGranularity)            
+            dColsDFsList_d02 = FetchData(dsName2, sDate, eDate, spatialRange, tGranularity)            
             return crossDBCorrelation_Score(dColsDFsList_d01, dColsDFsList_d02, on_what, num_Buckets, 'Pearson', tGranularity, dsName1, dsName2) # will run for db1 and db2 if they are different                    
         else:
             return sameDBCorrelation_Score(dColsDFsList_d01, on_what, num_Buckets, 'Pearson', tGranularity, dsName1) # will run for same DB
@@ -312,8 +319,17 @@ def join_DFs(colInfo_01, colInfo_02, on_what):
 
 
 
-def FetchData(dsName, tGranularity):
-
+def FetchData(dsName, sDate, eDate, spatialRange, tGranularity):
+    ## sample parameters
+    '''
+    sDate='2019-11-30'
+    eDate='2021-11-30'
+    item='CO'
+    spatialRange = 'POLYGON(( 151.29159091554948 -33.8617044816662, 151.19335629672247 -33.86521168936821, 151.20384737251953 -33.896770074812736, 151.2979945592178 -33.890436711537966, 151.29159091554948 -33.8617044816662 ))'
+    
+    '''
+    ## polygon format --> spatialRange = 'POLYGON(( 151.29159091554948 -33.8617044816662, 151.19335629672247 -33.86521168936821, 151.20384737251953 -33.896770074812736, 151.2979945592178 -33.890436711537966, 151.29159091554948 -33.8617044816662 ))'
+    print("start dte: ", sDate, file=sys.stderr)
     dCols_df_lst = []
     np.set_printoptions(threshold=sys.maxsize)
     conn = psycopg2.connect(database="root", user='root', password='root', host='127.0.0.1', port= '5433')
@@ -330,23 +346,35 @@ def FetchData(dsName, tGranularity):
             col_List.append(row[0]) # getting unique categories
         #col_List = ['CO', 'SO2', 'NO2', 'OZONE']
         for item in col_List:
-            tuple1 = [item]
+            tuple1 = [item, sDate, eDate, spatialRange]
             query = ''
 
             if tGranularity == 'daily':
                 query = sql.SQL("""select date, avg(value) as {field} from 
-                    (select value, Date(date) as date from "AirQualityReadings" ar inner join "AirQualitySites" bs
-                    on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by date""").format(field=sql.Identifier(item))               
+                    (select value, Date(date) as date from "AirQualityReadings" ar 
+                    inner join "AirQualitySites" bs on ar."airQualitySiteId" = bs.id 
+                    inner join "Suburbs" suburbs on suburbs.id = bs."suburbId" 
+                    where type=%s and date(date) between date(%s) and date(%s) 
+                    and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as Temps 
+                    group by date""").format(field=sql.Identifier(item))               
 
             elif tGranularity == 'monthly':
                 query = sql.SQL("""select year, month, avg(value) {field} from 
-                (select value, EXTRACT(year FROM date) AS year,  EXTRACT(month FROM date) AS month from "AirQualityReadings" ar inner join "AirQualitySites" bs
-                on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by year, month order by year, month""").format(field=sql.Identifier(item))
+                (select value, EXTRACT(year FROM date) AS year,  EXTRACT(month FROM date) AS month from "AirQualityReadings" ar 
+                inner join "AirQualitySites" bs on ar."airQualitySiteId" = bs.id 
+                inner join "Suburbs" suburbs on suburbs.id = bs."suburbId"
+                where type=%s and date(date) between date(%s) and date(%s) 
+                and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as Temps 
+                group by year, month order by year, month""").format(field=sql.Identifier(item))
 
             elif tGranularity == 'yearly':
                 query = sql.SQL("""select year, avg(value) {field} from 
-                (select value, EXTRACT(year FROM date) AS year from "AirQualityReadings" ar inner join "AirQualitySites" bs
-                on ar."airQualitySiteId" = bs.id where type=%s) as Temps group by year order by year""").format(field=sql.Identifier(item))
+                (select value, EXTRACT(year FROM date) AS year from "AirQualityReadings" ar 
+                inner join "AirQualitySites" bs on ar."airQualitySiteId" = bs.id 
+                inner join "Suburbs" suburbs on suburbs.id = bs."suburbId"
+                where type=%s and date(date) between date(%s) and date(%s) 
+                and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as Temps 
+                group by year order by year""").format(field=sql.Identifier(item))
 
             cursor.execute(query, tuple1)
             column_names = [desc[0] for desc in cursor.description] # getting a list of column names
@@ -361,30 +389,43 @@ def FetchData(dsName, tGranularity):
     
     elif dsName == 'weather':
         query = ''
+        tuple1 = [sDate, eDate, spatialRange]
         if tGranularity == 'daily':
             query = """select date, min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
             avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
             (select "bomStationId", Date(time) as date, "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
             pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
-            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by date order by date"""
+            from "BomReadings" br 
+            inner join "BomStations" bs on br."bomStationId" = bs.id 
+            inner join "Suburbs" suburbs on suburbs.id = bs."suburbId"
+            where date(time) between date(%s) and date(%s) 
+            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as temps group by date order by date"""
         
         elif tGranularity == 'monthly':
             query = """select  year, month,  min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
             avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
             (select "bomStationId", EXTRACT(year FROM time) AS year,  EXTRACT(month FROM time) AS month, "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
             pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
-            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by year, month order by year, month"""
+            from "BomReadings" br 
+            inner join "BomStations" bs on br."bomStationId" = bs.id 
+            inner join "Suburbs" suburbs on suburbs.id = bs."suburbId"
+            where date(time) between date(%s) and date(%s) 
+            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as temps group by year, month order by year, month"""
 
         elif tGranularity == 'yearly':
             query = """select  year, min(temp) as min_temp, max(temp) as max_temp, avg(temp) as avg_temp, avg(clouds) as avg_clouds_amnt, max(gust) as max_wind_gust_kmh, 
             avg(pressure) as avg_pressure, max(nullif(rainfall, 'NaN')) as total_rainfall, avg(humidity) as avg_humidity, avg(windspd) as avg_windspeed_kmh from
             (select "bomStationId", EXTRACT(year FROM time) AS year,  "airTemp_c" as temp, cloud_oktas as clouds, gust_kmh as gust, 
             pressure_hpa as pressure, "rainSince9am_mm" as rainfall, "relHumidity_perc" as humidity, "windSpd_kmh" as windspd
-            from "BomReadings" br inner join "BomStations" bs on br."bomStationId" = bs.id) as temps group by year order by year"""
+            from "BomReadings" br 
+            inner join "BomStations" bs on br."bomStationId" = bs.id 
+            inner join "Suburbs" suburbs on suburbs.id = bs."suburbId"
+            where date(time) between date(%s) and date(%s) 
+            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)) as temps group by year order by year"""
 
 
 
-        cursor.execute(query)
+        cursor.execute(query, tuple1)
         column_names = [desc[0] for desc in cursor.description]
         #print("Weather Cols: ", column_names)
         result = cursor.fetchall()
@@ -421,22 +462,31 @@ def FetchData(dsName, tGranularity):
             if str(cat) == 'None':
                 continue
             #print(str(cat))
-            tuple1 = [str(cat)]
+            tuple1 = [str(cat), sDate, eDate, spatialRange]
 
             if tGranularity == 'daily':
                 query = sql.SQL("""select created::date as date, count(1) as {field} from "TrafficIncidentCategories" M 
                         inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
-                        where M.category=%s group by date order by date""").format(field=sql.Identifier(str(cat)))              
+                        inner join "TrafficIncidentSuburbs" tis on s.id = tis."trafficIncidentId"
+                        inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                        where M.category=%s and date(created) between date(%s) and date(%s) 
+                        and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by date order by date""").format(field=sql.Identifier(str(cat)))              
 
             elif tGranularity == 'monthly':
                 query = sql.SQL("""select EXTRACT(year FROM created) AS year,  EXTRACT(month FROM created) AS month, count(1) as {field} from "TrafficIncidentCategories" M 
                         inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
-                        where M.category=%s group by year, month order by year, month""").format(field=sql.Identifier(str(cat)))
+                        inner join "TrafficIncidentSuburbs" tis on s.id = tis."trafficIncidentId"
+                        inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                        where M.category=%s and date(created) between date(%s) and date(%s) 
+                        and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year, month order by year, month""").format(field=sql.Identifier(str(cat)))
 
             elif tGranularity == 'yearly':
                 query = sql.SQL("""select EXTRACT(year FROM created) AS year, count(1) as {field} from "TrafficIncidentCategories" M 
                         inner join "TrafficIncidents" s on M.id = s."trafficIncidentCategoryId"
-                        where M.category=%s group by year order by year""").format(field=sql.Identifier(str(cat)))
+                        inner join "TrafficIncidentSuburbs" tis on s.id = tis."trafficIncidentId"
+                        inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                        where M.category=%s and date(created) between date(%s) and date(%s) 
+                        and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year""").format(field=sql.Identifier(str(cat)))
 
             cursor.execute(query, tuple1)
             column_names = [desc[0] for desc in cursor.description] # getting a list of column names
@@ -450,21 +500,34 @@ def FetchData(dsName, tGranularity):
         # For aggregate
         query_agg = ''
         colName = ''
+        tuple1 = [sDate, eDate, spatialRange]
         if tGranularity == 'daily':
-            query_agg = """select created::date as date, count(1) as "totalTIncidentsDaily" from "TrafficIncidents" group by date order by date"""             
+            query_agg = """select created::date as date, count(1) as "totalTIncidentsDaily" from "TrafficIncidents" t
+                            inner join "TrafficIncidentSuburbs" tis on t.id = tis."trafficIncidentId"
+                            inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                            where date(created) between date(%s) and date(%s) 
+                            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by date order by date"""             
             colName = 'totalTIncidentsDaily'
         
         elif tGranularity == 'monthly':
             query_agg = """select EXTRACT(year FROM created) AS year,  EXTRACT(month FROM created) AS month, count(1) as "totalTIncidentsMonthly" 
-                        from "TrafficIncidents" group by year, month order by year, month"""
+                            from "TrafficIncidents" t 
+                            inner join "TrafficIncidentSuburbs" tis on t.id = tis."trafficIncidentId"
+                            inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                            where date(created) between date(%s) and date(%s) 
+                            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year, month order by year, month"""
             colName = 'totalTIncidentsMonthly'
         
         elif tGranularity == 'yearly':
             query_agg = """select EXTRACT(year FROM created) AS year, count(1) as "totalTIncidentsAnnually" 
-                    from "TrafficIncidents" group by year order by year"""
+                            from "TrafficIncidents" t
+                            inner join "TrafficIncidentSuburbs" tis on t.id = tis."trafficIncidentId"
+                            inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
+                            wheredate(created) between date(%s) and date(%s) 
+                            and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year"""
             colName = 'totalTIncidentsAnnually'
 
-        cursor.execute(query_agg)
+        cursor.execute(query_agg, tuple1)
         column_names = [desc[0] for desc in cursor.description] # getting a list of column names
         #print(column_names)
         result = cursor.fetchall()
@@ -478,14 +541,19 @@ def FetchData(dsName, tGranularity):
     elif dsName == 'crimes':
         query = ''
         colName = ''
+        tuple1 = [sDate, eDate, spatialRange]
         if tGranularity == 'monthly':
-            query = """select year, month, sum(value) as "totalCrimesMonthly" from "CrimeIncidents" group by year, month order by year, month"""            
+            query = """select year, month, sum(value) as "totalCrimesMonthly" from "CrimeIncidents" ci inner join "Suburbs" suburbs 
+                    on ci."suburbId" = suburbs.id where year between EXTRACT(year FROM date(%s)) and EXTRACT(year FROM date(%s)) and 
+                    ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year, month order by year, month"""            
             colName = 'totalCrimesMonthly'
         elif tGranularity == 'yearly':  
-            query = """select year, sum(value) as "totalCrimesAnnually" from "CrimeIncidents" group by year order by year""" 
+            query = """select year, sum(value) as "totalCrimesAnnually" from "CrimeIncidents" ci inner join "Suburbs" suburbs 
+                    on ci."suburbId" = suburbs.id where year between EXTRACT(year FROM date(%s)) and EXTRACT(year FROM date(%s)) and 
+                    ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year""" 
             colName = 'totalCrimesAnnually'
 
-        cursor.execute(query)
+        cursor.execute(query, tuple1)
         column_names = [desc[0] for desc in cursor.description] # getting a list of column names
         #print(column_names)
         result = cursor.fetchall()
@@ -498,17 +566,31 @@ def FetchData(dsName, tGranularity):
     elif dsName == 'trafficVolume':
         query = ''
         colName = ''
+        tuple1 = [sDate, eDate, spatialRange]
         if tGranularity == 'daily':
-            query = """select date, sum(value) as "trafficVolDaily" from "TrafficVolumeReadings" group by date order by date"""           
+            query = """select date, sum(value) as "trafficVolDaily" from "TrafficVolumeReadings" tr 
+                        inner join "TrafficVolumeStations" tvs on tr."trafficVolumeStationId" = tvs.id
+                        inner join "Suburbs" suburbs on suburbs.id = tvs."suburbId" 
+                        where date(date) between date(%s) and date(%s) and 
+                        ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by date order by date"""           
             colName = 'trafficVolDaily'
         elif tGranularity == 'monthly':
-            query = """select EXTRACT(year FROM date) AS year, EXTRACT(month FROM date) AS month, sum(value) as "trafficVolMonthly" from "TrafficVolumeReadings" group by year, month order by year, month"""           
+            query = """select EXTRACT(year FROM date) AS year, EXTRACT(month FROM date) AS month, sum(value) as "trafficVolMonthly" 
+                    from "TrafficVolumeReadings" tr 
+                    inner join "TrafficVolumeStations" tvs on tr."trafficVolumeStationId" = tvs.id 
+                    inner join "Suburbs" suburbs on suburbs.id = tvs."suburbId"
+                    where date(date) between date(%s) and date(%s) and 
+                    ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year, month order by year, month"""           
             colName = 'trafficVolMonthly'
         elif tGranularity == 'yearly':  
-            query = """select EXTRACT(year FROM date) AS year, sum(value) as "trafficVolAnnually" from "TrafficVolumeReadings" group by year order by year""" 
+            query = """select EXTRACT(year FROM date) AS year, sum(value) as "trafficVolAnnually" from "TrafficVolumeReadings" tr 
+                    inner join "TrafficVolumeStations" tvs on tr."trafficVolumeStationId" = tvs.id
+                    inner join "Suburbs" suburbs on suburbs.id = tvs."suburbId"
+                    where date(date) between date(%s) and date(%s) and 
+                    ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year""" 
             colName = 'trafficVolAnnually'
 
-        cursor.execute(query)
+        cursor.execute(query, tuple1)
         column_names = [desc[0] for desc in cursor.description] # getting a list of column names
         #print(column_names)
         result = cursor.fetchall()
@@ -517,7 +599,7 @@ def FetchData(dsName, tGranularity):
         dCols_df_lst.append([colName, df_total_tVolume, tGranularity, dsName])
 
     
-    elif dsName == 'emission':
+    elif dsName == 'emissions':
         query = ''      
         types_Q = "select distinct name from \"CosGhgCategories\""
         cursor.execute(types_Q)
@@ -531,11 +613,19 @@ def FetchData(dsName, tGranularity):
         for cat in lst_emissions_types:
             if str(cat) == 'None':
                 continue
-            tuple1 = [str(cat)]
+            tuple1 = [str(cat), sDate, eDate, spatialRange]
 
             if tGranularity == 'yearly':           
-                query = sql.SQL("""select year, sum(reading) as {cat} from "CosGhgEmissions" R 
-                            inner join "CosGhgCategories" C on R."categoryId" = C.id where C.name=%s group by year order by year""").format(cat=sql.Identifier(str(cat)))
+                query = sql.SQL("""select year, sum(reading) as {field}
+                         from "CosGhgEmissions" R
+                         inner join "CosGhgCategories" C on R."categoryId" = C.id
+                         inner join "CosGhgEmissionSuburbs" cges on R.id = cges."cosGhgEmissionId"
+                         inner join "Suburbs" suburbs on suburbs.id = cges."suburbId"
+                         where C.name=%s
+                         and year between EXTRACT(year FROM date(%s)) and EXTRACT(year FROM date(%s))
+                         and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary)
+                         group by year
+                         order by year""").format(field=sql.Identifier(str(cat)))
             
             cursor.execute(query, tuple1)
             column_names = [desc[0] for desc in cursor.description] # getting a list of column names
@@ -547,8 +637,14 @@ def FetchData(dsName, tGranularity):
 
         if tGranularity == 'yearly':
             # Now annual aggregate
-            query_year = """select year, sum(reading) as "totalEmissionsAnnually" from "CosGhgEmissions" group by year order by year"""
-            cursor.execute(query_year)
+            tuple1 = [sDate, eDate, spatialRange]
+            query_year = """select year, sum(reading) as "totalEmissionsAnnually" from "CosGhgEmissions" R
+                         inner join "CosGhgCategories" C on R."categoryId" = C.id
+                         inner join "CosGhgEmissionSuburbs" cges on R.id = cges."cosGhgEmissionId"
+                         inner join "Suburbs" suburbs on suburbs.id = cges."suburbId"                     
+                         where year between EXTRACT(year FROM date(%s)) and EXTRACT(year FROM date(%s))
+                         and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year"""
+            cursor.execute(query_year, tuple1)
             column_names = [desc[0] for desc in cursor.description] # getting a list of column names
             #print(column_names)
             result = cursor.fetchall()
