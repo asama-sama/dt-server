@@ -7,6 +7,7 @@ import {
 } from "../../src/clients/nswTrafficVolume";
 import { DATASOURCES } from "../../src/const/datasource";
 import {
+  getCounts,
   updateReadings,
   updateStations,
 } from "../../src/controllers/trafficVolume";
@@ -14,6 +15,10 @@ import { DataSource } from "../../src/db/models/DataSource";
 import { Suburb } from "../../src/db/models/Suburb";
 import { TrafficVolumeReading } from "../../src/db/models/TrafficVolumeReading";
 import { TrafficVolumeStation } from "../../src/db/models/TrafficVolumeStation";
+import {
+  Frequency,
+  UpdateFrequency,
+} from "../../src/db/models/UpdateFrequency";
 import { dateToString } from "../../src/util/date";
 import { updateSuburbGeoJson } from "../../src/util/suburbUtils";
 
@@ -236,6 +241,198 @@ describe("trafficVolume controller", () => {
       date.setFullYear(date.getFullYear() - 3);
       const lastYearString = dateToString(date);
       expect(fromDateString).toBe(lastYearString);
+    });
+  });
+
+  describe("getCounts", () => {
+    const stations: TrafficVolumeStation[] = [];
+    let readingDs: DataSource;
+    let updateFrequency: UpdateFrequency;
+    beforeEach(async () => {
+      const ds = await DataSource.create({
+        name: "ds1",
+      });
+      readingDs = await DataSource.create({
+        name: "readingDs",
+      });
+      const _updateFrequency = await UpdateFrequency.findOne({
+        where: {
+          frequency: Frequency.DAILY,
+        },
+      });
+      if (!_updateFrequency) throw new Error("Update frequency not found");
+      updateFrequency = _updateFrequency;
+      const tvs1 = await TrafficVolumeStation.create({
+        dataSourceId: ds.id,
+        stationKey: "s1",
+        stationId: "s1",
+        position: {
+          type: "Point",
+          coordinates: [0, 0],
+        },
+      });
+      stations.push(tvs1);
+      const tvs2 = await TrafficVolumeStation.create({
+        dataSourceId: ds.id,
+        stationKey: "s2",
+        stationId: "s2",
+        position: {
+          type: "Point",
+          coordinates: [10, 5],
+        },
+      });
+      stations.push(tvs2);
+    });
+    test("it should retrieve a count with the correct date", async () => {
+      const date = new Date();
+      await TrafficVolumeReading.create({
+        date,
+        value: 5,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      const startDate = new Date();
+      startDate.setDate(1);
+      const readings = await getCounts(
+        [stations[0].id],
+        startDate,
+        date,
+        "day"
+      );
+      expect(readings).toMatchObject({
+        [dateToString(date)]: {
+          all: 5,
+        },
+      });
+    });
+
+    test("it should group counts by day", async () => {
+      const date1 = new Date();
+      const date2 = new Date();
+      date2.setDate(date2.getDate() - 1);
+      await TrafficVolumeReading.create({
+        date: date1,
+        value: 5,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      await TrafficVolumeReading.create({
+        date: date2,
+        value: 15,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      const startDate = new Date();
+      startDate.setDate(1);
+      const readings = await getCounts(
+        [stations[0].id],
+        startDate,
+        date1,
+        "day"
+      );
+      expect(readings).toMatchObject({
+        [dateToString(date2)]: {
+          all: 15,
+        },
+        [dateToString(date1)]: {
+          all: 5,
+        },
+      });
+    });
+
+    test("it should combine counts from different siteIds", async () => {
+      const date = new Date();
+      await TrafficVolumeReading.create({
+        date,
+        value: 5,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      await TrafficVolumeReading.create({
+        date,
+        value: 5,
+        trafficVolumeStationId: stations[1].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      const startDate = new Date();
+      startDate.setDate(1);
+      const readings = await getCounts(
+        stations.map(({ id }) => id),
+        startDate,
+        date,
+        "day"
+      );
+      expect(readings).toMatchObject({
+        [dateToString(date)]: {
+          all: 10,
+        },
+      });
+    });
+    test("it should only retrieve counts for the selected siteIds", async () => {
+      const date = new Date();
+      await TrafficVolumeReading.create({
+        date,
+        value: 5,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      await TrafficVolumeReading.create({
+        date,
+        value: 5,
+        trafficVolumeStationId: stations[1].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      const startDate = new Date();
+      startDate.setDate(1);
+      const readings = await getCounts(stations[0].id, startDate, date, "day");
+      expect(readings).toMatchObject({
+        [dateToString(date)]: {
+          all: 5,
+        },
+      });
+    });
+    test("it should aggregate counts by month", async () => {
+      const date1 = new Date("2022-08-04");
+      const date2 = new Date("2022-09-04");
+      await TrafficVolumeReading.create({
+        date: date1,
+        value: 5,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+      await TrafficVolumeReading.create({
+        date: date2,
+        value: 6,
+        trafficVolumeStationId: stations[0].id,
+        dataSourceId: readingDs.id,
+        updateFrequencyId: updateFrequency.id,
+      });
+
+      date1.setDate(1);
+      date2.setDate(1);
+
+      const readings = await getCounts(
+        stations[0].id,
+        date1,
+        new Date(),
+        "month"
+      );
+      expect(readings).toMatchObject({
+        [dateToString(date1)]: {
+          all: 5,
+        },
+        [dateToString(date2)]: {
+          all: 6,
+        },
+      });
     });
   });
 });
