@@ -5,7 +5,12 @@ import {
   getMonthlyObservations,
 } from "../controllers/airQuality";
 import { GeoData } from "../customTypes/api";
-import { isArray, isValidDate, isValidNumber } from "../util/validators";
+import {
+  isArray,
+  isValidDate,
+  isValidNumber,
+  isValidTemporalAggregate,
+} from "../util/validators";
 
 const router = express.Router();
 
@@ -65,14 +70,7 @@ router.get(
         endDate = new Date();
       }
 
-      if (
-        _aggregate !== "day" &&
-        _aggregate !== "month" &&
-        _aggregate !== "year"
-      ) {
-        throw new Error("aggregate must be one of day/month/year");
-      }
-      const aggregate = _aggregate;
+      const aggregate = isValidTemporalAggregate(_aggregate);
 
       const readings = await getAirQualitySiteReadings(
         airQualitySiteIds,
