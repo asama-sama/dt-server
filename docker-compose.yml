@@ -2,6 +2,7 @@ version: "3.7"
 
 services:
   api-be:
+    image: api-be
     build:
       target: api-be
       context: .
@@ -13,6 +14,7 @@ services:
     depends_on:
       - "db"
   analysis-be:
+    image: analysis-be
     build:
       target: analysis-be
       context: .
