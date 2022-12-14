@@ -1,6 +1,7 @@
 import { Suburb } from "../db/models/Suburb";
 import { Op } from "sequelize";
 import { getConnection } from "../db/connect";
+import { GeoData } from "../customTypes/api";
 
 export const get = async () => {
   const suburbs = await Suburb.findAll({
@@ -37,7 +38,7 @@ type GetByPositionSig = (
   longitude: number,
   latitude: number,
   radius: number // in m
-) => Promise<Suburb[]>;
+) => Promise<GeoData[]>;
 export const getByPosition: GetByPositionSig = async (
   longitude,
   latitude,
@@ -61,5 +62,9 @@ export const getByPosition: GetByPositionSig = async (
     ),
     raw: true,
   });
-  return suburbs;
+  const suburbsMapped = suburbs.map(({ id, boundary }) => ({
+    id,
+    geometry: boundary,
+  }));
+  return suburbsMapped;
 };

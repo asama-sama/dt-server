@@ -18,7 +18,7 @@ import { Loader } from "../util/loader";
 import { JobInitialisorOptions } from "../initialise/jobs";
 import { dateToString } from "../util/date";
 import { getConnection } from "../db/connect";
-import { DatewiseCategorySums } from "../customTypes/calculated";
+import { DatewiseCategorySums, GeoData } from "../customTypes/api";
 import { TemporalAggregate } from "../customTypes/suburb";
 import { isValidTemporalAggregate } from "../util/validators";
 
@@ -334,12 +334,12 @@ export const getAirQualitySiteReadings: GetDailyReadingsSignature = async (
   return dailyAirQualityReadings;
 };
 
-export const getAirQualitySites = async () => {
-  const sites = await AirQualitySite.findAll();
-  return sites.map(({ id, suburb, position, region }) => ({
+export const getAirQualitySites = async (): Promise<GeoData[]> => {
+  const sites = await AirQualitySite.findAll({
+    raw: true,
+  });
+  return sites.map(({ id, position }) => ({
     id,
-    suburb,
-    position,
-    region,
+    geometry: position,
   }));
 };

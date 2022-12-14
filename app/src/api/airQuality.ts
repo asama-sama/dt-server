@@ -4,7 +4,13 @@ import {
   getAirQualitySites,
   getMonthlyObservations,
 } from "../controllers/airQuality";
-import { isArray, isValidDate, isValidNumber } from "../util/validators";
+import { GeoData } from "../customTypes/api";
+import {
+  isArray,
+  isValidDate,
+  isValidNumber,
+  isValidTemporalAggregate,
+} from "../util/validators";
 
 const router = express.Router();
 
@@ -64,14 +70,7 @@ router.get(
         endDate = new Date();
       }
 
-      if (
-        _aggregate !== "day" &&
-        _aggregate !== "month" &&
-        _aggregate !== "year"
-      ) {
-        throw new Error("aggregate must be one of day/month/year");
-      }
-      const aggregate = _aggregate;
+      const aggregate = isValidTemporalAggregate(_aggregate);
 
       const readings = await getAirQualitySiteReadings(
         airQualitySiteIds,
@@ -86,9 +85,10 @@ router.get(
   }
 );
 
+// initial data required for fetching air quality site data
 router.get(
-  "/sites",
-  async (req: Request, res: Response, next: NextFunction) => {
+  "/pre",
+  async (req: Request, res: Response<GeoData[]>, next: NextFunction) => {
     try {
       const sites = await getAirQualitySites();
       return res.status(200).send(sites);

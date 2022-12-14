@@ -4,6 +4,9 @@ import {
   getStations,
 } from "../clients/nswTrafficVolume";
 import { DATASOURCES } from "../const/datasource";
+import { DatewiseCategorySums, GeoData } from "../customTypes/api";
+import { TemporalAggregate } from "../customTypes/suburb";
+import { getConnection } from "../db/connect";
 import { DataSource } from "../db/models/DataSource";
 import { Suburb } from "../db/models/Suburb";
 import { TrafficVolumeReading } from "../db/models/TrafficVolumeReading";
@@ -13,6 +16,7 @@ import { JobInitialisorOptions } from "../initialise/jobs";
 import { dateToString } from "../util/date";
 import { Loader } from "../util/loader";
 import { updateSuburbGeoJson } from "../util/suburbUtils";
+import { isValidTemporalAggregate } from "../util/validators";
 
 const YEARS_TO_SEARCH_INITIALISE = 3;
 const MONTHS_TO_SEARCH_INITIALISE = 1;
@@ -147,4 +151,58 @@ export const updateReadings = async (options?: JobInitialisorOptions) => {
     });
     loader.tick();
   }
+};
+
+export const getAllStations = async (): Promise<GeoData[]> => {
+  const stations = await TrafficVolumeStation.findAll({ raw: true });
+  const stationsMapped = stations.map(({ id, position }) => ({
+    id,
+    geometry: position,
+  }));
+  return stationsMapped;
+};
+
+export const getCounts = async (
+  stationIds: number[],
+  startDate: Date,
+  endDate: Date,
+  aggregateTime: TemporalAggregate
+): Promise<DatewiseCategorySums> => {
+  const sequelize = getConnection();
+
+  isValidTemporalAggregate(aggregateTime);
+
+  type DateGroupedReadings = {
+    dagg: Date;
+    value: number;
+  };
+  const readings = (await TrafficVolumeReading.findAll({
+    attributes: [
+      [sequelize.literal(`date_trunc('${aggregateTime}', date)`), "dagg"],
+      [
+        sequelize.cast(sequelize.fn("SUM", sequelize.col("value")), "integer"),
+        "value",
+      ],
+    ],
+    where: {
+      trafficVolumeStationId: stationIds,
+      date: {
+        [Op.gte]: startDate,
+        [Op.lte]: endDate,
+      },
+    },
+    group: ["dagg"],
+    order: [["dagg", "asc"]],
+    raw: true,
+  })) as unknown as DateGroupedReadings[];
+  const result: DatewiseCategorySums = {};
+  readings.map((reading) => {
+    const date = dateToString(reading.dagg);
+    if (!result[date]) {
+      result[date] = {};
+    }
+    result[date]["ALL"] = reading.value;
+  });
+
+  return result;
 };
