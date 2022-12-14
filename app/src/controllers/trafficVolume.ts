@@ -201,7 +201,7 @@ export const getCounts = async (
     if (!result[date]) {
       result[date] = {};
     }
-    result[date]["all"] = reading.value;
+    result[date]["ALL"] = reading.value;
   });
 
   return result;
