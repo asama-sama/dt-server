@@ -49,6 +49,9 @@ import psycopg2
 from psycopg2 import sql ### https://www.psycopg.org/psycopg3/docs/api/sql.html#module-psycopg.sql
 from flask import Flask, request
 from flask import jsonify
+from flask_cors import CORS
+import dotenv
+from dotenv import load_dotenv
 import ast
 
 import warnings
@@ -58,7 +61,7 @@ warnings.filterwarnings('ignore', '.*interpolation.*', )
 warnings.filterwarnings('ignore', '.*Degrees.*', )
 warnings.filterwarnings('ignore', '.*divide.*', )
 
-
+load_dotenv()
 
 Insight = ''
 menu_Column1 = ''
@@ -98,7 +101,7 @@ datasets_Dict = {}
 ## 'POLYGON(( 150.75389134450774 -33.59735137171584, 151.34643938711528 -33.766199181893704, 151.30784907341607 -34.06681311892785, 150.63189615926498 -34.00594964988948, 150.75389134450774 -33.59735137171584 ))'
 
 app = Flask(__name__)
-
+CORS(app)
 
 ######### ************ Simple Correlation ************** ##############
 @app.route('/simple_corr/')
@@ -249,7 +252,7 @@ def sameDBCorrelation_Score(dBColsDfs_01, on_what, num_Buckets, corr_Type, tGran
 
             df_bucks_lst = col_bucket_df(df_Joined, num_Buckets) # each item is like --> (column, df_col_buck, numBins, len(uniq_val), len(df_num))
             Avg_corr, Avg_Pvalue, numBins1, numBins2, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2 = comp_Correlation(colInfo_01[0], colInfo_02[0], corr_Type, df_bucks_lst)
-            if abs(Avg_corr) >= 0.5:
+            if Avg_corr >= 0.5:
                 impact_col1 = 1 ## col_Impact(pair[0], corr_Type, columns_name)
                 impact_col2 = 1 ## col_Impact(pair[1], corr_Type, columns_name)
                 Significane = 1 - Avg_Pvalue
@@ -332,7 +335,7 @@ def FetchData(dsName, sDate, eDate, spatialRange, tGranularity):
     print("start dte: ", sDate, file=sys.stderr)
     dCols_df_lst = []
     np.set_printoptions(threshold=sys.maxsize)
-    conn = psycopg2.connect(database="root", user='root', password='root', host='127.0.0.1', port= '5433')
+    conn = psycopg2.connect(database=os.environ['DB_NAME'], user=os.environ['DB_USER'], password=os.environ['DB_PASSWORD'], host=os.environ['DB_HOST'], port= os.environ['DB_PORT'])
     #Creating a cursor object using the cursor() method
     cursor = conn.cursor()
 
@@ -523,7 +526,7 @@ def FetchData(dsName, sDate, eDate, spatialRange, tGranularity):
                             from "TrafficIncidents" t
                             inner join "TrafficIncidentSuburbs" tis on t.id = tis."trafficIncidentId"
                             inner join "Suburbs" suburbs on suburbs.id = tis."suburbId"
-                            wheredate(created) between date(%s) and date(%s) 
+                            where date(created) between date(%s) and date(%s) 
                             and ST_Intersects(ST_SetSrid(ST_GeometryFromText(%s),4326), boundary) group by year order by year"""
             colName = 'totalTIncidentsAnnually'
 
