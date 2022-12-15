@@ -252,7 +252,7 @@ def sameDBCorrelation_Score(dBColsDfs_01, on_what, num_Buckets, corr_Type, tGran
 
             df_bucks_lst = col_bucket_df(df_Joined, num_Buckets) # each item is like --> (column, df_col_buck, numBins, len(uniq_val), len(df_num))
             Avg_corr, Avg_Pvalue, numBins1, numBins2, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2 = comp_Correlation(colInfo_01[0], colInfo_02[0], corr_Type, df_bucks_lst)
-            if Avg_corr != 0:
+            if Avg_corr >= 0.5:
                 impact_col1 = 1 ## col_Impact(pair[0], corr_Type, columns_name)
                 impact_col2 = 1 ## col_Impact(pair[1], corr_Type, columns_name)
                 Significane = 1 - Avg_Pvalue
@@ -285,7 +285,7 @@ def crossDBCorrelation_Score(dBColsDfs_01, dBColsDfs_02, on_what, num_Buckets, c
 
                 df_bucks_lst = col_bucket_df(df_Joined, num_Buckets) # each item is like --> (column, df_col_buck, numBins, len(uniq_val), len(df_num))
                 Avg_corr, Avg_Pvalue, numBins1, numBins2, actualNumRow1, actualNumRow2, uniqVals1, uniqVals2 = comp_Correlation(colInfo_01[0], colInfo_02[0], corr_Type, df_bucks_lst)
-                if Avg_corr != 0:
+                if abs(Avg_corr) >= 0.5:
                     impact_col1 = 1 ## col_Impact(pair[0], corr_Type, columns_name)
                     impact_col2 = 1 ## col_Impact(pair[1], corr_Type, columns_name)
                     Significane = 1 - Avg_Pvalue
