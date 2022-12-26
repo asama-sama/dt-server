@@ -14,7 +14,16 @@ DATA_FILES_PATH=/dataFiles
 DROP_TABLES=no
 NOMINATIM_API_TIMEOUT=1500
 FETCH_SUBURBS=yes
-NSW_OPEN_DATA_API_KEY=<opendata api key. see below for how to set>
+NSW_OPEN_DATA_API_KEY=<opendata api key for traffic incidents. see below for how to set>
+```
+
+* Create a .env file in `analysisBackend` with the following:
+```
+DB_NAME=root
+DB_USER=root
+DB_PASSWORD=root
+DB_HOST=db
+DB_PORT=5432
 ```
 
 * Create an api key for [NSW Open Data](https://opendata.transport.nsw.gov.au/)
