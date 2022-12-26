@@ -115,4 +115,3 @@ This view lets us look at a single source of data in detail. We can
 **Viewer**
 * react
 * leaflet
-* turf.js
