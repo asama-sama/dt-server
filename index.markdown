@@ -32,7 +32,7 @@ There are 4 main components to the application. They are the
 * Viewer - user interface to make selections and view results.
 * Database - continually stores new data and is updated through the Data Management Engine.
 
-![image]({{ site.url }}/assets/architecture.jpg)
+![image](./assets/architecture.jpg)
 
 
 # Server
@@ -64,26 +64,26 @@ This view allows a user to compare 2 data sources and view the results for them 
 
 The viewer supports data sources that are fixed locations (points) or regions (polygons). Fixed locations are represented as coloured dots and regions are represented with grey polygons.
 
-![image]({{ site.url }}/assets/comparison2.jpg)
+![image](./assets/comparison2.jpg)
 
 To select data, draw a rectangle by clicking the white button in the top left corner and click on two points to create a rectangle over that region. Selected points and polygons will become highlighted and data will be retrieved for that region.
 
-![image]({{ site.url }}/assets/comparison-selection.jpg)
+![image](./assets/comparison-selection.jpg)
 
 On the right hand side, initial data will be displayed. We can adjust the date range for which data is fetched using the sliders, and change the aggregation of the data to be daily, monthly or yearly.
 
-![image]({{ site.url }}/assets/comparison-graph.jpg)
+![image](./assets/comparison-graph.jpg)
 
 At the bottom of the right hand pane, we can choose what attributes of the data to filter by.
 
-![]({{ site.url}}/assets/comparison-category.jpg)
+![](./assets/comparison-category.jpg)
 
 Having made a selection for the date range and aggregation, we can retrieve the most significant correlations using the "Get correlations" button.
 After reviewing the correlations, we can filter by attributes to view the data that the correlations were returned for.
 
-![]({{ site.url }}/assets/comparison-getcorrelations.jpg)
+![](./assets/comparison-getcorrelations.jpg)
 
-![]({{ site.url }}/assets/comparison-getcorrelations2.jpg)
+![](./assets/comparison-getcorrelations2.jpg)
 
 ## Single Source View
 
@@ -93,7 +93,7 @@ This view lets us look at a single source of data in detail. We can
 * toggle which attributes to display
 * filter data for a particular year
 
-![]({{site.url}}/assets/single-source.jpg)
+![](./assets/single-source.jpg)
 
 
 # Tech Stack
