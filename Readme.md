@@ -36,6 +36,8 @@ DB_PORT=5432
 
 * * Add this API key to your environment variables for NSW_OPEN_DATA_API_KEY
 
+* Run `npm i`
+
 * Run the docker files from the root project directory `/`
 > docker-compose up
 
