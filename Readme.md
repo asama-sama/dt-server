@@ -83,6 +83,10 @@ updatedAt: NOW()
 
 * * Now restart the app and the file uploading should appear in the logs. When it is complete, the `processed` column for your new entry should be set to true
 
+ To update through an SQL statement,
+>
+>insert into "DataFiles" ("dataSourceId", "name", "createdAt", "updatedAt") values (6, 'ghgemissions.csv', NOW(), NOW());
+
 # Creating Docker image for production from development machine
 
 ## Build dockerfile
@@ -98,26 +102,42 @@ For MacOS, add this flag
 
 # Production machine
 
-## Download the docker image
+## Install Docker and download the docker image
+
+* Install Docker on the production server
+
+* Pull the Docker image
 
 > docker pull aqureshimon/dt-server:`<version>`
 
+## Create a network
+
+> docker network create mynet
+
 ## Database setup
 
-Postgres must be installed locally on the machine 
-* `listen_adresses = '*'` should be set in `postgresql.conf`
-*  The following line should be added in `pg_hba.conf` 
-> `host    all             all             172.17.0.0/16           md5`
+Download and run the postGIS container
 
+> docker run --net mynet --name dblocal -e POSTGRES_PASSWORD=`<password>` -d -p 5432:5432 postgis/postgis:14-3.3-alpine
 ## Env file
 
-A .env file should be created with the following values set
+* Create a project directory
+
+> mkdir `~/dt-config`
+
+* Create a `.env` file
+
+> cd `dt-config`
+
+> touch `.env`
+
+Set the following values in `.env`
 
 ```
-DB_NAME=<dbname>
-DB_USER=<dbuser>
-DB_PASSWORD=<dbpassword>
-DB_HOST=host.docker.internal
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=<password>
+DB_HOST=dblocal
 DB_PORT=5432
 DATA_FILES_PATH=/dataFiles
 DROP_TABLES=no
@@ -127,11 +147,18 @@ FETCH_SUBURBS=yes
 
 ## Create DATA_FILES directory
 
-Create a folder for the location of `DATA_FILES` as listed above. If using the same directory, run 
-> `mkdir ~/dataFiles`
+Create a folder for the location of `DATA_FILES`.
+
+> `mkdir dataFiles`
+
+## Add user to group 'docker'
+
+Run the following commands
+
+* `sudo usermod -a -G docker [<your current user>]`
+* `newgrp docker`
+
 
 ## Docker run command
 
-> docker run --mount type=bind,source=/home/ubuntu/dataFiles,target=/dataFiles --env-file .env --add-host=host.docker.internal:host-gateway  aqureshimon/dt-server:`<version>`
-
-Save this command in a bash script for reuse
+> docker run -d --net mynet --mount type=bind,source=dataFiles,target=/home/ubuntu/dt-config/dataFiles --env-file .env --add-host=host.docker.internal:host-gateway  `<user>`/dt-server:`<version>`
