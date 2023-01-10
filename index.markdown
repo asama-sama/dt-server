@@ -25,7 +25,6 @@ The currently supported data sources are:
 
 ## Architecture
 
-<<<<<<< HEAD
 There are 4 main components to the application. They are the
 
 * Data Management Engine - responsible for fetching and updating the database.
@@ -40,15 +39,10 @@ There are 4 main components to the application. They are the
 
 This section outlines the backend of the application, made up of the data management engine, the analysis engine and the database.
 
-=======
-### Components
-
-![image]({{ site.url }}/assets/architecture.jpg)
->>>>>>> 1a807a2 (add db diagram changes)
 
 ### ER Diagram
 
-![image]({{ site.url}}/assets/db-diagram.png}
+![image](./assets/db-diagram.png)
 
 ## Data Management Engine
 
