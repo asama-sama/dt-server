@@ -89,18 +89,40 @@ updatedAt: NOW()
 >
 >insert into "DataFiles" ("dataSourceId", "name", "createdAt", "updatedAt") values (6, 'ghgemissions.csv', NOW(), NOW());
 
-# Creating Docker image for production from development machine
+# Creating a new Docker image for production from development machine 
+
+Follow these steps to update the docker image on docker hub (or some other registry)
 
 ## Build dockerfile
 
->docker buildx build -t aqureshimon/dt-server:`<version>` -f Dockerfile.prod .
+* **api backend**
 
-For MacOS, add this flag
+From `/api-be`, run:
+
+>docker buildx build -t aykyu/dt-server:`<version>` -f Dockerfile.prod .
+
+If building on MacOS, add this flag
+> --platform=linux/amd64
+
+* **analysis backend**
+
+From `/analysisBackend`, run:
+
+>docker buildx build -t aykyu/
+dt-anlys-be:`<version>` .
+
+If building on MacOS, add this flag
 > --platform=linux/amd64
 
 ## Push to registry
 
-> docker push aqureshimon/dt-server:`<version>`
+* Push the api backend
+
+> docker push aykyu/dt-server:`<version>`
+
+* Push the analysis  backend
+
+> docker push aykyu/dt-anlys-be:`<version>`
 
 # Production machine
 
@@ -108,9 +130,13 @@ For MacOS, add this flag
 
 * Install Docker on the production server
 
-* Pull the Docker image
+* Pull the Docker image for the api backend
 
-> docker pull aqureshimon/dt-server:`<version>`
+> docker pull aykyu/dt-server:`<version>`
+
+* Pull the Docker image for the analysis backend
+
+> docker pull aykyu/dt-anlys-be:`version`
 
 ## Create a network
 
@@ -121,15 +147,32 @@ For MacOS, add this flag
 Download and run the postGIS container
 
 > docker run --net mynet --name dblocal -e POSTGRES_PASSWORD=`<password>` -d -p 5432:5432 postgis/postgis:14-3.3-alpine
-## Env file
 
-* Create a project directory
+## Env files
 
-> mkdir `~/dt-config`
+* Create directory for analysis backend
 
-* Create a `.env` file
+> mkdir `~/dt-anlys-be-config`
+>
+> cd `dt-anlys-be-config`
 
-> cd `dt-config`
+* Create an .env file with the following variables in this directory
+
+```
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=<password>
+DB_HOST=dblocal
+DB_PORT=5432
+```
+
+* Create a project directory for the api backend
+
+> mkdir `~/dt-api-be-config`
+
+* Create a `.env` file in this directory
+
+> cd `~/dt-api-be-config`
 
 > touch `.env`
 
@@ -161,6 +204,12 @@ Run the following commands
 * `newgrp docker`
 
 
-## Docker run command
+## Docker run command for api backend
 
-> docker run -d --net mynet --mount type=bind,source=dataFiles,target=/home/ubuntu/dt-config/dataFiles --env-file .env --add-host=host.docker.internal:host-gateway  `<user>`/dt-server:`<version>`
+> docker run -d --net mynet --mount type=bind,source=/home/ubuntu/dt-api-be-config/dataFiles,target=/dataFiles -p 3000:3000 --name api-be --env-file .env --add-host=host.docker.internal:host-gateway  aykyu/dt-server:`<version>`
+
+## Docker run command for analysis backend
+
+> cd ~/dt-anlys-be-config
+>
+> docker run -d --net mynet -p 3200:3200 --name dt-anlys-be --env-file .env aykyu/dt-anlys-be:`<version>`

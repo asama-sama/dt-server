@@ -5,19 +5,21 @@ services:
     image: api-be
     build:
       target: api-be
-      context: .
+      context: ./api-be
+      # dockerfile: api-be/Dockerfile
     ports:
       - 3000:3000
     volumes:
-      - ./app:/app
-      - ./dataFiles:/dataFiles
+      - ./api-be/app:/app
+      - ./api-be/dataFiles:/dataFiles
     depends_on:
       - "db"
   analysis-be:
     image: analysis-be
     build:
       target: analysis-be
-      context: .
+      context: ./analysisBackend
+      # dockerfile: analysisBackend/Dockerfile
     ports:
       - 3200:3200
     volumes:
