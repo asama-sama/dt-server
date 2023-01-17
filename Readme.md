@@ -1,4 +1,4 @@
-[About this project](https://aykyu.github.io/dt-server/)
+[About this project](https://asama-sama.github.io/dt-server/)
 
 # How to get this working on your local development machine
 
